@@ -23,7 +23,7 @@
       cursor: pointer;
     }
     #arScene {
-      display: none; /* Oculta la escena AR inicialmente */
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
@@ -45,8 +45,8 @@
 
   <!-- Escena AR (oculta hasta que se presione el botón) -->
   <div id="arScene">
-    <a-scene embedded arjs='detectionMode: mono_and_matrix; matrixCodeType: 3x3;' vr-mode-ui="enabled: false">
-      <a-marker type="pattern" value="5">
+    <a-scene embedded arjs='sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;' vr-mode-ui="enabled: false">
+      <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.patt">
         <a-video 
           src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
           width="1.6" 
@@ -65,30 +65,51 @@
     const arScene = document.getElementById('arScene');
     const instructions = document.getElementById('instructions');
 
-    startButton.addEventListener('click', () => {
-      // Pedir permisos de cámara
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(() => {
-          // Ocultar instrucciones y mostrar escena AR
-          instructions.style.display = 'none';
-          arScene.style.display = 'block';
-          
-          // Controlar video al detectar/perder el marcador
-          const marker = document.querySelector('a-marker');
-          const video = document.getElementById('arVideo');
-          
-          marker.addEventListener('markerFound', () => {
-            video.play(); // Solo reproduce cuando se ve el marcador
-          });
-          
-          marker.addEventListener('markerLost', () => {
-            video.pause(); // Pausa al perder el marcador
-            video.currentTime = 0; // Reinicia el video
-          });
-        })
-        .catch(error => {
-          alert("Error: Necesitas permitir el acceso a la cámara.");
+    startButton.addEventListener('click', async () => {
+      try {
+        // Primero solicitar permisos de cámara
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: {
+            facingMode: 'environment' // Usar cámara trasera
+          } 
         });
+        
+        // Detener cualquier stream previo
+        if (window.arStream) {
+          window.arStream.getTracks().forEach(track => track.stop());
+        }
+        window.arStream = stream;
+        
+        // Ocultar instrucciones y mostrar escena AR
+        instructions.style.display = 'none';
+        arScene.style.display = 'block';
+        
+        // Controlar video al detectar/perder el marcador
+        const marker = document.querySelector('a-marker');
+        const video = document.getElementById('arVideo');
+        
+        marker.addEventListener('markerFound', () => {
+          video.play().catch(e => console.log("Error al reproducir:", e));
+        });
+        
+        marker.addEventListener('markerLost', () => {
+          video.pause();
+          video.currentTime = 0;
+        });
+        
+        // Forzar actualización de la escena AR
+        const scene = document.querySelector('a-scene');
+        if (scene.hasLoaded) {
+          scene.systems['arjs'].start();
+        } else {
+          scene.addEventListener('loaded', () => {
+            scene.systems['arjs'].start();
+          });
+        }
+      } catch (error) {
+        console.error("Error al acceder a la cámara:", error);
+        alert("Error: Necesitas permitir el acceso a la cámara. Recarga la página e inténtalo de nuevo.");
+      }
     });
   </script>
 </body>
