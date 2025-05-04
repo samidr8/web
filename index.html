@@ -2,18 +2,32 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>AR con Video - Solución Definitiva</title>
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR con Video - Solución Mejorada</title>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
     body { 
       margin: 0; 
-      padding: 0;
+      overflow: hidden;
       font-family: Arial, sans-serif;
       text-align: center;
       background: #f0f0f0;
-      overflow: hidden;
+    }
+    #startScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
     }
     #startButton {
       margin: 20px auto;
@@ -24,160 +38,234 @@
       border-radius: 5px;
       font-size: 18px;
       cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+    #startButton:hover {
+      background: #45a049;
+      transform: translateY(-2px);
     }
     #arScene {
-      display: none;
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
     }
-    #instructions {
-      margin-top: 50px;
-      padding: 20px;
-    }
-    .loading {
+    #loadingMessage {
       display: none;
+      font-size: 18px;
+      margin-top: 20px;
+      color: #555;
+    }
+    #backButton {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      padding: 10px 15px;
+      background: rgba(0, 0, 0, 0.6);
       color: white;
-      padding: 20px;
+      border: none;
       border-radius: 5px;
-      z-index: 1000;
+      display: none;
+      cursor: pointer;
+    }
+    #scanInstructions {
+      position: fixed;
+      bottom: 30px;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px;
+      font-size: 16px;
+      display: none;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
-  <div id="instructions">
+  <!-- Pantalla de inicio -->
+  <div id="startScreen">
     <h1>¡Bienvenido a mi AR!</h1>
-    <p>Presiona el botón para activar la cámara y escanear el marcador.</p>
+    <p>Esta aplicación mostrará un video cuando detecte un marcador específico.</p>
+    <p>Necesitarás permitir el acceso a la cámara para que funcione.</p>
     <button id="startButton">ACTIVAR CÁMARA</button>
+    <div id="loadingMessage">Cargando cámara, por favor espera...</div>
   </div>
 
-  <div class="loading" id="loading">Cargando recursos, por favor espera...</div>
+  <!-- Botón para volver -->
+  <button id="backButton">◀ Volver</button>
+  
+  <!-- Instrucciones mientras se escanea -->
+  <div id="scanInstructions">Busca el marcador "Hiro" para ver el video en AR</div>
 
-  <!-- Escena AR (oculta hasta que se presione el botón) -->
+  <!-- Escena AR -->
   <div id="arScene">
     <a-scene 
       embedded 
-      arjs='sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;' 
+      arjs='sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;' 
       vr-mode-ui="enabled: false"
-      renderer="logarithmicDepthBuffer: true;"
-    >
+      renderer="logarithmicDepthBuffer: true; precision: medium;"
+      loading-screen="enabled: false">
+      
+      <!-- Definir assets para precarga -->
       <a-assets>
         <video 
-          id="videoAsset" 
-          src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
-          preload="auto" 
+          id="arVideoAsset" 
+          src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          preload="auto"
+          loop
           crossorigin="anonymous"
           muted
-          loop
-        ></video>
+          playsinline></video>
       </a-assets>
       
+      <!-- Marcador y video -->
       <a-marker 
+        id="hiroMarker"
         type="pattern" 
-        url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.patt"
-        emitevents="true"
-      >
+        url="estrella.patt"
+        smooth="true"
+        smoothCount="5"
+        smoothTolerance="0.01"
+        smoothThreshold="2">
         <a-video 
-          src="#videoAsset" 
+          src="#arVideoAsset" 
           width="1.6" 
           height="0.9" 
           position="0 0.5 0" 
           rotation="-90 0 0"
-          id="arVideo"
-          autoplay="false"
-          muted="true"
-        ></a-video>
+          transparent="true"
+          material="alphaTest: 0.5"></a-video>
       </a-marker>
+      
       <a-entity camera></a-entity>
     </a-scene>
   </div>
 
   <script>
+    // Elementos DOM
+    const startScreen = document.getElementById('startScreen');
     const startButton = document.getElementById('startButton');
-    const arScene = document.getElementById('arScene');
-    const instructions = document.getElementById('instructions');
-    const loading = document.getElementById('loading');
-
+    const loadingMessage = document.getElementById('loadingMessage');
+    const backButton = document.getElementById('backButton');
+    const scanInstructions = document.getElementById('scanInstructions');
+    const videoElement = document.getElementById('arVideoAsset');
+    
+    // Variable para el stream de cámara
+    let cameraStream = null;
+    
+    // Evento para el botón de inicio
     startButton.addEventListener('click', async () => {
       try {
-        loading.style.display = 'block';
-        startButton.disabled = true;
+        // Mostrar mensaje de carga
+        startButton.style.display = 'none';
+        loadingMessage.style.display = 'block';
         
-        // Primero solicitar permisos de cámara
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+        // Solicitar permisos de cámara
+        cameraStream = await navigator.mediaDevices.getUserMedia({ 
           video: {
-            facingMode: { ideal: 'environment' } // Preferir cámara trasera
-          } 
+            facingMode: 'environment', // Usar cámara trasera
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
         });
         
-        // Detener cualquier stream previo
-        if (window.arStream) {
-          window.arStream.getTracks().forEach(track => track.stop());
-        }
-        window.arStream = stream;
+        // Configurar el video para que empiece muteado
+        videoElement.muted = true;
+        videoElement.pause();
         
-        // Ocultar instrucciones y mostrar escena AR
-        instructions.style.display = 'none';
-        arScene.style.display = 'block';
-        loading.style.display = 'none';
+        // Ocultar pantalla de inicio y mostrar botón de regreso e instrucciones
+        startScreen.style.display = 'none';
+        backButton.style.display = 'block';
+        scanInstructions.style.display = 'block';
         
-        // Controlar video al detectar/perder el marcador
-        const marker = document.querySelector('a-marker');
-        const video = document.getElementById('arVideo');
-        const videoAsset = document.getElementById('videoAsset');
-        
-        // Asegurarse de que el video no se reproduzca automáticamente
-        videoAsset.autoplay = false;
-        videoAsset.muted = true;
-        
-        marker.addEventListener('markerFound', () => {
-          console.log("Marcador detectado");
-          videoAsset.play().catch(e => console.log("Error al reproducir:", e));
-          video.setAttribute('material', 'opacity', 1);
-          videoAsset.muted = false;
-        });
-        
-        marker.addEventListener('markerLost', () => {
-          console.log("Marcador perdido");
-          videoAsset.pause();
-          videoAsset.currentTime = 0;
-          video.setAttribute('material', 'opacity', 0);
-          videoAsset.muted = true;
-        });
-        
-        // Inicializar la escena AR
-        const scene = document.querySelector('a-scene');
-        if (scene.hasLoaded) {
-          scene.systems['arjs'].start();
-        } else {
-          scene.addEventListener('loaded', () => {
-            scene.systems['arjs'].start();
-            // Ocultar loading cuando la escena esté lista
-            loading.style.display = 'none';
-          });
-        }
+        // Configurar eventos del marcador
+        setupMarkerEvents();
         
       } catch (error) {
         console.error("Error al acceder a la cámara:", error);
-        loading.style.display = 'none';
-        startButton.disabled = false;
-        alert("Error: Necesitas permitir el acceso a la cámara. Asegúrate de que la aplicación tenga permisos de cámara y recarga la página.");
+        // Mensaje de error más descriptivo
+        loadingMessage.innerHTML = `
+          <strong style="color: red">Error:</strong> No se pudo acceder a la cámara.<br>
+          - Verifica que has concedido permisos<br>
+          - Asegúrate de usar un dispositivo con cámara<br>
+          - Intenta con otro navegador (Chrome/Safari)<br>
+          <button id="retryButton" style="margin-top: 15px; padding: 10px 20px; background: #4285f4; color: white; border: none; border-radius: 4px;">
+            Intentar nuevamente
+          </button>
+        `;
+        
+        // Botón para reintentar
+        document.getElementById('retryButton').addEventListener('click', () => {
+          location.reload();
+        });
       }
     });
     
-    // Precargar el video para mejor experiencia
-    window.addEventListener('load', () => {
-      const videoAsset = document.createElement('video');
-      videoAsset.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-      videoAsset.preload = 'auto';
-      videoAsset.muted = true;
+    // Función para configurar eventos del marcador
+    function setupMarkerEvents() {
+      const marker = document.getElementById('hiroMarker');
+      
+      marker.addEventListener('markerFound', () => {
+        console.log('Marcador encontrado');
+        scanInstructions.style.display = 'none';
+        
+        // Desmuteamos el video al encontrar el marcador
+        videoElement.muted = false;
+        
+        // Intentamos reproducir el video
+        videoElement.play().catch(error => {
+          console.error('Error al reproducir el video:', error);
+          // En algunos navegadores, necesitamos interacción del usuario antes de reproducir con sonido
+          videoElement.muted = true;
+          videoElement.play();
+        });
+      });
+      
+      marker.addEventListener('markerLost', () => {
+        console.log('Marcador perdido');
+        scanInstructions.style.display = 'block';
+        
+        // Pausamos y muteamos el video al perder el marcador
+        videoElement.pause();
+        videoElement.currentTime = 0;
+        videoElement.muted = true;
+      });
+    }
+    
+    // Botón para volver a la pantalla de inicio
+    backButton.addEventListener('click', () => {
+      // Detener la transmisión de la cámara
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      
+      // Pausar el video si está reproduciéndose
+      videoElement.pause();
+      videoElement.currentTime = 0;
+      
+      // Ocultar botón de regreso e instrucciones
+      backButton.style.display = 'none';
+      scanInstructions.style.display = 'none';
+      
+      // Mostrar pantalla de inicio
+      startScreen.style.display = 'flex';
+      startButton.style.display = 'block';
+      loadingMessage.style.display = 'none';
+      
+      // Recargar la página para reiniciar completamente AR.js
+      // Esto es necesario en algunos dispositivos
+      location.reload();
+    });
+    
+    // Prevenir que el video se reproduzca automáticamente al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+      videoElement.pause();
     });
   </script>
 </body>
