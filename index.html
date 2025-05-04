@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR con Marcador Personalizado</title>
+  <title>AR con Video - Solucionado</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
@@ -20,14 +20,25 @@
       z-index: 1000;
       font-size: 18px;
     }
+    /* Ocultar la escena AR inicialmente */
+    a-scene { display: none; }
   </style>
 </head>
 <body>
-  <a-scene embedded arjs='sourceType: webcam; detectionMode: manual;'>
-    <!-- Marcador personalizado -->
-    <a-marker type="pattern" url="estrella.patt">
-      <a-video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
-               width="1.6" height="0.9" position="0 0.5 0" rotation="-90 0 0"></a-video>
+  <!-- Escena AR (oculta al inicio) -->
+  <a-scene embedded arjs='detectionMode: mono_and_matrix; matrixCodeType: 3x3;' vr-mode-ui="enabled: false">
+    <a-marker type="pattern" value="5">
+      <!-- Video con autoplay y loop desactivado -->
+      <a-video 
+        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
+        width="1.6" 
+        height="0.9" 
+        position="0 0.5 0" 
+        rotation="-90 0 0"
+        autoplay="false"
+        loop="false"
+        id="ar-video"
+      ></a-video>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
@@ -35,21 +46,30 @@
   <button id="startButton">ACTIVAR CÁMARA</button>
 
   <script>
-    document.getElementById('startButton').addEventListener('click', () => {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(() => {
-            document.getElementById('startButton').style.display = 'none';
-            // Iniciar detección AR manualmente
-            const scene = document.querySelector('a-scene');
-            if (scene.arjs) {
-              scene.arjs.start();
-            }
-          })
-          .catch(error => {
-            alert("Permite el acceso a la cámara para usar AR.");
+    const startButton = document.getElementById('startButton');
+    const arScene = document.querySelector('a-scene');
+    const arVideo = document.getElementById('ar-video');
+
+    startButton.addEventListener('click', () => {
+      // Solicitar permisos de cámara
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(() => {
+          startButton.style.display = 'none';
+          arScene.style.display = 'block'; // Mostrar escena AR
+          
+          // Configurar eventos del marcador
+          const marker = document.querySelector('a-marker');
+          marker.addEventListener('markerFound', () => {
+            arVideo.play(); // Reproducir solo cuando se detecte el marcador
           });
-      }
+          marker.addEventListener('markerLost', () => {
+            arVideo.pause(); // Pausar cuando se pierda el marcador
+            arVideo.currentTime = 0; // Reiniciar el video
+          });
+        })
+        .catch(error => {
+          alert("Debes permitir el acceso a la cámara para usar AR.");
+        });
     });
   </script>
 </body>
