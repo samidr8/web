@@ -2,17 +2,21 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR con Video - Solución Mejorada</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
     body { 
       margin: 0; 
+      padding: 0;
       overflow: hidden;
       font-family: Arial, sans-serif;
       text-align: center;
       background: #f0f0f0;
+      width: 100%;
+      height: 100vh;
+      touch-action: manipulation;
     }
     #startScreen {
       position: fixed;
@@ -26,8 +30,21 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 10px;
       box-sizing: border-box;
+      overflow-y: auto;
+    }
+    
+    #startScreen h1 {
+      font-size: 1.8rem;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    
+    #startScreen p {
+      font-size: 1rem;
+      margin: 5px 0;
+      max-width: 90%;
     }
     #startButton {
       margin: 20px auto;
@@ -119,14 +136,15 @@
           loop
           crossorigin="anonymous"
           muted
-          playsinline></video>
+          playsinline
+          webkit-playsinline></video>
       </a-assets>
       
       <!-- Marcador y video -->
       <a-marker 
         id="hiroMarker"
         type="pattern" 
-        url="https://samidr8.github.io/web/.patt"
+        url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.patt"
         smooth="true"
         smoothCount="5"
         smoothTolerance="0.01"
@@ -164,6 +182,16 @@
         startButton.style.display = 'none';
         loadingMessage.style.display = 'block';
         
+        // Intentar reproducir en mudo para desbloquear la API de medios en iOS
+        try {
+          videoElement.muted = true;
+          await videoElement.play();
+          videoElement.pause();
+          videoElement.currentTime = 0;
+        } catch (e) {
+          console.log("Reproducción inicial fallida, pero es esperado:", e);
+        }
+        
         // Solicitar permisos de cámara
         cameraStream = await navigator.mediaDevices.getUserMedia({ 
           video: {
@@ -177,6 +205,10 @@
         // Configurar el video para que empiece muteado
         videoElement.muted = true;
         videoElement.pause();
+        videoElement.currentTime = 0;
+        
+        // Forzar carga del video
+        videoElement.load();
         
         // Ocultar pantalla de inicio y mostrar botón de regreso e instrucciones
         startScreen.style.display = 'none';
@@ -217,13 +249,30 @@
         // Desmuteamos el video al encontrar el marcador
         videoElement.muted = false;
         
-        // Intentamos reproducir el video
-        videoElement.play().catch(error => {
-          console.error('Error al reproducir el video:', error);
-          // En algunos navegadores, necesitamos interacción del usuario antes de reproducir con sonido
-          videoElement.muted = true;
-          videoElement.play();
-        });
+        // Forzar carga del video
+        videoElement.load();
+        
+        // Intentamos reproducir el video con múltiples métodos para asegurar compatibilidad
+        const playPromise = videoElement.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log('Video reproducido correctamente');
+          }).catch(error => {
+            console.error('Error al reproducir el video:', error);
+            // En algunos navegadores, necesitamos interacción del usuario antes de reproducir con sonido
+            videoElement.muted = true;
+            videoElement.play().catch(e => {
+              console.error('Error al reproducir incluso con mute:', e);
+              
+              // Último intento - crear un evento de usuario para superar las restricciones
+              document.body.addEventListener('touchend', function playVideoOnTouch() {
+                videoElement.play();
+                document.body.removeEventListener('touchend', playVideoOnTouch);
+              }, { once: true });
+            });
+          });
+        }
       });
       
       marker.addEventListener('markerLost', () => {
@@ -266,6 +315,40 @@
     // Prevenir que el video se reproduzca automáticamente al cargar
     document.addEventListener('DOMContentLoaded', () => {
       videoElement.pause();
+      
+      // Precarga del video
+      videoElement.load();
+      
+      // Agregar evento de interacción global para ayudar con la reproducción en iOS
+      document.addEventListener('touchstart', function enableAudio() {
+        // Crear un contexto de audio para "desbloquear" el audio en iOS
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          const audioCtx = new AudioContext();
+          // Crear un oscilador silencioso y conectarlo
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          gainNode.gain.value = 0; // Volumen 0
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.start(0);
+          oscillator.stop(0.001);
+        }
+        
+        // Intentar reproducir el video cuando esté muteado
+        videoElement.muted = true;
+        const playAttempt = videoElement.play();
+        if (playAttempt) {
+          playAttempt.then(() => {
+            videoElement.pause(); // Lo pausamos inmediatamente
+            videoElement.currentTime = 0;
+          }).catch(e => {
+            console.log("Reproducción inicial fallida, pero es normal:", e);
+          });
+        }
+        
+        document.removeEventListener('touchstart', enableAudio);
+      }, { once: true });
     });
   </script>
 </body>
