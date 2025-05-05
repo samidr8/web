@@ -5,8 +5,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Proyecto AR Web</title>
     <!-- A-Frame y AR.js para la experiencia de AR -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/AR.js/2.3.1/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <!-- Gestos para A-Frame -->
+    <script>
+        // Componente para detectar gestos
+        AFRAME.registerComponent('gesture-detector', {
+            schema: {
+                element: { default: '' }
+            },
+            init: function() {
+                this.targetElement = this.data.element && document.querySelector(this.data.element);
+                if (!this.targetElement) {
+                    this.targetElement = this.el;
+                }
+                this.internalState = {
+                    previousState: null
+                };
+                this.emitGestureEvent = this.emitGestureEvent.bind(this);
+                this.targetElement.addEventListener('touchstart', this.emitGestureEvent);
+                this.targetElement.addEventListener('touchend', this.emitGestureEvent);
+                this.targetElement.addEventListener('touchmove', this.emitGestureEvent);
+            },
+            remove: function() {
+                this.targetElement.removeEventListener('touchstart', this.emitGestureEvent);
+                this.targetElement.removeEventListener('touchend', this.emitGestureEvent);
+                this.targetElement.removeEventListener('touchmove', this.emitGestureEvent);
+            },
+            emitGestureEvent(event) {
+                const currentState = this.getTouchState(event);
+                const previousState = this.internalState.previousState;
+                const gestureContinues = previousState && currentState && 
+                    currentState.touchCount === previousState.touchCount;
+                const gestureEnded = previousState && !gestureContinues;
+                const gestureStarted = currentState && !gestureContinues;
+                
+                if (gestureEnded) {
+                    const eventName = this.getEventPrefix(previousState.touchCount) + 'fingerend';
+                    this.targetElement.emit(eventName, previousState);
+                    this.internalState.previousState = null;
+                }
+                
+                if (gestureStarted) {
+                    currentState.startTime = performance.now();
+                    currentState.startPosition = currentState.position;
+                    currentState.startSpread = currentState.spread;
+                    const eventName = this.getEventPrefix(currentState.touchCount) + 'fingerstart';
+                    this.targetElement.emit(eventName, currentState);
+                    this.internalState.previousState = currentState;
+                }
+                
+                if (gestureContinues) {
+                    const eventDetail = {
+                        positionChange: {
+                            x: currentState.position.x - previousState.position.x,
+                            y: currentState.position.y - previousState.position.y
+                        }
+                    };
+                    
+                    if (currentState.spread) {
+                        eventDetail.spreadChange = currentState.spread - previousState.spread;
+                    }
+                    
+                    // Update state with new data
+                    Object.assign(previousState, currentState);
+                    
+                    // Add state data to event detail
+                    Object.assign(eventDetail, previousState);
+                    
+                    const eventName = this.getEventPrefix(currentState.touchCount) + 'fingermove';
+                    this.targetElement.emit(eventName, eventDetail);
+                }
+            },
+            getTouchState: function(event) {
+                if (event.touches.length === 0) {
+                    return null;
+                }
+                
+                // Convert touches to array to make finger identification more robust
+                const touchList = [];
+                for (let i = 0; i < event.touches.length; i++) {
+                    touchList.push(event.touches[i]);
+                }
+                
+                const touchState = {
+                    touchCount: touchList.length
+                };
+                
+                // Calculate center position of all current touches
+                const centerPositionRawX = touchList.reduce((sum, touch) => sum + touch.clientX, 0) / touchList.length;
+                const centerPositionRawY = touchList.reduce((sum, touch) => sum + touch.clientY, 0) / touchList.length;
+                
+                touchState.positionRaw = { x: centerPositionRawX, y: centerPositionRawY };
+                
+                // Scale touch position to canvas coordinates
+                touchState.position = { x: centerPositionRawX / window.innerWidth, y: centerPositionRawY / window.innerHeight };
+                
+                // Calculate spread of touches
+                if (touchList.length >= 2) {
+                    touchState.spread = Math.sqrt(
+                        Math.pow(touchList[0].clientX - touchList[1].clientX, 2) +
+                        Math.pow(touchList[0].clientY - touchList[1].clientY, 2)
+                    );
+                }
+                
+                return touchState;
+            },
+            getEventPrefix(touchCount) {
+                const numberNames = ['one', 'two', 'three', 'many'];
+                return numberNames[Math.min(touchCount, 4) - 1];
+            }
+        });
+    </script>
+    
     <!-- JQuery para manipulación del DOM -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <style>
@@ -140,19 +251,24 @@
     </div>
     
     <!-- A-Frame Scene para AR -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" vr-mode-ui="enabled: false">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;" vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; precision: medium;" gesture-detector>
+        <!-- Agregar Assets -->
+        <a-assets>
+            <video id="video-asset" src="media/video.mp4" preload="auto" loop crossorigin="anonymous"></video>
+        </a-assets>
+        
         <!-- Marcador 1: Video -->
-        <a-marker id="marker1" type="pattern" url="markers/mark1.patt">
-            <a-video src="media/video.mp4" width="2" height="1.5" position="0 0.5 0" rotation="-90 0 0"></a-video>
+        <a-marker id="marker1" preset="hiro">
+            <a-video src="#video-asset" width="2" height="1.5" position="0 0.5 0" rotation="-90 0 0"></a-video>
         </a-marker>
         
         <!-- Marcador 2: Modelo 3D -->
-        <a-marker id="marker2" type="pattern" url="markers/mark2.patt">
+        <a-marker id="marker2" preset="kanji">
             <a-entity id="model" gltf-model="media/duck.gltf" scale="0.5 0.5 0.5" position="0 0.5 0" rotation="-90 0 0" animation="property: rotation; to: -90 360 0; loop: true; dur: 10000; easing: linear"></a-entity>
         </a-marker>
         
         <!-- Marcador 3: GeoGebra -->
-        <a-marker id="marker3" type="pattern" url="markers/mark3.patt">
+        <a-marker id="marker3" preset="pattern" type="pattern" url="markers/mark3.patt">
             <a-plane width="3" height="3" position="0 0 0" rotation="-90 0 0" color="#FFFFFF" id="geogebra-plane"></a-plane>
         </a-marker>
         
@@ -261,6 +377,18 @@
             
             // Botón de retroceso para volver a la pantalla de inicio
             $("#back-button").click(function() {
+                // Primero pausar cualquier video que se esté reproduciendo
+                $("a-video").each(function() {
+                    const videoEl = this.components.material.material.map.image;
+                    if (videoEl && !videoEl.paused) {
+                        videoEl.pause();
+                    }
+                });
+                
+                // Recargar la página para asegurarnos de reiniciar correctamente la AR
+                location.reload();
+                
+                /* La siguiente funcionalidad se comenta porque es más seguro recargar la página
                 $("#splash-screen").fadeIn();
                 $("#back-button").hide();
                 $("#debug-panel").hide();
@@ -275,6 +403,7 @@
                     'marker2': false,
                     'marker3': false
                 };
+                */
             });
             
             // Minimizar/maximizar panel de debug
@@ -299,16 +428,29 @@
                 $(this).on("markerFound", function() {
                     if (!markersDetected[markerId]) {
                         markersDetected[markerId] = true;
-                        addDebugMessage(`✓ Marcador ${markerId} detectado`);
+                        
+                        // Mostrar qué marcador fue detectado con información más detallada
+                        if (markerId === "marker1") {
+                            addDebugMessage(`✓ Marcador Hiro (${markerId}) detectado`);
+                        } else if (markerId === "marker2") {
+                            addDebugMessage(`✓ Marcador Kanji (${markerId}) detectado`);
+                        } else {
+                            addDebugMessage(`✓ Marcador ${markerId} detectado`);
+                        }
                         
                         // Acciones específicas según el marcador
                         if (markerId === "marker1") {
                             // Iniciar el video
-                            const videoEl = $(this).find("a-video")[0].components.material.material.map.image;
+                            const videoEl = document.querySelector('#video-asset');
                             if (videoEl && videoEl.paused) {
-                                videoEl.play();
-                                addDebugMessage("ℹ Reproduciendo video");
+                                videoEl.play().then(() => {
+                                    addDebugMessage("ℹ Reproduciendo video correctamente");
+                                }).catch(err => {
+                                    addDebugMessage("✗ Error al reproducir video: " + err);
+                                });
                             }
+                        } else if (markerId === "marker2") {
+                            addDebugMessage("ℹ Mostrando modelo 3D con animación");
                         } else if (markerId === "marker3") {
                             // Mostrar applet GeoGebra
                             $("#geogebra-container").fadeIn();
@@ -325,7 +467,7 @@
                         
                         // Pausar video si estaba reproduciéndose
                         if (markerId === "marker1") {
-                            const videoEl = $(this).find("a-video")[0].components.material.material.map.image;
+                            const videoEl = document.querySelector('#video-asset');
                             if (videoEl && !videoEl.paused) {
                                 videoEl.pause();
                                 addDebugMessage("ℹ Video pausado");
@@ -333,6 +475,7 @@
                         } else if (markerId === "marker3") {
                             // Ocultar applet GeoGebra
                             $("#geogebra-container").fadeOut();
+                            addDebugMessage("ℹ Applet GeoGebra oculto");
                         }
                     }
                 });
