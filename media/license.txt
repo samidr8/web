@@ -1,0 +1,11 @@
+Model Information:
+* title:	Worldmachine Terrain
+* source:	https://sketchfab.com/3d-models/worldmachine-terrain-550d7edf4bcb4e79acd4a1bd13c4b5ba
+* author:	Hannes Delbeke (https://sketchfab.com/han)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Worldmachine Terrain" (https://sketchfab.com/3d-models/worldmachine-terrain-550d7edf4bcb4e79acd4a1bd13c4b5ba) by Hannes Delbeke (https://sketchfab.com/han) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
