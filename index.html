@@ -128,15 +128,6 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .marker-img {
-            width: 80%;
-            max-width: 300px;
-            margin: 10px auto;
-            display: block;
-            border-radius: 10px;
-            border: 2px solid white;
-        }
-        
         #instructions {
             position: fixed;
             bottom: 20px;
@@ -154,25 +145,22 @@
         .a-enter-vr {
             display: none !important;
         }
+        
+        /* Asegurarse de que la escena AR ocupa toda la pantalla */
+        .a-scene {
+            width: 100vw !important;
+            height: 100vh !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
     </style>
 </head>
 <body>
     <!-- Pantalla de inicio -->
     <div id="splash-screen">
         <h1>Experiencia AR</h1>
-        <p>Apunta tu cámara a estos marcadores:</p>
-        
-        <div style="display: flex; flex-wrap: wrap; justify-content: center; margin: 10px 0;">
-            <div style="margin: 10px; text-align: center;">
-                <p><strong>Marcador 1: Video</strong></p>
-                <img class="marker-img" src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" alt="Marcador Hiro">
-            </div>
-            <div style="margin: 10px; text-align: center;">
-                <p><strong>Marcador 2: Modelo 3D</strong></p>
-                <img class="marker-img" src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/kanji.png" alt="Marcador Kanji">
-            </div>
-        </div>
-        
+        <p>Apunta tu cámara a los marcadores para iniciar la experiencia</p>
         <p>Para el tercer marcador (Geogebra), crea un marcador personalizado</p>
         <button id="start-button">Iniciar Experiencia AR</button>
     </div>
@@ -236,7 +224,8 @@
                     arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;" 
                     vr-mode-ui="enabled: false"
                     renderer="antialias: true; alpha: true; precision: mediump; logarithmicDepthBuffer: true;"
-                    id="ar-scene">
+                    id="ar-scene"
+                    style="width: 100vw; height: 100vh; position: absolute; top: 0; left: 0;">
                         
                     <a-assets>
                         <video id="video-asset" src="media/video.mp4" preload="auto" loop crossorigin="anonymous" muted playsinline webkit-playsinline></video>
@@ -395,8 +384,8 @@
                     audio: false,
                     video: {
                         facingMode: 'environment', // Usar cámara trasera si está disponible
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
                     }
                 }).then(function(stream) {
                     // Ocultar pantalla de bienvenida
