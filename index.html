@@ -228,17 +228,17 @@
                     style="width: 100vw; height: 100vh; position: absolute; top: 0; left: 0;">
                         
                     <a-assets>
-                        <video id="video-asset" src="media/sonidos_animales.mp4" preload="auto" loop crossorigin="anonymous" muted playsinline webkit-playsinline></video>
+                        <video id="video-asset" src="media/video.mp4" preload="auto" loop crossorigin="anonymous" muted playsinline webkit-playsinline autoplay></video>
                     </a-assets>
                     
                     <!-- Marcador 1: Video (HIRO) -->
                     <a-marker id="marker1" preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01">
-                        <a-video src="#video-asset" width="2" height="1.5" position="0 0.5 0" rotation="-90 0 0"></a-video>
+                        <a-video src="#video-asset" width="2" height="1.5" position="0 0.5 0" rotation="-90 0 0" autoplay="true" loop="true"></a-video>
                     </a-marker>
                     
                     <!-- Marcador 2: Modelo 3D (KANJI) -->
                     <a-marker id="marker2" preset="kanji" smooth="true" smoothCount="5" smoothTolerance="0.01">
-                        <a-entity id="model" gltf-model="media/scene.gltf" scale="0.5 0.5 0.5" position="0 0.5 0" rotation="-90 0 0" animation="property: rotation; to: -90 360 0; loop: true; dur: 10000; easing: linear"></a-entity>
+                        <a-entity id="model" gltf-model="media/duck.gltf" scale="0.5 0.5 0.5" position="0 0.5 0" rotation="-90 0 0" animation="property: rotation; to: -90 360 0; loop: true; dur: 10000; easing: linear"></a-entity>
                     </a-marker>
                     
                     <!-- Marcador 3: GeoGebra (Personalizado) -->
@@ -291,11 +291,20 @@
                                 // Iniciar el video
                                 const videoEl = document.querySelector('#video-asset');
                                 if (videoEl) {
-                                    videoEl.play().then(() => {
-                                        addDebugMessage("ℹ Reproduciendo video correctamente");
-                                    }).catch(err => {
-                                        addDebugMessage(`✗ Error al reproducir video: ${err.message}`);
-                                    });
+                                    // Forzar la carga del video
+                                    videoEl.load();
+                                    // Intentar reproducir con un pequeño retraso
+                                    setTimeout(() => {
+                                        videoEl.play().then(() => {
+                                            addDebugMessage("ℹ Reproduciendo video correctamente");
+                                        }).catch(err => {
+                                            addDebugMessage(`✗ Error al reproducir video: ${err.message}`);
+                                            // Segundo intento con interacción del usuario
+                                            addDebugMessage("ℹ Intentando reproducción alternativa del video");
+                                            videoEl.muted = true;
+                                            videoEl.play();
+                                        });
+                                    }, 1000);
                                 }
                             } else if (markerId === "marker2") {
                                 addDebugMessage(`✓ Marcador Kanji (${markerId}) detectado`);
@@ -384,8 +393,8 @@
                     audio: false,
                     video: {
                         facingMode: 'environment', // Usar cámara trasera si está disponible
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
                     }
                 }).then(function(stream) {
                     // Ocultar pantalla de bienvenida
