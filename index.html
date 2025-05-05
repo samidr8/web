@@ -301,31 +301,32 @@
     
     // Función específica para reproducir el video cuando se encuentra el marcador
     function playVideoOnMarker() {
-  if (!markerVisible || !videoInitialized) return;
-  
-  console.log('Intentando reproducir video...');
-  
-  if (videoElement.ended) {
-    videoElement.currentTime = 0;
-  }
-  
-  // Siempre empezar con mute para evitar bloqueos
-  videoElement.muted = true;
-  
-  videoElement.play()
-    .then(() => {
-      console.log('Video reproducido (con mute)');
-      // Intentar quitar mute después de empezar la reproducción
-      setTimeout(() => {
-        if (audioUnlocked) {
-          videoElement.muted = false;
-        }
-      }, 1000);
-    })
-    .catch(error => {
-      console.error('Error al reproducir:', error);
-    });
-}
+      // Si el marcador no está visible, no hacer nada
+      if (!markerVisible) return;
+      
+      console.log('Intentando reproducir video...');
+      
+      // Resetear el video si está al final
+      if (videoElement.ended) {
+        videoElement.currentTime = 0;
+      }
+      
+      // Intentar reproducir el video
+      const playPromise = videoElement.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log('Video reproducido correctamente');
+        }).catch(error => {
+          console.error('Error al reproducir el video:', error);
+          // Si hay error, mantener muteado y volver a intentar
+          videoElement.muted = true;
+          videoElement.play().catch(e => {
+            console.error('Error incluso con mute:', e);
+          });
+        });
+      }
+    }
     
     // Evento para desbloquear el audio en dispositivos móviles
     document.body.addEventListener('click', function unlockAudio() {
