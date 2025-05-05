@@ -206,9 +206,9 @@
     id="arScene"
     embedded
     loading-screen="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 640; sourceHeight: 480;"
     vr-mode-ui="enabled: false"
-    renderer="logarithmicDepthBuffer: true; precision: medium;"
+    renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
     gesture-detector>
     
     <!-- Definición de assets -->
@@ -217,6 +217,7 @@
         id="video-asset" 
         src="https://cdn.glitch.global/3075896f-9013-42d9-87c8-f4b7321ece93/BigBuckBunny_320x180.mp4"
         preload="auto"
+        muted
         crossorigin="anonymous"
         playsinline
         webkit-playsinline
@@ -282,7 +283,7 @@
       markerVisible: false,
       videoReady: false,
       audioUnlocked: false,
-      debug: false // Cambiar a true para modo de desarrollo
+      debug: true // Activado para ayudar a diagnosticar problemas
     };
     
     // Funciones de utilidad para debug
@@ -315,6 +316,19 @@
       // Configurar eventos de la escena
       scene.addEventListener('loaded', onSceneLoaded);
       
+      // Agregar información del navegador al debug
+      debug(`Navegador: ${navigator.userAgent}`);
+      
+      // Verificar si estamos en HTTP o HTTPS
+      if (window.location.protocol !== 'https:') {
+        debug('ADVERTENCIA: La aplicación no está en HTTPS. Algunas características pueden no funcionar.');
+        
+        // En algunos navegadores, getUserMedia solo funciona en HTTPS
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          alert('Para acceder a la cámara, esta página debe ejecutarse en HTTPS. Por favor, carga la página utilizando HTTPS.');
+        }
+      }
+      
       // Evento del botón de inicio
       startButton.addEventListener('click', startExperience);
       
@@ -341,12 +355,35 @@
     
     // Verificar compatibilidad del dispositivo con AR
     function checkARCompatibility() {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        debug('Dispositivo compatible con AR');
-      } else {
-        alert('Tu dispositivo no es compatible con experiencias de Realidad Aumentada. Se requiere acceso a la cámara.');
-        debug('Dispositivo no compatible con AR');
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Tu dispositivo o navegador no es compatible con experiencias de Realidad Aumentada. Se requiere acceso a la cámara.');
+        debug('Dispositivo no compatible con AR - Sin mediaDevices API');
+        return false;
       }
+      
+      // Verificar si hay cámaras disponibles
+      if (navigator.mediaDevices.enumerateDevices) {
+        navigator.mediaDevices.enumerateDevices()
+          .then(devices => {
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            if (videoDevices.length === 0) {
+              alert('No se detectaron cámaras en tu dispositivo.');
+              debug('No se detectaron cámaras');
+              return false;
+            } else {
+              debug(`Cámaras detectadas: ${videoDevices.length}`);
+              videoDevices.forEach((device, index) => {
+                debug(`Cámara ${index + 1}: ${device.label || 'sin etiqueta'}`);
+              });
+            }
+          })
+          .catch(err => {
+            debug(`Error al enumerar dispositivos: ${err.message}`);
+          });
+      }
+      
+      debug('Dispositivo compatible con AR');
+      return true;
     }
     
     // Iniciar la experiencia AR
@@ -356,43 +393,98 @@
       // Mostrar pantalla de carga
       startScreen.style.display = 'none';
       loadingScreen.style.display = 'flex';
+      loadingText.textContent = 'Solicitando acceso a la cámara...';
       
-      // Inicializar la cámara con tiempo máximo de 10 segundos
+      // Inicializar la cámara con tiempo máximo de 15 segundos
       let cameraTimeout = setTimeout(() => {
         debug('Tiempo de espera de cámara excedido');
         loadingScreen.style.display = 'none';
         startScreen.style.display = 'flex';
         alert('No se pudo acceder a la cámara. Por favor, verifica los permisos e inténtalo de nuevo.');
-      }, 10000);
+      }, 15000);
       
-      // Solicitar permisos y configurar la escena
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          clearTimeout(cameraTimeout);
-          debug('Cámara inicializada correctamente');
-          
-          // Guardar referencia al stream para limpieza posterior
-          appState.cameraStream = stream;
-          appState.cameraReady = true;
-          
-          // Ocultar pantalla de carga
-          loadingScreen.style.display = 'none';
-          
-          // Mostrar indicadores y botones de la UI
-          backButton.style.display = 'block';
-          scanIndicator.style.display = 'block';
-          setTimeout(() => {
-            tapIndicator.style.display = 'block';
-          }, 3000);
-        })
+      // Opciones avanzadas para la cámara
+      const cameraConstraints = { 
+        audio: false,
+        video: { 
+          facingMode: 'environment', // Usar cámara trasera
+          width: { ideal: 640 },     // Resolución más baja para mejor rendimiento
+          height: { ideal: 480 },
+          frameRate: { ideal: 30 }   // Frames por segundo
+        } 
+      };
+      
+      // Intentar primero con cámara trasera
+      navigator.mediaDevices.getUserMedia(cameraConstraints)
+        .then(handleCameraSuccess)
         .catch(error => {
-          clearTimeout(cameraTimeout);
-          debug(`Error de cámara: ${error.message}`);
+          debug(`Error con cámara trasera: ${error.message}. Intentando con cámara frontal...`);
+          loadingText.textContent = 'Intentando con cámara alternativa...';
           
-          loadingScreen.style.display = 'none';
-          startScreen.style.display = 'flex';
-          alert(`No se pudo acceder a la cámara: ${error.message}`);
+          // Intentar con cámara frontal como respaldo
+          const fallbackConstraints = { 
+            audio: false,
+            video: { 
+              facingMode: 'user',    // Cámara frontal
+              width: { ideal: 640 }, 
+              height: { ideal: 480 } 
+            } 
+          };
+          
+          navigator.mediaDevices.getUserMedia(fallbackConstraints)
+            .then(handleCameraSuccess)
+            .catch(handleCameraError);
         });
+      
+      // Función para manejar conexión exitosa de cámara
+      function handleCameraSuccess(stream) {
+        clearTimeout(cameraTimeout);
+        debug('Cámara inicializada correctamente');
+        
+        // Guardar referencia al stream para limpieza posterior
+        appState.cameraStream = stream;
+        appState.cameraReady = true;
+        
+        // Ocultar pantalla de carga
+        loadingScreen.style.display = 'none';
+        
+        // Mostrar indicadores y botones de la UI
+        backButton.style.display = 'block';
+        scanIndicator.style.display = 'block';
+        setTimeout(() => {
+          tapIndicator.style.display = 'block';
+        }, 3000);
+      }
+      
+      // Función para manejar error de cámara
+      function handleCameraError(error) {
+        clearTimeout(cameraTimeout);
+        debug(`Error de cámara: ${error.message}`);
+        
+        loadingScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+        
+        // Mensaje de error específico según el tipo de error
+        let errorMsg = 'No se pudo acceder a la cámara: ';
+        
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          errorMsg += 'Permisos denegados. Por favor, permite el acceso a la cámara en tu navegador.';
+        } else if (error.name === 'NotFoundError') {
+          errorMsg += 'No se encontró ninguna cámara en el dispositivo.';
+        } else if (error.name === 'NotReadableError' || error.name === 'AbortError') {
+          errorMsg += 'La cámara está siendo usada por otra aplicación o no está disponible.';
+        } else if (error.name === 'OverconstrainedError') {
+          errorMsg += 'Las configuraciones de cámara solicitadas no son compatibles con tu dispositivo.';
+        } else if (error.name === 'SecurityError') {
+          errorMsg += 'El uso de la cámara fue bloqueado por políticas de seguridad.';
+        } else if (error.name === 'TypeError') {
+          errorMsg += 'No se especificaron configuraciones válidas para la cámara.';
+        } else {
+          errorMsg += error.message || 'Error desconocido.';
+        }
+        
+        alert(errorMsg);
+      }
     }
     
     // Configurar eventos del video
