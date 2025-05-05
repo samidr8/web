@@ -8,8 +8,8 @@
     <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     
-    <!-- AR.js versión optimizada con mejor soporte para móviles -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <!-- Cambiado a una versión específica más estable de AR.js -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.3.1/aframe/build/aframe-ar.js"></script>
     
     <!-- JQuery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
@@ -154,6 +154,23 @@
             top: 0 !important;
             left: 0 !important;
         }
+
+        /* Estilo para botón de reproducción manual */
+        #play-video-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -180,9 +197,12 @@
         <div id="debug-content"></div>
     </div>
     
+    <!-- Botón para reproducir el video manualmente -->
+    <button id="play-video-button">Reproducir Video</button>
+    
     <!-- Contenedor para GeoGebra -->
     <div class="geogebra-container" id="geogebra-container">
-        <iframe src="https://www.geogebra.org/m/s5u5g6yr" width="100%" height="100%" frameborder="0"></iframe>
+        <iframe src="https://www.geogebra.org/classic" width="100%" height="100%" frameborder="0"></iframe>
     </div>
     
     <!-- La escena AR se creará dinámicamente -->
@@ -192,6 +212,9 @@
         // Elemento global para la escena AR
         let arSceneCreated = false;
         let arScene = null;
+        let videoElement = null;
+        let videoAsset = null;
+        let userInteracted = false;
         
         $(document).ready(function() {
             // Variables para seguimiento
@@ -223,22 +246,22 @@
                     embedded 
                     arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;" 
                     vr-mode-ui="enabled: false"
-                    renderer="antialias: true; alpha: true; precision: mediump; logarithmicDepthBuffer: true;"
+                    renderer="antialias: true; alpha: true; precision: lowp; logarithmicDepthBuffer: false;"
                     id="ar-scene"
                     style="width: 100vw; height: 100vh; position: absolute; top: 0; left: 0;">
                         
-                    <a-assets>
-                        <video id="video-asset" src="media/sonidos_animales.mp4" preload="auto" loop crossorigin="anonymous" muted playsinline webkit-playsinline autoplay></video>
+                    <a-assets timeout="10000">
+                        <video id="video-asset" src="media/sonidos_animales.mp4" preload="auto" loop crossorigin="anonymous" playsinline></video>
                     </a-assets>
                     
                     <!-- Marcador 1: Video (HIRO) -->
                     <a-marker id="marker1" preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01">
-                        <a-video src="#video-asset" width="2" height="1.5" position="0 0.5 0" rotation="-90 0 0" autoplay="true" loop="true"></a-video>
+                        <a-video id="video-plane" src="#video-asset" width="2" height="1.5" position="0 0.5 0" rotation="-90 0 0"></a-video>
                     </a-marker>
                     
                     <!-- Marcador 2: Modelo 3D (KANJI) -->
                     <a-marker id="marker2" preset="kanji" smooth="true" smoothCount="5" smoothTolerance="0.01">
-                        <a-entity id="model" gltf-model="media/scene.gltf" scale="0.5 0.5 0.5" position="0 0.5 0" rotation="-90 0 0" animation="property: rotation; to: -90 360 0; loop: true; dur: 10000; easing: linear"></a-entity>
+                        <a-box position="0 0.5 0" rotation="0 45 0" color="red" animation="property: rotation; to: 0 405 0; loop: true; dur: 10000; easing: linear"></a-box>
                     </a-marker>
                     
                     <!-- Marcador 3: GeoGebra (Personalizado) -->
@@ -261,11 +284,71 @@
                 // Configurar eventos para los marcadores después de que la escena se haya cargado
                 arScene.addEventListener('loaded', function() {
                     addDebugMessage("✓ Escena AR cargada correctamente");
+                    
+                    // Obtener referencias al video después de que la escena está cargada
+                    videoAsset = document.getElementById('video-asset');
+                    videoElement = document.getElementById('video-plane');
+                    
+                    if (videoAsset) {
+                        addDebugMessage("✓ Elemento de video encontrado en assets");
+                        
+                        // Preparar el video pero sin reproducirlo automáticamente
+                        videoAsset.load();
+                        
+                        // Configurar el botón para reproducir video manualmente
+                        $("#play-video-button").show().click(function() {
+                            playVideo();
+                            userInteracted = true;
+                            $(this).hide();
+                        });
+                    } else {
+                        addDebugMessage("✗ Error: No se encontró el elemento de video");
+                    }
+                    
                     setupMarkerEvents();
                     checkDeviceCapabilities();
                     
                     // Mostrar instrucciones
                     $("#instructions").fadeIn();
+                });
+                
+                // Capturar errores en la carga de a-assets
+                document.addEventListener('DOMNodeInserted', function(e) {
+                    if (e.target.tagName === 'A-ASSETS') {
+                        e.target.addEventListener('timeout', function() {
+                            addDebugMessage("✗ Tiempo de espera agotado al cargar assets. Intenta recargar la página.");
+                        });
+                    }
+                });
+            }
+            
+            // Función para intentar reproducir el video
+            function playVideo() {
+                if (!videoAsset) return;
+                
+                addDebugMessage("ℹ Intentando reproducir video...");
+                
+                // Asegurarse de que el video está pausado antes de intentar reproducirlo
+                videoAsset.pause();
+                
+                // Mostrar información de estado del video
+                addDebugMessage(`ℹ Estado del video: ${videoAsset.readyState}, Pausado: ${videoAsset.paused}`);
+                
+                // Primer intento: reproducción normal
+                videoAsset.play().then(() => {
+                    addDebugMessage("✓ Video reproducido correctamente");
+                }).catch(err => {
+                    addDebugMessage(`✗ Error en reproducción: ${err.message}`);
+                    
+                    // Segundo intento: con mute (los navegadores permiten autoplay con mute)
+                    addDebugMessage("ℹ Intentando reproducción con mute");
+                    videoAsset.muted = true;
+                    
+                    videoAsset.play().then(() => {
+                        addDebugMessage("✓ Video reproducido con mute");
+                    }).catch(err2 => {
+                        addDebugMessage(`✗ Fallo total de reproducción: ${err2.message}`);
+                    });
                 });
             }
             
@@ -288,27 +371,18 @@
                             if (markerId === "marker1") {
                                 addDebugMessage(`✓ Marcador Hiro (${markerId}) detectado`);
                                 
-                                // Iniciar el video
-                                const videoEl = document.querySelector('#video-asset');
-                                if (videoEl) {
-                                    // Forzar la carga del video
-                                    videoEl.load();
-                                    // Intentar reproducir con un pequeño retraso
-                                    setTimeout(() => {
-                                        videoEl.play().then(() => {
-                                            addDebugMessage("ℹ Reproduciendo video correctamente");
-                                        }).catch(err => {
-                                            addDebugMessage(`✗ Error al reproducir video: ${err.message}`);
-                                            // Segundo intento con interacción del usuario
-                                            addDebugMessage("ℹ Intentando reproducción alternativa del video");
-                                            videoEl.muted = true;
-                                            videoEl.play();
-                                        });
-                                    }, 1000);
+                                // Si el usuario ya ha interactuado, intentar reproducir el video
+                                if (userInteracted) {
+                                    playVideo();
+                                } else {
+                                    // Mostrar botón para reproducir
+                                    $("#play-video-button").fadeIn();
+                                    addDebugMessage("ℹ Se requiere interacción del usuario para reproducir el video");
                                 }
+                                
                             } else if (markerId === "marker2") {
                                 addDebugMessage(`✓ Marcador Kanji (${markerId}) detectado`);
-                                addDebugMessage("ℹ Mostrando modelo 3D con animación");
+                                addDebugMessage("ℹ Mostrando cubo 3D con animación");
                             } else if (markerId === "marker3") {
                                 addDebugMessage(`✓ Marcador Personalizado (${markerId}) detectado`);
                                 // Mostrar applet GeoGebra
@@ -326,9 +400,8 @@
                             
                             // Pausar video si estaba reproduciéndose
                             if (markerId === "marker1") {
-                                const videoEl = document.querySelector('#video-asset');
-                                if (videoEl && !videoEl.paused) {
-                                    videoEl.pause();
+                                if (videoAsset && !videoAsset.paused) {
+                                    videoAsset.pause();
                                     addDebugMessage("ℹ Video pausado");
                                 }
                             } else if (markerId === "marker3") {
@@ -386,8 +459,15 @@
                 }
             }
             
+            // Agregar evento para detectar cualquier interacción con la página
+            $(document).on('click touchstart', function() {
+                userInteracted = true;
+            });
+            
             // Botón de inicio para solicitar permisos de cámara y comenzar AR
             $("#start-button").click(function() {
+                userInteracted = true;
+                
                 // Solicitar permiso de cámara manualmente primero
                 navigator.mediaDevices.getUserMedia({ 
                     audio: false,
@@ -450,7 +530,10 @@
                 
                 // Comprobar si la escena AR existe y adaptarla
                 if (arScene) {
-                    arScene.resize();
+                    // A-Frame tiene un método resize() para manejar cambios de tamaño
+                    if (typeof arScene.resize === 'function') {
+                        arScene.resize();
+                    }
                 }
             });
             
