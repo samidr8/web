@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR con Video - Solución Corregida</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
@@ -166,14 +167,14 @@
         smoothTolerance="0.01"
         smoothThreshold="2">
         <a-video 
-        id="videoPlane"
-        src="#arVideoAsset" 
-        width="1.6" 
-        height="0.9" 
-        position="0 0.5 0" 
-        rotation="-90 0 0"
-        material="alphaTest: 0.5; transparent: true; shader: flat">
-      </a-video>
+          id="videoPlane"
+          src="#arVideoAsset" 
+          width="1.6" 
+          height="0.9" 
+          position="0 0.5 0" 
+          rotation="-90 0 0"
+          transparent="true"
+          material="alphaTest: 0.5"></a-video>
       </a-marker>
       
       <a-entity camera></a-entity>
@@ -272,78 +273,31 @@
     }
     
     // Función para configurar eventos del marcador
-function setupMarkerEvents() {
-  const marker = document.querySelector('#hiroMarker');
-  const videoPlane = document.querySelector('#videoPlane');
-  
-  // Asegurarse de que el material del video tenga las propiedades correctas
-  videoPlane.setAttribute('material', {
-    src: '#arVideoAsset',
-    alphaTest: 0.5,
-    transparent: true
-  });
-
-  marker.addEventListener('markerFound', () => {
-    console.log('Marcador encontrado');
-    markerVisible = true;
-    scanInstructions.style.display = 'none';
-    
-    // Asegurarse de que el video esté listo
-    if (videoElement.readyState >= 3) { // 3 = HAVE_FUTURE_DATA
-      videoInitialized = true;
-      playVideoOnMarker();
-    } else {
-      videoElement.addEventListener('canplay', playVideoOnMarker, { once: true });
-    }
-  });
-  
-  marker.addEventListener('markerLost', () => {
-    console.log('Marcador perdido');
-    markerVisible = false;
-    scanInstructions.style.display = 'block';
-    
-    // Pausar el video pero mantenerlo preparado
-    if (!videoElement.paused) {
-      videoElement.pause();
-      // Mantener el tiempo actual para reanudar más rápido
-    }
-  });
-}
-
-// Función para reproducir el video - VERSIÓN MEJORADA
-function playVideoOnMarker() {
-  if (!markerVisible) return;
-  
-  console.log('Intentando reproducir video...');
-  
-  // Resetear el video si está al final
-  if (videoElement.ended || videoElement.currentTime >= videoElement.duration - 0.5) {
-    videoElement.currentTime = 0;
-  }
-  
-  // Configuración mejorada para la reproducción
-  videoElement.muted = !audioUnlocked;
-  videoElement.playsInline = true;
-  
-  const playPromise = videoElement.play();
-  
-  if (playPromise !== undefined) {
-    playPromise.then(() => {
-      console.log('Video reproducido correctamente');
-      // Si el audio está desbloqueado, intentar quitar el mute
-      if (audioUnlocked) {
-        videoElement.muted = false;
-      }
-    }).catch(error => {
-      console.error('Error al reproducir el video:', error);
-      // Intentar con mute si falla
-      videoElement.muted = true;
-      videoElement.play().catch(e => {
-        console.error('Error incluso con mute:', e);
+    function setupMarkerEvents() {
+      const marker = document.querySelector('#hiroMarker');
+      
+      marker.addEventListener('markerFound', () => {
+        console.log('Marcador encontrado');
+        markerVisible = true;
+        scanInstructions.style.display = 'none';
+        
+        // Si el video está inicializado, intentamos reproducirlo
+        if (videoInitialized) {
+          playVideoOnMarker();
+        }
       });
-    });
-  }
-}
+      
+      marker.addEventListener('markerLost', () => {
+        console.log('Marcador perdido');
+        markerVisible = false;
+        scanInstructions.style.display = 'block';
+        
+        // Pausamos el video al perder el marcador
+        if (videoInitialized) {
+          videoElement.pause();
+        }
+      });
+    }
     
     // Función específica para reproducir el video cuando se encuentra el marcador
     function playVideoOnMarker() {
@@ -447,10 +401,7 @@ function playVideoOnMarker() {
     document.addEventListener('DOMContentLoaded', () => {
       // Precarga del video
       videoElement.load();
-      videoElement.setAttribute('playsinline', '');
-videoElement.setAttribute('webkit-playsinline', '');
-videoElement.setAttribute('crossorigin', 'anonymous');
-videoElement.muted = true;
+      videoElement.muted = true;
     });
   </script>
 </body>
