@@ -104,6 +104,24 @@
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
+      pointer-events: auto;
+    }
+    
+    #soundButton {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: none;
+      pointer-events: auto;
+      z-index: 100;
     }
     
     #backButton {
@@ -194,8 +212,9 @@
   <!-- Interfaz durante la experiencia AR -->
   <div class="ui-container">
     <button id="backButton">↩</button>
+    <button id="soundButton">🔊</button>
     <div id="scanIndicator" class="ar-indicator">Busca el marcador HIRO para ver el video</div>
-    <div id="tapIndicator" class="ar-indicator">Toca la pantalla para activar el sonido</div>
+    <div id="tapIndicator" class="ar-indicator">Toca aquí para activar el sonido</div>
   </div>
   
   <!-- Panel de debug (solo para desarrollo) -->
@@ -237,12 +256,12 @@
       smoothTolerance="0.01"
       smoothThreshold="5">
       
-      <!-- Plano de video -->
+      <!-- Plano de video - Corregida orientación y posición -->
       <a-video
         id="video-plane"
         src="#video-asset"
-        position="0 0.1 0"
-        rotation="-90 0 0"
+        position="0 0.5 0"
+        rotation="0 0 0"
         width="1.6"
         height="0.9"
         class="clickable">
@@ -250,7 +269,7 @@
       
       <!-- Base del video para darle contexto -->
       <a-box 
-        position="0 0 0" 
+        position="0 0.2 0" 
         width="1.8" 
         height="0.01" 
         depth="1.1" 
@@ -272,6 +291,7 @@
     const backButton = document.getElementById('backButton');
     const scanIndicator = document.getElementById('scanIndicator');
     const tapIndicator = document.getElementById('tapIndicator');
+    const soundButton = document.getElementById('soundButton');
     const debugPanel = document.getElementById('debugPanel');
     const videoElement = document.getElementById('video-asset');
     const scene = document.querySelector('a-scene');
@@ -335,8 +355,9 @@
       // Evento del botón de regreso
       backButton.addEventListener('click', resetExperience);
       
-      // Evento para desbloquear audio
-      document.addEventListener('click', unlockAudio);
+      // Eventos para desbloquear audio
+      tapIndicator.addEventListener('click', unlockAudio);
+      soundButton.addEventListener('click', unlockAudio);
       
       debug('Aplicación inicializada');
     }
@@ -451,6 +472,7 @@
         // Mostrar indicadores y botones de la UI
         backButton.style.display = 'block';
         scanIndicator.style.display = 'block';
+        soundButton.style.display = 'block';
         setTimeout(() => {
           tapIndicator.style.display = 'block';
         }, 3000);
@@ -523,6 +545,11 @@
         appState.markerVisible = true;
         scanIndicator.style.display = 'none';
         
+        // Mostrar indicador de sonido si no está desbloqueado
+        if (!appState.audioUnlocked) {
+          tapIndicator.style.display = 'block';
+        }
+        
         // Si el video está listo, reproducirlo
         if (appState.videoReady) {
           playVideo();
@@ -533,6 +560,7 @@
         debug('Marcador perdido');
         appState.markerVisible = false;
         scanIndicator.style.display = 'block';
+        tapIndicator.style.display = 'none';
         
         // Pausar el video
         videoElement.pause();
@@ -553,6 +581,11 @@
         videoElement.currentTime = 0;
       }
       
+      // Aplicar estado de audio según la configuración actual
+      if (appState.audioUnlocked) {
+        videoElement.muted = false;
+      }
+      
       // Intentar reproducir
       const playPromise = videoElement.play();
       
@@ -560,13 +593,18 @@
         playPromise
           .then(() => {
             debug('Reproducción exitosa');
+            
+            // Si ya está desbloqueado el audio, asegurarse de quitar el mute
+            if (appState.audioUnlocked) {
+              videoElement.muted = false;
+            }
           })
           .catch(error => {
             debug(`Error en reproducción: ${error}`);
             
             // Intentar con mute si falló
             if (!videoElement.muted) {
-              debug('Intentando reproducir con mute');
+              debug('Intentando reproducir con mute por política autoplay');
               videoElement.muted = true;
               videoElement.play().catch(e => {
                 debug(`Fallo incluso con mute: ${e}`);
@@ -578,8 +616,6 @@
     
     // Desbloquear audio (necesario en iOS/Safari)
     function unlockAudio() {
-      if (appState.audioUnlocked) return;
-      
       debug('Desbloqueando audio');
       
       // Crear un contexto de audio (necesario para iOS)
@@ -597,12 +633,22 @@
       }
       
       // Quitar mute al video si está reproduciéndose
-      if (videoElement.paused === false) {
+      videoElement.muted = false;
+      
+      // Reproducir el video con sonido si está visible
+      if (appState.markerVisible && !videoElement.paused) {
+        debug('Reactivando video con sonido');
+        // Reiniciar reproducción para aplicar cambio de mute
+        const currentTime = videoElement.currentTime;
+        videoElement.pause();
+        videoElement.currentTime = currentTime;
         videoElement.muted = false;
+        videoElement.play();
       }
       
       appState.audioUnlocked = true;
       tapIndicator.style.display = 'none';
+      soundButton.textContent = '🔊';
       debug('Audio desbloqueado');
     }
     
@@ -623,6 +669,7 @@
       backButton.style.display = 'none';
       scanIndicator.style.display = 'none';
       tapIndicator.style.display = 'none';
+      soundButton.style.display = 'none';
       
       // Restablecer estado
       appState.markerVisible = false;
@@ -649,6 +696,11 @@
       init: function () {
         this.el.sceneEl.addEventListener('click', (evt) => {
           debug('Click en escena detectado');
+          
+          // Comprobar si el click fue en el video
+          if (appState.markerVisible && !appState.audioUnlocked) {
+            unlockAudio();
+          }
         });
       }
     });
