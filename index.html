@@ -225,7 +225,7 @@
     id="arScene"
     embedded
     loading-screen="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 640; sourceHeight: 480;"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 1280; sourceHeight: 960; cameraParametersUrl: https://raw.githack.com/AR-js-org/AR.js/master/data/data/camera_para.dat;"
     vr-mode-ui="enabled: false"
     renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
     gesture-detector>
@@ -252,24 +252,25 @@
       emitevents="true"
       cursor="fuse: false; rayOrigin: mouse;"
       smooth="true"
-      smoothCount="10"
-      smoothTolerance="0.01"
-      smoothThreshold="5">
+      smoothCount="15"
+      smoothTolerance="0.005"
+      smoothThreshold="3">
       
-      <!-- Plano de video - Corregida orientación y posición -->
+      <!-- Plano de video - Ajustada posición y rotación -->
       <a-video
         id="video-plane"
         src="#video-asset"
-        position="0 0.2 0"
+        position="0 0.1 0"
         rotation="-90 0 0"
         width="1.6"
         height="0.9"
+        material="shader: flat; transparent: true; alphaTest: 0.5"
         class="clickable">
       </a-video>
       
       <!-- Base del video para darle contexto -->
       <a-box 
-        position="0 0.1 0" 
+        position="0 0 0" 
         width="1.8" 
         height="0.01" 
         depth="1.1" 
@@ -294,6 +295,7 @@
     const soundButton = document.getElementById('soundButton');
     const debugPanel = document.getElementById('debugPanel');
     const videoElement = document.getElementById('video-asset');
+    const videoPlane = document.getElementById('video-plane');
     const scene = document.querySelector('a-scene');
     const marker = document.getElementById('hiro-marker');
     
@@ -311,6 +313,7 @@
       if (appState.debug) {
         console.log(`[AR-DEBUG] ${message}`);
         debugPanel.innerHTML = `${new Date().toLocaleTimeString()}: ${message}<br>` + debugPanel.innerHTML;
+        debugPanel.style.display = 'block';
         
         // Limitar el número de mensajes en el panel
         const maxLines = 20;
@@ -356,8 +359,12 @@
       backButton.addEventListener('click', resetExperience);
       
       // Eventos para desbloquear audio
+      document.addEventListener('click', unlockAudio);
       tapIndicator.addEventListener('click', unlockAudio);
       soundButton.addEventListener('click', unlockAudio);
+      
+      // Añadir listener a todo el documento para asegurar el desbloqueo de audio
+      document.addEventListener('touchstart', unlockAudio, {once: true});
       
       debug('Aplicación inicializada');
     }
@@ -372,6 +379,15 @@
       
       // Verificar compatibilidad con AR
       checkARCompatibility();
+      
+      // Forzar la creación de la textura de video para A-Frame
+      setTimeout(() => {
+        const videoMaterial = videoPlane.getAttribute('material');
+        if (videoMaterial) {
+          videoMaterial.needsUpdate = true;
+          debug('Textura de video actualizada');
+        }
+      }, 1000);
     }
     
     // Verificar compatibilidad del dispositivo con AR
@@ -429,8 +445,8 @@
         audio: false,
         video: { 
           facingMode: 'environment', // Usar cámara trasera
-          width: { ideal: 640 },     // Resolución más baja para mejor rendimiento
-          height: { ideal: 480 },
+          width: { ideal: 1280 },    // Mayor resolución para mejor detección
+          height: { ideal: 960 },
           frameRate: { ideal: 30 }   // Frames por segundo
         } 
       };
@@ -447,8 +463,8 @@
             audio: false,
             video: { 
               facingMode: 'user',    // Cámara frontal
-              width: { ideal: 640 }, 
-              height: { ideal: 480 } 
+              width: { ideal: 1280 }, 
+              height: { ideal: 960 } 
             } 
           };
           
@@ -465,6 +481,9 @@
         // Guardar referencia al stream para limpieza posterior
         appState.cameraStream = stream;
         appState.cameraReady = true;
+        
+        // Precargar video para asegurar disponibilidad
+        preloadVideo();
         
         // Ocultar pantalla de carga
         loadingScreen.style.display = 'none';
@@ -507,6 +526,30 @@
         
         alert(errorMsg);
       }
+    }
+    
+    // Precargar video para evitar problemas
+    function preloadVideo() {
+      debug('Precargando video...');
+      videoElement.load();
+      
+      // Forzar la carga del video
+      videoElement.onloadeddata = function() {
+        debug('Video precargado exitosamente');
+        appState.videoReady = true;
+        
+        // Asegurarse de que la textura del video se actualice en A-Frame
+        videoPlane.addEventListener('materialtextureloaded', function() {
+          debug('Textura del video cargada en A-Frame');
+        });
+        
+        // Intentar un frame del video para inicializar la textura
+        videoElement.currentTime = 0.1;
+      };
+      
+      videoElement.onerror = function() {
+        debug(`Error al precargar video: ${videoElement.error ? videoElement.error.message : 'desconocido'}`);
+      };
     }
     
     // Configurar eventos del video
@@ -582,8 +625,14 @@
       }
       
       // Aplicar estado de audio según la configuración actual
-      if (appState.audioUnlocked) {
-        videoElement.muted = false;
+      videoElement.muted = !appState.audioUnlocked;
+      
+      // Forzar actualización del material del video
+      const videoMat = videoPlane.getAttribute('material');
+      if (videoMat) {
+        videoMat.needsUpdate = true;
+        videoMat.src = "#video-asset";
+        videoPlane.setAttribute('material', videoMat);
       }
       
       // Intentar reproducir
@@ -598,6 +647,14 @@
             if (appState.audioUnlocked) {
               videoElement.muted = false;
             }
+            
+            // Actualizar material después de que el video está reproduciéndose
+            setTimeout(() => {
+              if (videoPlane.object3D) {
+                videoPlane.object3D.visible = true;
+                debug('Plano de video visible');
+              }
+            }, 100);
           })
           .catch(error => {
             debug(`Error en reproducción: ${error}`);
@@ -616,6 +673,10 @@
     
     // Desbloquear audio (necesario en iOS/Safari)
     function unlockAudio() {
+      if (appState.audioUnlocked) {
+        return; // Ya desbloqueado
+      }
+      
       debug('Desbloqueando audio');
       
       // Crear un contexto de audio (necesario para iOS)
