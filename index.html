@@ -20,12 +20,6 @@
       overflow: hidden;
       font-family: Arial, sans-serif;
       touch-action: none;
-      background-color: transparent;
-    }
-    
-    /* Eliminamos cualquier posible capa que oculte el video */
-    .a-enter-vr, .a-orientation-modal {
-      display: none !important;
     }
     
     .ui-container {
@@ -231,9 +225,9 @@
     id="arScene"
     embedded
     loading-screen="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 640; sourceHeight: 480; canvasWidth: window.innerWidth; canvasHeight: window.innerHeight;"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 640; sourceHeight: 480;"
     vr-mode-ui="enabled: false"
-    renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true; alpha: true; transparent: true;"
+    renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
     gesture-detector>
     
     <!-- Definición de assets -->
@@ -273,13 +267,13 @@
         class="clickable">
       </a-video>
       
-      <!-- Base del video para darle contexto - Reduciendo la profundidad -->
+      <!-- Base del video para darle contexto -->
       <a-box 
         position="0 0.2 0" 
         width="1.8" 
         height="0.01" 
-        depth="0.1"
-        opacity="0.5"
+        depth="1.1" 
+        opacity="0.7"
         color="#333333">
       </a-box>
     </a-marker>
@@ -332,22 +326,6 @@
       if (appState.debug) {
         debugPanel.style.display = 'block';
       }
-      
-      // Forzar transparencia en cualquier elemento overlay de AR.js
-      document.addEventListener('DOMNodeInserted', function(e) {
-        if (e.target.classList && e.target.classList.contains('a-canvas')) {
-          e.target.style.backgroundColor = 'transparent';
-          debug('Canvas AR detectado y establecido como transparente');
-        }
-      });
-      
-      // Remover cualquier capa negra que AR.js pueda crear
-      setTimeout(() => {
-        document.querySelectorAll('.a-canvas').forEach(canvas => {
-          canvas.style.backgroundColor = 'transparent';
-          debug('Canvas AR establecido como transparente');
-        });
-      }, 1000);
       
       // Configurar eventos del video
       setupVideoEvents();
@@ -572,18 +550,6 @@
           tapIndicator.style.display = 'block';
         }
         
-        // Asegurar que no haya elementos que oculten el video
-        document.querySelectorAll('.a-canvas').forEach(canvas => {
-          canvas.style.backgroundColor = 'transparent';
-        });
-        
-        // Asegurar visibilidad del video
-        const videoPlane = document.getElementById('video-plane');
-        if (videoPlane) {
-          videoPlane.setAttribute('visible', 'true');
-          videoPlane.object3D.visible = true;
-        }
-        
         // Si el video está listo, reproducirlo
         if (appState.videoReady) {
           playVideo();
@@ -613,13 +579,6 @@
       // Reiniciar si necesario
       if (videoElement.ended) {
         videoElement.currentTime = 0;
-      }
-      
-      // Hacer visible el plano de video y asegurar que no haya elementos ocultándolo
-      const videoPlane = document.getElementById('video-plane');
-      if (videoPlane) {
-        videoPlane.setAttribute('visible', 'true');
-        videoPlane.object3D.visible = true;
       }
       
       // Aplicar estado de audio según la configuración actual
