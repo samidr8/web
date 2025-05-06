@@ -1,98 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Proyecto AR Web</title>
-    
-    <!-- A-Frame -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    
-    <!-- Cambiado a una versión específica más estable de AR.js -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.3.1/aframe/build/aframe-ar.js"></script>
-    
-    <!-- JQuery -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiencia AR Profesional</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         body {
             margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
         }
         
-        #splash-screen {
+        #welcome-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 999;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            transition: opacity 0.5s;
         }
         
-        #start-button {
-            background-color: white;
-            color: #6e8efb;
+        #welcome-screen h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(90deg, #00dbde, #fc00ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        #welcome-screen p {
+            font-size: 1.2rem;
+            max-width: 80%;
+            text-align: center;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        #start-ar {
+            padding: 15px 30px;
+            background: linear-gradient(90deg, #00dbde, #fc00ff);
             border: none;
-            padding: 15px 32px;
-            margin-top: 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            border-radius: 25px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 219, 222, 0.3);
         }
         
-        #start-button:hover {
-            background-color: #f1f1f1;
-            transform: scale(1.05);
+        #start-ar:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 219, 222, 0.4);
+        }
+        
+        #ar-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: none;
         }
         
         #back-button {
-            position: fixed;
+            position: absolute;
             top: 20px;
             left: 20px;
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #333;
-            border: none;
+            z-index: 999;
             padding: 10px 20px;
-            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
-            z-index: 10;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            display: none;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        #back-button:hover {
+            background: rgba(0, 0, 0, 0.9);
         }
         
         #debug-panel {
-            position: fixed;
+            position: absolute;
             bottom: 20px;
-            right: 20px;
+            left: 20px;
             width: 300px;
-            background-color: rgba(0, 0, 0, 0.35);
-            color: white;
-            padding: 10px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.35);
             border-radius: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
+            padding: 15px;
             overflow-y: auto;
-            z-index: 10;
-            display: none;
+            font-family: monospace;
+            font-size: 0.9rem;
+            z-index: 999;
         }
         
-        #minimize-button {
+        .debug-message {
+            margin-bottom: 5px;
+            color: #00ff9d;
+        }
+        
+        .debug-warning {
+            color: #ffcc00;
+        }
+        
+        .debug-error {
+            color: #ff5555;
+        }
+        
+        .debug-info {
+            color: #00dbde;
+        }
+        
+        #minimize-btn {
             position: absolute;
             top: 5px;
             right: 5px;
@@ -100,6 +132,7 @@
             border: none;
             color: white;
             cursor: pointer;
+            font-size: 0.8rem;
         }
         
         .minimized {
@@ -107,442 +140,160 @@
             overflow: hidden !important;
         }
         
-        #debug-content {
-            margin-top: 10px;
-        }
-        
-        .geogebra-container {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            display: none;
-            z-index: 5;
-        }
-        
-        .debug-message {
-            margin: 2px 0;
-            padding: 2px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        #instructions {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 12px;
-            max-width: 150px;
-            z-index: 9;
-            display: none;
-        }
-        
-        /* Clase para ocultar la interfaz AR.js que a veces aparece */
-        .a-enter-vr {
-            display: none !important;
-        }
-        
-        /* Asegurarse de que la escena AR ocupa toda la pantalla */
-        .a-scene {
-            width: 100vw !important;
-            height: 100vh !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-        }
-
-        /* Estilo para botón de reproducción manual */
-        #play-video-button {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #333;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            z-index: 10;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        .minimized .debug-content {
             display: none;
         }
     </style>
 </head>
 <body>
-    <!-- Pantalla de inicio -->
-    <div id="splash-screen">
-        <h1>Experiencia AR</h1>
-        <p>Apunta tu cámara a los marcadores para iniciar la experiencia</p>
-        <p>Para el tercer marcador (Geogebra), crea un marcador personalizado</p>
-        <button id="start-button">Iniciar Experiencia AR</button>
+    <!-- Pantalla de bienvenida -->
+    <div id="welcome-screen">
+        <h1>Experiencia de Realidad Aumentada</h1>
+        <p>Descubre contenido interactivo apuntando con tu cámara a los marcadores designados. Cada marcador activará diferentes experiencias multimedia.</p>
+        <button id="start-ar">Iniciar AR</button>
     </div>
     
-    <!-- Botón de retroceso -->
-    <button id="back-button">← Volver</button>
-    
-    <!-- Panel de instrucciones -->
-    <div id="instructions">
-        Muestra los marcadores a la cámara
+    <!-- Contenedor AR -->
+    <div id="ar-container">
+        <button id="back-button">← Volver</button>
+        
+        <!-- Panel de depuración -->
+        <div id="debug-panel">
+            <button id="minimize-btn">_</button>
+            <div class="debug-content" id="debug-content">
+                <div class="debug-message debug-info">Sistema AR inicializando...</div>
+            </div>
+        </div>
+        
+        <!-- Escena AR -->
+        <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+            <!-- Marcador 1: Video -->
+            <a-marker type="pattern" url="markers/marker1.patt">
+                <a-video src="media/sonidos_animales.mp4" width="1.6" height="0.9" position="0 0 0" rotation="-90 0 0"></a-video>
+            </a-marker>
+            
+            <!-- Marcador 2: Modelo 3D (Volcán) -->
+            <a-marker type="pattern" url="markers/marker2.patt">
+                <a-entity position="0 0 0" rotation="0 0 0" scale="0.05 0.05 0.05">
+                    <a-entity gltf-model="media/volcano.glb" animation-mixer></a-entity>
+                </a-entity>
+            </a-marker>
+            
+            <!-- Marcador 3: Applet de GeoGebra -->
+            <a-marker type="pattern" url="markers/marker3.patt">
+                <a-entity position="0 0 0">
+                    <a-plane src="https://www.geogebra.org/m/s5u5g6yr" width="1.6" height="0.9" position="0 0 0" rotation="-90 0 0"></a-plane>
+                </a-entity>
+            </a-marker>
+            
+            <a-entity camera></a-entity>
+        </a-scene>
     </div>
-    
-    <!-- Panel de depuración -->
-    <div id="debug-panel">
-        <button id="minimize-button">-</button>
-        <div id="debug-title">Debug Console</div>
-        <div id="debug-content"></div>
-    </div>
-    
-    <!-- Botón para reproducir el video manualmente -->
-    <button id="play-video-button">Reproducir Video</button>
-    
-    <!-- Contenedor para GeoGebra -->
-    <div class="geogebra-container" id="geogebra-container">
-        <iframe src="https://www.geogebra.org/classic" width="100%" height="100%" frameborder="0"></iframe>
-    </div>
-    
-    <!-- La escena AR se creará dinámicamente -->
-    <div id="ar-scene-container"></div>
     
     <script>
-        // Elemento global para la escena AR
-        let arSceneCreated = false;
-        let arScene = null;
-        let videoElement = null;
-        let videoAsset = null;
-        let userInteracted = false;
+        // Elementos de la interfaz
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const arContainer = document.getElementById('ar-container');
+        const startArButton = document.getElementById('start-ar');
+        const backButton = document.getElementById('back-button');
+        const debugPanel = document.getElementById('debug-panel');
+        const debugContent = document.getElementById('debug-content');
+        const minimizeBtn = document.getElementById('minimize-btn');
         
-        $(document).ready(function() {
-            // Variables para seguimiento
-            let debugMinimized = false;
-            let cameraCount = 0;
-            let markersDetected = {
-                'marker1': false,
-                'marker2': false,
-                'marker3': false
-            };
+        // Variables de estado
+        let isDebugMinimized = false;
+        
+        // Función para agregar mensajes de depuración
+        function addDebugMessage(message, type = 'info') {
+            const messageElement = document.createElement('div');
+            messageElement.className = `debug-message debug-${type}`;
+            messageElement.textContent = message;
             
-            // Función para agregar mensajes al panel de debug
-            function addDebugMessage(message) {
-                const time = new Date().toLocaleTimeString();
-                $("#debug-content").append(`<div class="debug-message">[${time}] ${message}</div>`);
-                // Auto-scroll hacia abajo
-                const debugContent = document.getElementById('debug-content');
-                debugContent.scrollTop = debugContent.scrollHeight;
-            }
-            
-            // Crear la escena AR
-            function createARScene() {
-                if (arSceneCreated) return;
+            debugContent.appendChild(messageElement);
+            debugPanel.scrollTop = debugPanel.scrollHeight;
+        }
+        
+        // Evento para iniciar AR
+        startArButton.addEventListener('click', async () => {
+            try {
+                // Verificar compatibilidad
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    addDebugMessage('Dispositivo no compatible con acceso a cámara', 'error');
+                    return;
+                }
                 
-                addDebugMessage("ℹ Creando escena AR...");
+                // Solicitar permiso de cámara
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                addDebugMessage('Permiso de cámara concedido', 'info');
                 
-                const sceneHTML = `
-                <a-scene 
-                    embedded 
-                    arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;" 
-                    vr-mode-ui="enabled: false"
-                    renderer="antialias: true; alpha: true; precision: lowp; logarithmicDepthBuffer: false;"
-                    id="ar-scene"
-                    style="width: 100vw; height: 100vh; position: absolute; top: 0; left: 0;">
-                        
-                    <a-assets timeout="10000">
-                        <video id="video-asset" src="media/sonidos_animales.mp4" preload="auto" loop crossorigin="anonymous" playsinline></video>
-                    </a-assets>
-                    
-                    <!-- Marcador 1: Video (HIRO) -->
-                    <a-marker id="marker1" preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01">
-                        <a-video id="video-plane" src="#video-asset" width="2" height="1.5" position="0 0.5 0" rotation="-90 0 0"></a-video>
-                    </a-marker>
-                    
-                    <!-- Marcador 2: Modelo 3D (KANJI) -->
-                    <a-marker id="marker2" preset="kanji" smooth="true" smoothCount="5" smoothTolerance="0.01">
-                        <a-box position="0 0.5 0" rotation="0 45 0" color="red" animation="property: rotation; to: 0 405 0; loop: true; dur: 10000; easing: linear"></a-box>
-                    </a-marker>
-                    
-                    <!-- Marcador 3: GeoGebra (Personalizado) -->
-                    <a-marker id="marker3" type="pattern" url="markers/mark3.patt" smooth="true" smoothCount="5" smoothTolerance="0.01">
-                        <a-plane width="3" height="3" position="0 0 0" rotation="-90 0 0" color="#FFFFFF" id="geogebra-plane"></a-plane>
-                    </a-marker>
-                    
-                    <!-- Cámara -->
-                    <a-entity camera></a-entity>
-                </a-scene>
-                `;
+                // Obtener información de las cámaras
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const cameras = devices.filter(device => device.kind === 'videoinput');
+                addDebugMessage(`Cámaras detectadas: ${cameras.length}`, 'info');
                 
-                // Insertar la escena en el DOM
-                $("#ar-scene-container").html(sceneHTML);
-                arSceneCreated = true;
+                // Mostrar información del dispositivo
+                addDebugMessage(`User Agent: ${navigator.userAgent}`, 'info');
                 
-                // Guardar referencia a la escena
-                arScene = document.getElementById('ar-scene');
+                // Ocultar pantalla de bienvenida y mostrar AR
+                welcomeScreen.style.opacity = '0';
+                setTimeout(() => {
+                    welcomeScreen.style.display = 'none';
+                    arContainer.style.display = 'block';
+                }, 500);
                 
-                // Configurar eventos para los marcadores después de que la escena se haya cargado
-                arScene.addEventListener('loaded', function() {
-                    addDebugMessage("✓ Escena AR cargada correctamente");
-                    
-                    // Obtener referencias al video después de que la escena está cargada
-                    videoAsset = document.getElementById('video-asset');
-                    videoElement = document.getElementById('video-plane');
-                    
-                    if (videoAsset) {
-                        addDebugMessage("✓ Elemento de video encontrado en assets");
-                        
-                        // Preparar el video pero sin reproducirlo automáticamente
-                        videoAsset.load();
-                        
-                        // Configurar el botón para reproducir video manualmente
-                        $("#play-video-button").show().click(function() {
-                            playVideo();
-                            userInteracted = true;
-                            $(this).hide();
-                        });
-                    } else {
-                        addDebugMessage("✗ Error: No se encontró el elemento de video");
-                    }
-                    
-                    setupMarkerEvents();
-                    checkDeviceCapabilities();
-                    
-                    // Mostrar instrucciones
-                    $("#instructions").fadeIn();
-                });
-                
-                // Capturar errores en la carga de a-assets
-                document.addEventListener('DOMNodeInserted', function(e) {
-                    if (e.target.tagName === 'A-ASSETS') {
-                        e.target.addEventListener('timeout', function() {
-                            addDebugMessage("✗ Tiempo de espera agotado al cargar assets. Intenta recargar la página.");
-                        });
-                    }
-                });
-            }
-            
-            // Función para intentar reproducir el video
-            function playVideo() {
-                if (!videoAsset) return;
-                
-                addDebugMessage("ℹ Intentando reproducir video...");
-                
-                // Asegurarse de que el video está pausado antes de intentar reproducirlo
-                videoAsset.pause();
-                
-                // Mostrar información de estado del video
-                addDebugMessage(`ℹ Estado del video: ${videoAsset.readyState}, Pausado: ${videoAsset.paused}`);
-                
-                // Primer intento: reproducción normal
-                videoAsset.play().then(() => {
-                    addDebugMessage("✓ Video reproducido correctamente");
-                }).catch(err => {
-                    addDebugMessage(`✗ Error en reproducción: ${err.message}`);
-                    
-                    // Segundo intento: con mute (los navegadores permiten autoplay con mute)
-                    addDebugMessage("ℹ Intentando reproducción con mute");
-                    videoAsset.muted = true;
-                    
-                    videoAsset.play().then(() => {
-                        addDebugMessage("✓ Video reproducido con mute");
-                    }).catch(err2 => {
-                        addDebugMessage(`✗ Fallo total de reproducción: ${err2.message}`);
-                    });
-                });
-            }
-            
-            // Configurar eventos para los marcadores
-            function setupMarkerEvents() {
-                // Para cada marcador, configurar eventos de detección
-                ['marker1', 'marker2', 'marker3'].forEach(function(markerId) {
-                    const marker = document.getElementById(markerId);
-                    if (!marker) {
-                        addDebugMessage(`✗ No se encontró el marcador ${markerId}`);
-                        return;
-                    }
-                    
-                    // Evento cuando se detecta un marcador
-                    marker.addEventListener('markerFound', function() {
-                        if (!markersDetected[markerId]) {
-                            markersDetected[markerId] = true;
-                            
-                            // Mostrar qué marcador fue detectado
-                            if (markerId === "marker1") {
-                                addDebugMessage(`✓ Marcador Hiro (${markerId}) detectado`);
-                                
-                                // Si el usuario ya ha interactuado, intentar reproducir el video
-                                if (userInteracted) {
-                                    playVideo();
-                                } else {
-                                    // Mostrar botón para reproducir
-                                    $("#play-video-button").fadeIn();
-                                    addDebugMessage("ℹ Se requiere interacción del usuario para reproducir el video");
-                                }
-                                
-                            } else if (markerId === "marker2") {
-                                addDebugMessage(`✓ Marcador Kanji (${markerId}) detectado`);
-                                addDebugMessage("ℹ Mostrando cubo 3D con animación");
-                            } else if (markerId === "marker3") {
-                                addDebugMessage(`✓ Marcador Personalizado (${markerId}) detectado`);
-                                // Mostrar applet GeoGebra
-                                $("#geogebra-container").fadeIn();
-                                addDebugMessage("ℹ Cargando applet GeoGebra");
-                            }
-                        }
-                    });
-                    
-                    // Evento cuando se pierde un marcador
-                    marker.addEventListener('markerLost', function() {
-                        if (markersDetected[markerId]) {
-                            markersDetected[markerId] = false;
-                            addDebugMessage(`ℹ Marcador ${markerId} perdido de vista`);
-                            
-                            // Pausar video si estaba reproduciéndose
-                            if (markerId === "marker1") {
-                                if (videoAsset && !videoAsset.paused) {
-                                    videoAsset.pause();
-                                    addDebugMessage("ℹ Video pausado");
-                                }
-                            } else if (markerId === "marker3") {
-                                // Ocultar applet GeoGebra
-                                $("#geogebra-container").fadeOut();
-                                addDebugMessage("ℹ Applet GeoGebra oculto");
-                            }
-                        }
-                    });
-                });
-            }
-            
-            // Comprobar compatibilidad del dispositivo
-            function checkDeviceCapabilities() {
-                // Verificar si el navegador soporta WebRTC
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    addDebugMessage("✓ Dispositivo compatible con WebRTC");
-                    
-                    // Verificar WebGL
-                    let canvas = document.createElement('canvas');
-                    let gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                    if (gl && gl instanceof WebGLRenderingContext) {
-                        addDebugMessage("✓ Soporte WebGL detectado");
-                    } else {
-                        addDebugMessage("✗ WebGL no soportado - La experiencia AR puede ser limitada");
-                    }
-                    
-                    // Verificar cámaras disponibles
-                    if (navigator.mediaDevices.enumerateDevices) {
-                        navigator.mediaDevices.enumerateDevices()
-                            .then(function(devices) {
-                                cameraCount = devices.filter(device => device.kind === 'videoinput').length;
-                                addDebugMessage(`ℹ Cámaras detectadas: ${cameraCount}`);
-                            })
-                            .catch(function(err) {
-                                addDebugMessage(`✗ Error al enumerar dispositivos: ${err.message}`);
-                            });
-                    }
+                // Verificar compatibilidad con WebGL
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (!gl) {
+                    addDebugMessage('WebGL no soportado. AR.js no funcionará correctamente.', 'error');
                 } else {
-                    addDebugMessage("✗ WebRTC no soportado - La AR no funcionará en este dispositivo");
+                    addDebugMessage('WebGL soportado. AR.js debería funcionar correctamente.', 'info');
                 }
                 
-                // Verificar giroscopio
-                if (window.DeviceOrientationEvent) {
-                    addDebugMessage("✓ API de orientación de dispositivo disponible");
-                } else {
-                    addDebugMessage("✗ Sin giroscopio o API de orientación - Puede afectar la experiencia AR");
-                }
+                // Verificar marcadores
+                addDebugMessage('Marcadores configurados: marker1 (video), marker2 (modelo 3D), marker3 (applet)', 'info');
                 
-                // Verificar acelerómetro
-                if (window.DeviceMotionEvent) {
-                    addDebugMessage("✓ API de movimiento de dispositivo disponible");
-                } else {
-                    addDebugMessage("✗ Sin acelerómetro o API de movimiento");
-                }
+            } catch (error) {
+                addDebugMessage(`Error al acceder a la cámara: ${error.message}`, 'error');
+                console.error('Error al acceder a la cámara:', error);
             }
-            
-            // Agregar evento para detectar cualquier interacción con la página
-            $(document).on('click touchstart', function() {
-                userInteracted = true;
-            });
-            
-            // Botón de inicio para solicitar permisos de cámara y comenzar AR
-            $("#start-button").click(function() {
-                userInteracted = true;
-                
-                // Solicitar permiso de cámara manualmente primero
-                navigator.mediaDevices.getUserMedia({ 
-                    audio: false,
-                    video: {
-                        facingMode: 'environment', // Usar cámara trasera si está disponible
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                }).then(function(stream) {
-                    // Ocultar pantalla de bienvenida
-                    $("#splash-screen").fadeOut();
-                    
-                    // Mostrar botón de retroceso y panel de debug
-                    $("#back-button").fadeIn();
-                    $("#debug-panel").fadeIn();
-                    
-                    // Inicializar mensajes de debug
-                    addDebugMessage("✓ Permiso de cámara concedido exitosamente");
-                    
-                    // Detener el stream ya que AR.js manejará la cámara
-                    stream.getTracks().forEach(track => {
-                        track.stop();
-                        addDebugMessage("ℹ Stream de cámara manual detenido, AR.js tomará el control");
-                    });
-                    
-                    // Crear la escena AR después de obtener permisos
-                    setTimeout(() => {
-                        createARScene();
-                    }, 500);
-                    
-                }).catch(function(err) {
-                    addDebugMessage(`✗ Error al obtener acceso a la cámara: ${err.message}`);
-                    alert("Se requiere acceso a la cámara para la experiencia AR. Por favor, permite el acceso e intenta nuevamente.");
-                });
-            });
-            
-            // Botón de retroceso para volver a la pantalla de inicio
-            $("#back-button").click(function() {
-                // Recarga la página para reiniciar completamente
-                location.reload();
-            });
-            
-            // Minimizar/maximizar panel de debug
-            $("#minimize-button").click(function() {
-                debugMinimized = !debugMinimized;
-                if (debugMinimized) {
-                    $("#debug-panel").addClass("minimized");
-                    $("#minimize-button").text("+");
-                    $("#debug-content").hide();
-                } else {
-                    $("#debug-panel").removeClass("minimized");
-                    $("#minimize-button").text("-");
-                    $("#debug-content").show();
-                }
-            });
-            
-            // Manejar eventos de resize
-            $(window).resize(function() {
-                addDebugMessage("ℹ Cambio de tamaño de ventana detectado");
-                
-                // Comprobar si la escena AR existe y adaptarla
-                if (arScene) {
-                    // A-Frame tiene un método resize() para manejar cambios de tamaño
-                    if (typeof arScene.resize === 'function') {
-                        arScene.resize();
-                    }
-                }
-            });
-            
-            // Manejar errores de red o carga
-            window.addEventListener('error', function(event) {
-                if (event.target.tagName === 'IMG' || event.target.tagName === 'VIDEO' || event.target.tagName === 'SCRIPT') {
-                    addDebugMessage(`✗ Error al cargar recurso: ${event.target.src || event.target.currentSrc}`);
-                }
-            }, true);
+        });
+        
+        // Evento para volver atrás
+        backButton.addEventListener('click', () => {
+            arContainer.style.display = 'none';
+            welcomeScreen.style.display = 'flex';
+            setTimeout(() => {
+                welcomeScreen.style.opacity = '1';
+            }, 10);
+        });
+        
+        // Evento para minimizar/maximizar panel de depuración
+        minimizeBtn.addEventListener('click', () => {
+            isDebugMinimized = !isDebugMinimized;
+            if (isDebugMinimized) {
+                debugPanel.classList.add('minimized');
+                minimizeBtn.textContent = '+';
+            } else {
+                debugPanel.classList.remove('minimized');
+                minimizeBtn.textContent = '_';
+            }
+        });
+        
+        // Simular eventos de marcadores (en un entorno real, estos serían detectados por AR.js)
+        setTimeout(() => {
+            addDebugMessage('Sistema AR listo. Buscando marcadores...', 'info');
+        }, 3000);
+        
+        // Event listeners para marcadores (simulados)
+        document.querySelector('a-scene').addEventListener('markerFound', (e) => {
+            const markerId = e.target.getAttribute('url').split('/').pop().split('.')[0];
+            addDebugMessage(`Marcador detectado: ${markerId}`, 'info');
+        });
+        
+        document.querySelector('a-scene').addEventListener('markerLost', (e) => {
+            const markerId = e.target.getAttribute('url').split('/').pop().split('.')[0];
+            addDebugMessage(`Marcador perdido: ${markerId}`, 'info');
         });
     </script>
 </body>
