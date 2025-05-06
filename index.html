@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Experiencia AR Profesional</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.js"></script>
     <style>
         body {
             margin: 0;
@@ -228,6 +228,21 @@
             margin-top: 5px;
         }
         
+        /* Indicador de detección de marcador */
+        #marker-indicator {
+            position: fixed;
+            top: 70px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            z-index: 9999;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: none;
+        }
+        
         @media (max-width: 768px) {
             #welcome-screen h1 {
                 font-size: 1.8rem;
@@ -267,8 +282,8 @@
         <div id="config-panel">
             <div class="config-option">
                 <label for="pattern-ratio">Ratio de detección:</label>
-                <input type="range" id="pattern-ratio" min="0.4" max="0.9" step="0.05" value="0.5">
-                <span id="ratio-value">0.5</span>
+                <input type="range" id="pattern-ratio" min="0.4" max="0.9" step="0.05" value="0.75">
+                <span id="ratio-value">0.75</span>
             </div>
             <div class="config-option">
                 <label for="detection-mode">Modo de detección:</label>
@@ -278,9 +293,16 @@
                     <option value="color_and_matrix">color_and_matrix</option>
                 </select>
             </div>
+            <div class="config-option">
+                <label for="threshold-value">Umbral:</label>
+                <input type="range" id="threshold-value" min="40" max="200" step="5" value="80">
+                <span id="threshold-display">80</span>
+            </div>
             <button class="config-button" id="apply-config">Aplicar</button>
             <button class="config-button" id="reset-config">Reset</button>
         </div>
+        
+        <div id="marker-indicator">Marcador detectado: <span id="marker-name">ninguno</span></div>
         
         <div id="debug-panel">
             <div id="debug-header">
@@ -300,10 +322,8 @@
                  debugUIEnabled: false; 
                  detectionMode: mono; 
                  matrixCodeType: 3x3; 
-                 patternRatio: 0.5;
-                 canvasWidth: 1280;
-                 canvasHeight: 960;
-                 maxDetectionRate: 60;"
+                 patternRatio: 0.75;
+                 maxDetectionRate: 30;"
             loading-screen="enabled: false"
             vr-mode-ui="enabled: false"
             renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
@@ -371,8 +391,12 @@
         const patternRatioSlider = document.getElementById('pattern-ratio');
         const ratioValue = document.getElementById('ratio-value');
         const detectionModeSelect = document.getElementById('detection-mode');
+        const thresholdSlider = document.getElementById('threshold-value');
+        const thresholdDisplay = document.getElementById('threshold-display');
         const applyConfigButton = document.getElementById('apply-config');
         const resetConfigButton = document.getElementById('reset-config');
+        const markerIndicator = document.getElementById('marker-indicator');
+        const markerName = document.getElementById('marker-name');
         
         // Estado y variables globales
         let debugIsMinimized = false;
@@ -382,6 +406,12 @@
             marker2: false,
             marker3: false
         };
+        
+        // Asegurarse de que los valores iniciales son correctos
+        patternRatioSlider.value = 0.75;
+        ratioValue.textContent = '0.75';
+        thresholdSlider.value = 80;
+        thresholdDisplay.textContent = '80';
         
         // Componente personalizado de AFRAME para manejo de eventos de marcadores
         if (!AFRAME.components.registerevents) {
@@ -395,6 +425,10 @@
                         markerDetected[markerId] = true;
                         addDebugMessage(`Marcador detectado: ${markerId}`, 'success');
                         
+                        // Actualizar indicador visual
+                        markerIndicator.style.display = 'block';
+                        markerName.textContent = markerId;
+                        
                         // Comportamiento específico por marcador
                         if (markerId === 'marker1') {
                             handleMarker1Found();
@@ -405,6 +439,13 @@
                     marker.addEventListener('markerLost', function() {
                         markerDetected[markerId] = false;
                         addDebugMessage(`Marcador perdido: ${markerId}`, 'warning');
+                        
+                        // Actualizar indicador visual
+                        let anyMarkerVisible = Object.values(markerDetected).some(detected => detected);
+                        if (!anyMarkerVisible) {
+                            markerIndicator.style.display = 'none';
+                            markerName.textContent = 'ninguno';
+                        }
                         
                         // Comportamiento específico por marcador
                         if (markerId === 'marker1') {
@@ -424,8 +465,26 @@
                 
                 if (videoElement) {
                     videoElement.muted = false; // Asegurarse de que no esté silenciado
-                    videoElement.play();
-                    addDebugMessage('Reproduciendo video de animales', 'info');
+                    videoElement.play()
+                        .then(() => {
+                            addDebugMessage('Reproduciendo video de animales', 'info');
+                        })
+                        .catch(e => {
+                            addDebugMessage(`Error al reproducir video: ${e.message}`, 'error');
+                            // Intentar reproducir con mute primero (requisito en algunos navegadores)
+                            videoElement.muted = true;
+                            videoElement.play()
+                                .then(() => {
+                                    addDebugMessage('Video reproduciendo (silenciado por política del navegador)', 'warning');
+                                    // Algunos navegadores permiten quitar el mute después de la interacción del usuario
+                                    setTimeout(() => {
+                                        videoElement.muted = false;
+                                    }, 1000);
+                                })
+                                .catch(e2 => {
+                                    addDebugMessage(`Error persistente en reproducción: ${e2.message}`, 'error');
+                                });
+                        });
                 } else {
                     addDebugMessage('Error: No se encontró el elemento de video', 'error');
                 }
@@ -459,7 +518,8 @@
             
             return {
                 patternRatio: patternRatioSlider.value,
-                detectionMode: detectionModeSelect.value
+                detectionMode: detectionModeSelect.value,
+                threshold: thresholdSlider.value
             };
         }
         
@@ -498,9 +558,10 @@
                     // Actualizar la configuración
                     arSystem._arController.setPatternDetectionMode(config.detectionMode === 'mono' ? 0 : 1);
                     arSystem._arController.setThresholdMode(0); // Auto
+                    arSystem._arController.setThreshold(parseInt(config.threshold)); // Usar valor del slider
                     arSystem._arController.setPatternRatio(parseFloat(config.patternRatio));
                     
-                    addDebugMessage(`Configuración actualizada: ratio=${config.patternRatio}, modo=${config.detectionMode}`, 'success');
+                    addDebugMessage(`Configuración actualizada: ratio=${config.patternRatio}, modo=${config.detectionMode}, umbral=${config.threshold}`, 'success');
                 } else {
                     addDebugMessage('No se pudo acceder al controlador AR para actualizar la configuración', 'warning');
                 }
@@ -550,11 +611,17 @@
             ratioValue.textContent = patternRatioSlider.value;
         });
         
+        // Actualizar valor mostrado del slider de umbral
+        thresholdSlider.addEventListener('input', () => {
+            thresholdDisplay.textContent = thresholdSlider.value;
+        });
+        
         // Aplicar configuración
         applyConfigButton.addEventListener('click', () => {
             const config = {
                 patternRatio: patternRatioSlider.value,
-                detectionMode: detectionModeSelect.value
+                detectionMode: detectionModeSelect.value,
+                threshold: thresholdSlider.value
             };
             
             applyArJsConfig(config);
@@ -563,17 +630,20 @@
         
         // Resetear configuración
         resetConfigButton.addEventListener('click', () => {
-            patternRatioSlider.value = 0.5;
-            ratioValue.textContent = '0.5';
+            patternRatioSlider.value = 0.75;
+            ratioValue.textContent = '0.75';
             detectionModeSelect.value = 'mono';
+            thresholdSlider.value = 80;
+            thresholdDisplay.textContent = '80';
             
             const config = {
-                patternRatio: 0.5,
-                detectionMode: 'mono'
+                patternRatio: 0.75,
+                detectionMode: 'mono',
+                threshold: 80
             };
             
             applyArJsConfig(config);
-            addDebugMessage('Configuración restablecida a valores predeterminados', 'info');
+            addDebugMessage('Configuración restablecida a valores optimizados', 'info');
         });
         
         // Evento para iniciar AR
@@ -594,8 +664,8 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 640 },  // Cambiado para coincidir con los parámetros de cámara
+                        height: { ideal: 480 }  // Cambiado para coincidir con los parámetros de cámara
                     },
                     audio: false
                 });
@@ -691,6 +761,8 @@
                     // Tiempo para dejar que el sistema se inicialice completamente
                     setTimeout(() => {
                         addDebugMessage('Sistema AR listo - Apunta a los marcadores', 'success');
+                        // Llamar a función de verificación de marcadores
+                        checkMarkerValidity();
                     }, 3000);
                 } else {
                     addDebugMessage('Algunos recursos no están disponibles. La experiencia AR puede no funcionar correctamente.', 'warning');
@@ -699,6 +771,51 @@
             } catch (error) {
                 addDebugMessage(`Error al verificar recursos: ${error.message}`, 'error');
             }
+        }
+        
+        // Función para verificar la calidad de los marcadores
+        function checkMarkerValidity() {
+            addDebugMessage('Verificando calidad de marcadores...', 'info');
+            
+            // Verificar disponibilidad de marcadores
+            const markers = document.querySelectorAll('a-marker');
+            if (markers.length === 0) {
+                addDebugMessage('No se encontraron marcadores en la escena', 'error');
+                return;
+            }
+            
+            addDebugMessage(`Encontrados ${markers.length} marcadores en la escena`, 'success');
+            
+            // Intentar forzar una actualización de marcadores
+            setTimeout(() => {
+                const scene = document.getElementById('ar-scene');
+                if (scene && scene.systems['arjs']) {
+                    try {
+                        const arSystem = scene.systems['arjs'];
+                        if (arSystem && arSystem._arController) {
+                            // Forzar actualización de parámetros
+                            arSystem._arController.setThresholdMode(0);
+                            arSystem._arController.setThreshold(80);
+                            arSystem._arController.setPatternRatio(0.75);
+                            
+                            addDebugMessage('Parámetros de detección de marcadores optimizados', 'success');
+                            
+                            // Verificar configuración de procesamiento de imagen
+                            const processingMode = arSystem._arController.getProcessingMode();
+                            addDebugMessage(`Modo de procesamiento actual: ${processingMode}`, 'info');
+                            
+                            // Agregar mensajes de ayuda para mejorar la detección
+                            addDebugMessage('Consejos para mejor detección:', 'info');
+                            addDebugMessage('1. Asegúrate de tener buena iluminación', 'info');
+                            addDebugMessage('2. Evita reflejos en los marcadores', 'info');
+                            addDebugMessage('3. Mantén el marcador completamente visible', 'info');
+                            addDebugMessage('4. Distancia óptima: 20-50cm del marcador', 'info');
+                        }
+                    } catch (e) {
+                        addDebugMessage(`Error al optimizar marcadores: ${e.message}`, 'error');
+                    }
+                }
+            }, 5000);
         }
         
         // Evento para volver atrás
@@ -733,6 +850,9 @@
                 marker3: false
             };
             
+            // Ocultar indicador de marcador
+            markerIndicator.style.display = 'none';
+            
             // Mostrar pantalla de bienvenida y ocultar AR
             arContainer.style.display = 'none';
             welcomeScreen.style.display = 'flex';
@@ -746,6 +866,50 @@
                 debugIsMinimized = false;
             }
         });
+        
+        // Función para mejorar manualmente la detección de marcadores
+        function forceMarkerDetectionUpdate() {
+            const scene = document.getElementById('ar-scene');
+            if (!scene || !scene.systems['arjs']) return;
+            
+            try {
+                const arSystem = scene.systems['arjs'];
+                if (arSystem && arSystem._arController) {
+                    // Configurar parámetros óptimos
+                    const config = {
+                        patternRatio: parseFloat(patternRatioSlider.value),
+                        detectionMode: detectionModeSelect.value,
+                        threshold: parseInt(thresholdSlider.value)
+                    };
+                    
+                    // Aplicar configuración optimizada
+                    arSystem._arController.setPatternDetectionMode(config.detectionMode === 'mono' ? 0 : 1);
+                    arSystem._arController.setThresholdMode(0); // Auto
+                    arSystem._arController.setThreshold(config.threshold);
+                    arSystem._arController.setPatternRatio(config.patternRatio);
+                    
+                    addDebugMessage('Forzada actualización de parámetros de detección', 'success');
+                }
+            } catch (e) {
+                addDebugMessage(`Error al forzar actualización: ${e.message}`, 'error');
+            }
+        }
+        
+        // Añadir botón para forzar actualización (funcionalidad extra para solucionar problemas)
+        const forceUpdateButton = document.createElement('button');
+        forceUpdateButton.textContent = '🔄 Forzar detección';
+        forceUpdateButton.className = 'config-button';
+        forceUpdateButton.style.position = 'fixed';
+        forceUpdateButton.style.bottom = '20px';
+        forceUpdateButton.style.right = '20px';
+        forceUpdateButton.style.zIndex = '9999';
+        forceUpdateButton.style.padding = '10px 15px';
+        forceUpdateButton.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        forceUpdateButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+        forceUpdateButton.style.borderRadius = '5px';
+        forceUpdateButton.style.color = 'white';
+        forceUpdateButton.addEventListener('click', forceMarkerDetectionUpdate);
+        arContainer.appendChild(forceUpdateButton);
         
         // Prevenir comportamientos no deseados en dispositivos táctiles
         document.addEventListener('touchmove', function(e) {
@@ -767,6 +931,22 @@
         // Configurar manejo de errores global
         window.addEventListener('error', (event) => {
             addDebugMessage(`Error global: ${event.message}`, 'error');
+        });
+        
+        // Agregar función para manejar problemas de inicialización AR.js
+        window.addEventListener('artoolkitNFTCreated', function(ev) {
+            addDebugMessage('ARToolkit NFT inicializado correctamente', 'success');
+        });
+        
+        // Detectar cambios de orientación para actualizar la vista
+        window.addEventListener('orientationchange', function() {
+            addDebugMessage('Cambio de orientación detectado. Actualizando vista...', 'info');
+            
+            // Dar tiempo a que la pantalla se ajuste
+            setTimeout(() => {
+                // Intentar forzar reinicio o actualización de AR.js
+                forceMarkerDetectionUpdate();
+            }, 1000);
         });
     </script>
 </body>
