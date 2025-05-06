@@ -2,21 +2,35 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>Experiencia AR Profesional</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eruda@2.4.1/eruda.min.js"></script>
     <style>
-        body {
+        :root {
+            --primary-color: #00dbde;
+            --secondary-color: #fc00ff;
+            --debug-bg: rgba(0, 0, 0, 0.6);
+            --text-color: white;
+        }
+        
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
             background: linear-gradient(135deg, #1a1a2e, #16213e);
-            color: white;
+            color: var(--text-color);
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         
+        /* Pantalla de bienvenida */
         #welcome-screen {
             position: fixed;
             top: 0;
@@ -27,34 +41,34 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             z-index: 1000;
-            transition: opacity 0.5s;
             padding: 20px;
-            box-sizing: border-box;
+            text-align: center;
+            transition: opacity 0.5s ease;
         }
         
         #welcome-screen h1 {
-            font-size: 2rem;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
             margin-bottom: 20px;
-            text-align: center;
-            background: linear-gradient(90deg, #00dbde, #fc00ff);
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            line-height: 1.3;
         }
         
         #welcome-screen p {
-            font-size: 1rem;
-            max-width: 90%;
-            text-align: center;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            max-width: 600px;
             margin-bottom: 30px;
             line-height: 1.6;
+            opacity: 0.9;
         }
         
         #start-ar {
-            padding: 12px 25px;
-            background: linear-gradient(90deg, #00dbde, #fc00ff);
+            padding: 12px 30px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             border: none;
             border-radius: 50px;
             color: white;
@@ -62,44 +76,97 @@
             cursor: pointer;
             transition: transform 0.3s, box-shadow 0.3s;
             box-shadow: 0 4px 15px rgba(0, 219, 222, 0.3);
-            min-width: 150px;
+            min-width: 180px;
+            font-weight: 500;
         }
         
+        #start-ar:active {
+            transform: scale(0.98);
+        }
+        
+        /* Contenedor AR */
         #ar-container {
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 100vh;
+            height: 100%;
             display: none;
+            z-index: 900;
         }
         
+        /* Botón de retroceso */
         #back-button {
-            position: absolute;
-            top: 15px;
-            left: 15px;
+            position: fixed;
+            top: 20px;
+            left: 20px;
             z-index: 999;
-            padding: 8px 15px;
-            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            background: var(--debug-bg);
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            transition: opacity 0.3s;
+        }
+        
+        #back-button:hover {
+            opacity: 0.9;
+        }
+        
+        /* Panel de depuración */
+        #debug-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 500px;
+            max-height: 150px;
+            background: var(--debug-bg);
+            border-radius: 10px;
+            z-index: 999;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        #debug-header {
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+        
+        #debug-title {
+            font-weight: bold;
             font-size: 0.9rem;
         }
         
-        #debug-panel {
-            position: absolute;
-            bottom: 15px;
-            left: 15px;
-            width: 90%;
-            max-width: 300px;
-            max-height: 150px;
-            background: rgba(0, 0, 0, 0.35);
-            border-radius: 10px;
-            padding: 10px;
+        #minimize-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        #debug-content {
+            padding: 10px 15px;
             overflow-y: auto;
-            font-family: monospace;
+            max-height: 100px;
+            font-family: 'Courier New', monospace;
             font-size: 0.8rem;
-            z-index: 999;
+            line-height: 1.4;
         }
         
         .debug-message {
@@ -112,12 +179,46 @@
         .debug-error { color: #ff5555; }
         .debug-success { color: #00ff9d; }
         
+        .minimized {
+            max-height: 40px !important;
+        }
+        
+        /* Escena AR */
+        .arjs-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+        }
+        
+        .arjs-loader div {
+            text-align: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
-            #welcome-screen h1 {
-                font-size: 1.8rem;
+            #debug-container {
+                width: 95%;
+                max-height: 120px;
             }
             
-            #welcome-screen p {
+            #debug-content {
+                max-height: 80px;
+                font-size: 0.75rem;
+            }
+            
+            #back-button {
+                top: 15px;
+                left: 15px;
+                padding: 8px 15px;
                 font-size: 0.9rem;
             }
         }
@@ -134,21 +235,39 @@
     <!-- Contenedor AR -->
     <div id="ar-container">
         <button id="back-button">← Volver</button>
-        <div id="debug-panel">
-            <div id="debug-content">
-                <div class="debug-message debug-info">Sistema AR inicializando...</div>
+        
+        <!-- Panel de depuración mejorado -->
+        <div id="debug-container">
+            <div id="debug-header">
+                <span id="debug-title">Consola de Depuración</span>
+                <button id="minimize-btn">−</button>
             </div>
+            <div id="debug-content"></div>
         </div>
         
         <!-- Escena AR optimizada -->
         <a-scene 
-            embedded 
-            arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;"
             vr-mode-ui="enabled: false"
             renderer="logarithmicDepthBuffer: true; precision: medium;"
+            arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;"
+            cursor="rayOrigin: mouse; fuse: false"
+            raycaster="objects: [marker]"
         >
-            <!-- Marcador 1: Video (solo se reproduce cuando se detecta) -->
-            <a-marker id="marker1" type="pattern" url="markers/pattern-marker1.patt" emitevents="true" cursor="rayOrigin: mouse">
+            <!-- Loader mientras se inicializa -->
+            <div class="arjs-loader">
+                <div>Inicializando cámara AR...</div>
+            </div>
+            
+            <!-- Marcador 1: Video con control preciso -->
+            <a-marker 
+                id="marker1" 
+                type="pattern" 
+                url="markers/pattern-marker1.patt" 
+                emitevents="true" 
+                cursor="rayOrigin: mouse"
+                raycaster="objects: [clickable]"
+                data-raycastable
+            >
                 <a-video 
                     id="animal-video"
                     src="media/sonidos_animales.mp4" 
@@ -158,28 +277,47 @@
                     rotation="-90 0 0"
                     autoplay="false"
                     loop="false"
+                    data-clickable
                 ></a-video>
             </a-marker>
             
             <!-- Marcador 2: Modelo 3D (Volcán) -->
-            <a-marker id="marker2" type="pattern" url="markers/pattern-marker2.patt">
-                <a-entity position="0 0.5 0" rotation="0 0 0" scale="0.05 0.05 0.05">
+            <a-marker 
+                id="marker2" 
+                type="pattern" 
+                url="markers/pattern-marker2.patt"
+                emitevents="true"
+                data-raycastable
+            >
+                <a-entity 
+                    position="0 0.5 0" 
+                    rotation="0 0 0" 
+                    scale="0.05 0.05 0.05"
+                    data-clickable
+                >
                     <a-entity 
                         gltf-model="url(media/volcano.glb)"
-                        animation-mixer
+                        animation-mixer="clip: *"
                         shadow="cast: true; receive: false"
                     ></a-entity>
                 </a-entity>
             </a-marker>
             
-            <!-- Marcador 3: Imagen de GeoGebra (solución alternativa) -->
-            <a-marker id="marker3" type="pattern" url="markers/pattern-marker3.patt">
+            <!-- Marcador 3: Imagen alternativa (solución CORS) -->
+            <a-marker 
+                id="marker3" 
+                type="pattern" 
+                url="markers/pattern-marker3.patt"
+                emitevents="true"
+                data-raycastable
+            >
                 <a-image 
-                    src="https://www.geogebra.org/resource/s5u5g6yr/UXzQdQK0QH8zQ1Uf/material-s5u5g6yr.png" 
+                    src="assets/geogebra-fallback.jpg" 
                     width="1.6" 
                     height="0.9" 
                     position="0 0 0" 
                     rotation="-90 0 0"
+                    data-clickable
                 ></a-image>
             </a-marker>
             
@@ -188,28 +326,46 @@
     </div>
     
     <script>
+        // Inicializar Eruda para depuración en móvil
+        if (!/eruda=true/.test(window.location) && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            eruda.init();
+        }
+        
         // Elementos de la interfaz
         const welcomeScreen = document.getElementById('welcome-screen');
         const arContainer = document.getElementById('ar-container');
         const startArButton = document.getElementById('start-ar');
         const backButton = document.getElementById('back-button');
+        const debugContainer = document.getElementById('debug-container');
         const debugContent = document.getElementById('debug-content');
+        const minimizeBtn = document.getElementById('minimize-btn');
         const animalVideo = document.getElementById('animal-video');
+        
+        // Variables de estado
+        let isDebugMinimized = false;
+        let cameraStream = null;
         
         // Función para agregar mensajes de depuración
         function addDebugMessage(message, type = 'info') {
             const messageElement = document.createElement('div');
             messageElement.className = `debug-message debug-${type}`;
-            messageElement.textContent = message;
+            messageElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             
             debugContent.appendChild(messageElement);
             debugContent.scrollTop = debugContent.scrollHeight;
         }
         
+        // Evento para minimizar/maximizar panel de depuración
+        minimizeBtn.addEventListener('click', () => {
+            isDebugMinimized = !isDebugMinimized;
+            debugContainer.classList.toggle('minimized', isDebugMinimized);
+            minimizeBtn.textContent = isDebugMinimized ? "+" : "−";
+        });
+        
         // Evento para iniciar AR
         startArButton.addEventListener('click', async () => {
             try {
-                addDebugMessage('Verificando compatibilidad del dispositivo...', 'info');
+                addDebugMessage('Iniciando experiencia AR...', 'info');
                 
                 // Verificar compatibilidad
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -221,7 +377,7 @@
                 // Solicitar permiso de cámara
                 addDebugMessage('Solicitando permiso para acceder a la cámara...', 'info');
                 
-                const stream = await navigator.mediaDevices.getUserMedia({ 
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
                         width: { ideal: 1280 },
@@ -239,43 +395,64 @@
                 // Mostrar AR y ocultar pantalla de bienvenida
                 welcomeScreen.style.display = 'none';
                 arContainer.style.display = 'block';
+                backButton.style.display = 'block';
                 
                 // Configurar eventos de marcadores
-                document.querySelector('a-scene').addEventListener('markerFound', (e) => {
-                    const markerId = e.target.id;
-                    addDebugMessage(`Marcador detectado: ${markerId}`, 'success');
+                const scene = document.querySelector('a-scene');
+                
+                scene.addEventListener('loaded', () => {
+                    // Ocultar loader cuando la escena esté lista
+                    const loader = document.querySelector('.arjs-loader');
+                    if (loader) loader.style.display = 'none';
                     
-                    // Controlar reproducción de video
-                    if (markerId === 'marker1') {
-                        const video = document.querySelector(`#${markerId} a-video`);
-                        if (video) {
-                            video.components.material.material.map.image.play();
-                            addDebugMessage('Reproduciendo video asociado al marcador 1', 'info');
-                        }
-                    }
+                    addDebugMessage('Escena AR cargada correctamente', 'success');
                 });
                 
-                document.querySelector('a-scene').addEventListener('markerLost', (e) => {
-                    const markerId = e.target.id;
-                    addDebugMessage(`Marcador perdido: ${markerId}`, 'warning');
-                    
-                    // Pausar video cuando se pierde el marcador
-                    if (markerId === 'marker1') {
-                        const video = document.querySelector(`#${markerId} a-video`);
-                        if (video) {
-                            video.components.material.material.map.image.pause();
-                            video.components.material.material.map.image.currentTime = 0;
+                // Eventos para cada marcador
+                document.querySelectorAll('a-marker').forEach(marker => {
+                    marker.addEventListener('markerFound', (e) => {
+                        const markerId = e.target.id;
+                        addDebugMessage(`Marcador detectado: ${markerId}`, 'success');
+                        
+                        // Control específico para el video
+                        if (markerId === 'marker1') {
+                            const video = marker.querySelector('a-video');
+                            if (video) {
+                                const videoEl = video.components.material.material.map.image;
+                                videoEl.play().catch(e => {
+                                    addDebugMessage(`Error al reproducir video: ${e.message}`, 'error');
+                                });
+                            }
                         }
-                    }
+                    });
+                    
+                    marker.addEventListener('markerLost', (e) => {
+                        const markerId = e.target.id;
+                        addDebugMessage(`Marcador perdido: ${markerId}`, 'warning');
+                        
+                        // Control específico para el video
+                        if (markerId === 'marker1') {
+                            const video = marker.querySelector('a-video');
+                            if (video) {
+                                const videoEl = video.components.material.material.map.image;
+                                videoEl.pause();
+                                videoEl.currentTime = 0;
+                            }
+                        }
+                    });
                 });
                 
                 // Verificar recursos
-                checkResources();
+                await checkResources();
                 
             } catch (error) {
-                addDebugMessage(`Error al acceder a la cámara: ${error.message}`, 'error');
+                addDebugMessage(`Error al iniciar AR: ${error.message}`, 'error');
                 console.error('Error:', error);
-                alert(`Error al acceder a la cámara: ${error.message}`);
+                alert(`Error al iniciar AR: ${error.message}`);
+                
+                // Volver a pantalla de bienvenida en caso de error
+                welcomeScreen.style.display = 'flex';
+                arContainer.style.display = 'none';
             }
         });
         
@@ -283,52 +460,66 @@
         async function checkResources() {
             try {
                 // Verificar marcadores
-                const markers = ['marker1', 'marker2', 'marker3'];
+                const markers = [
+                    {id: 'marker1', file: 'markers/pattern-marker1.patt'},
+                    {id: 'marker2', file: 'markers/pattern-marker2.patt'},
+                    {id: 'marker3', file: 'markers/pattern-marker3.patt'}
+                ];
+                
                 for (const marker of markers) {
-                    const response = await fetch(`markers/pattern-${marker}.patt`);
-                    if (!response.ok) {
-                        addDebugMessage(`Advertencia: No se encontró el archivo de marcador para ${marker}`, 'warning');
-                    } else {
-                        addDebugMessage(`Marcador ${marker} cargado correctamente`, 'success');
+                    try {
+                        const response = await fetch(marker.file);
+                        if (!response.ok) throw new Error('Archivo no encontrado');
+                        addDebugMessage(`Marcador ${marker.id} cargado: ${marker.file}`, 'success');
+                    } catch (error) {
+                        addDebugMessage(`Error con marcador ${marker.id}: ${error.message}`, 'error');
                     }
                 }
                 
                 // Verificar video
-                const videoResponse = await fetch('media/sonidos_animales.mp4');
-                if (!videoResponse.ok) {
-                    addDebugMessage('Error: No se encontró el archivo de video', 'error');
-                } else {
-                    addDebugMessage('Video de animales cargado correctamente', 'success');
+                try {
+                    const response = await fetch('media/sonidos_animales.mp4');
+                    if (!response.ok) throw new Error('Archivo no encontrado');
+                    addDebugMessage('Video cargado: media/sonidos_animales.mp4', 'success');
+                } catch (error) {
+                    addDebugMessage(`Error con video: ${error.message}`, 'error');
                 }
                 
                 // Verificar modelo 3D
-                const modelResponse = await fetch('media/volcano.glb');
-                if (!modelResponse.ok) {
-                    addDebugMessage('Error: No se encontró el modelo 3D del volcán', 'error');
-                } else {
-                    addDebugMessage('Modelo 3D del volcán cargado correctamente', 'success');
+                try {
+                    const response = await fetch('media/volcano.glb');
+                    if (!response.ok) throw new Error('Archivo no encontrado');
+                    addDebugMessage('Modelo 3D cargado: media/volcano.glb', 'success');
+                } catch (error) {
+                    addDebugMessage(`Error con modelo 3D: ${error.message}`, 'error');
+                }
+                
+                // Verificar imagen alternativa
+                try {
+                    const response = await fetch('assets/geogebra-fallback.jpg');
+                    if (!response.ok) throw new Error('Archivo no encontrado');
+                    addDebugMessage('Imagen alternativa cargada: assets/geogebra-fallback.jpg', 'success');
+                } catch (error) {
+                    addDebugMessage(`Error con imagen alternativa: ${error.message}`, 'error');
                 }
                 
             } catch (error) {
                 addDebugMessage(`Error al verificar recursos: ${error.message}`, 'error');
+                throw error;
             }
         }
         
         // Evento para volver atrás
         backButton.addEventListener('click', () => {
             // Detener transmisión de cámara
-            const scene = document.querySelector('a-scene');
-            if (scene && scene.systems['arjs']) {
-                const source = scene.systems['arjs']._arSource;
-                if (source) {
-                    source.stop();
-                    source.destroy();
-                }
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
             }
             
             // Pausar video si está reproduciéndose
             if (animalVideo) {
-                const videoEl = animalVideo.components.material.material.map.image;
+                const videoEl = animalVideo.components?.material?.material?.map?.image;
                 if (videoEl) {
                     videoEl.pause();
                     videoEl.currentTime = 0;
@@ -338,7 +529,13 @@
             // Mostrar pantalla de bienvenida
             arContainer.style.display = 'none';
             welcomeScreen.style.display = 'flex';
+            backButton.style.display = 'none';
+            
+            addDebugMessage('Experiencia AR finalizada', 'info');
         });
+        
+        // Inicialización
+        addDebugMessage('Aplicación inicializada. Haz clic en "Iniciar AR" para comenzar.', 'info');
     </script>
 </body>
 </html>
