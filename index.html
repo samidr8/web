@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8,19 +9,21 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- Pantalla de bienvenida -->
     <div id="welcome-screen">
         <h1>Experiencia de Realidad Aumentada</h1>
-        <p>Para comenzar, haz clic en el botón "Iniciar AR" y permite el acceso a tu cámara. Luego apunta a los marcadores para ver el contenido.</p>
+        <p>Para comenzar, haz clic en el botón "Iniciar AR" y permite el acceso a tu cámara. Luego apunta a los
+            marcadores para ver el contenido.</p>
         <button id="start-ar">Iniciar AR</button>
     </div>
-    
+
     <!-- Contenedor AR -->
     <div id="ar-container">
         <button id="back-button">← Volver</button>
         <button id="config-button">⚙️ Config</button>
-        
+
         <div id="config-panel">
             <div class="config-option">
                 <label for="pattern-ratio">Ratio de detección:</label>
@@ -43,9 +46,9 @@
             <button class="config-button" id="apply-config">Aplicar</button>
             <button class="config-button" id="reset-config">Reset</button>
         </div>
-        
+
         <div id="marker-indicator">Marcador detectado: <span id="marker-name">ninguno</span></div>
-        
+
         <div id="debug-panel">
             <div id="debug-header">
                 <span id="debug-title">Estado del Sistema</span>
@@ -55,77 +58,58 @@
                 <div class="debug-message debug-info">Sistema AR inicializando...</div>
             </div>
         </div>
-        
+
         <!-- Escena AR optimizada -->
-        <a-scene 
-            id="ar-scene"
-            embedded 
-            arjs="sourceType: webcam; 
-                 debugUIEnabled: false; 
-                 detectionMode: mono; 
-                 matrixCodeType: 3x3; 
-                 patternRatio: 0.75;
-                 maxDetectionRate: 30;
-                 canvasWidth: 640; 
-                 canvasHeight: 480;
-                 trackingMethod: best;"
-            loading-screen="enabled: false"
-            vr-mode-ui="enabled: false"
-            renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
-            stats="false"
-        >
+        <a-scene embedded arjs="sourceType: webcam; 
+             debugUIEnabled: true; 
+             detectionMode: mono; 
+             patternRatio: 0.65;
+             maxDetectionRate: 30;
+             canvasWidth: 640; 
+             canvasHeight: 480;
+             trackingMethod: best;
+             sourceWidth: 640;
+             sourceHeight: 480;
+             displayWidth: 640;
+             displayHeight: 480;" vr-mode-ui="enabled: false"
+            renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;">
             <!-- Definición de assets para precargar -->
             <a-assets>
-                <video id="animal-video-asset" src="media/sonidos_animales.mp4" preload="auto" muted playsinline></video>
+                <video id="animal-video-asset" src="media/sonidos_animales.mp4" preload="auto" muted
+                    playsinline></video>
                 <a-asset-item id="volcano-model" src="media/volcano.glb"></a-asset-item>
                 <img id="math-image" src="media/matematicas.png" alt="Imagen matemáticas">
             </a-assets>
-            
+
             <!-- Marcador 1: Video -->
-            <a-marker id="marker1" type="pattern" url="markers/pattern-marker1.patt" 
-                     registerevents>
-                <a-video 
-                    id="animal-video-element"
-                    src="#animal-video-asset" 
-                    width="1.6" 
-                    height="0.9" 
-                    position="0 0 0" 
-                    rotation="-90 0 0"
-                ></a-video>
+            <a-marker id="marker1" type="pattern" url="markers/pattern-marker1.patt" registerevents>
+                <a-video id="animal-video-element" src="#animal-video-asset" width="1.6" height="0.9" position="0 0 0"
+                    rotation="-90 0 0"></a-video>
             </a-marker>
-            
+
             <!-- Marcador 2: Modelo 3D (Volcán) -->
-            <a-marker id="marker2" type="pattern" url="markers/pattern-marker2.patt"
-                     registerevents>
+            <a-marker id="marker2" type="pattern" url="markers/pattern-marker2.patt" registerevents>
                 <a-entity position="0 0.5 0" rotation="0 0 0" scale="0.05 0.05 0.05">
-                    <a-entity 
-                        gltf-model="#volcano-model"
-                        animation-mixer
-                        shadow="cast: true; receive: false"
-                    ></a-entity>
+                    <a-entity gltf-model="#volcano-model" animation-mixer
+                        shadow="cast: true; receive: false"></a-entity>
                 </a-entity>
             </a-marker>
-            
+
             <!-- Marcador 3: Imagen local -->
-            <a-marker id="marker3" type="pattern" url="markers/pattern-marker3.patt"
-                     registerevents>
-                <a-plane 
-                    src="#math-image" 
-                    width="1.6" 
-                    height="0.9" 
-                    position="0 0 0" 
-                    rotation="-90 0 0"
-                ></a-plane>
+            <a-marker id="marker3" type="pattern" url="markers/pattern-marker3.patt" registerevents>
+                <a-plane src="#math-image" width="1.6" height="0.9" position="0 0 0" rotation="-90 0 0"></a-plane>
             </a-marker>
-            
+
             <!-- Usar una cámara con atributos específicos -->
             <a-entity camera></a-entity>
         </a-scene>
     </div>
-    
+
     <!-- Elementos para accesibilidad -->
     <div id="aria-announcer" aria-live="polite" class="visually-hidden"></div>
-    
+
+    <script src="custom-ar.js"></script>
     <script src="main.js"></script>
 </body>
+
 </html>
