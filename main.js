@@ -54,7 +54,7 @@ if (!AFRAME.components.registerevents) {
             // Eventos de marcador encontrado
             marker.addEventListener('markerFound', function() {
                 markerDetected[markerId] = true;
-                addDebugMessage(`Marcador detectado: ${markerId}`, 'success');
+                addDebugMessage(`¡Marcador detectado: ${markerId}!`, 'success');
                 
                 // Actualizar indicador visual
                 markerIndicator.style.display = 'block';
@@ -63,10 +63,33 @@ if (!AFRAME.components.registerevents) {
                 // Anunciar para accesibilidad
                 announceToScreenReader(`Marcador ${markerId} detectado`);
                 
-                // Comportamiento específico por marcador
+                // Mostrar contenido relacionado con el marcador (dependiendo del ID)
+                let markerContent = '';
                 if (markerId === 'marker1') {
+                    markerContent = 'Video de sonidos de animales';
                     handleMarker1Found();
+                } else if (markerId === 'marker2') {
+                    markerContent = 'Modelo 3D de volcán';
+                } else if (markerId === 'marker3') {
+                    markerContent = 'Imagen de matemáticas';
                 }
+                
+                // Agregar información sobre el contenido
+                if (markerContent) {
+                    addDebugMessage(`Mostrando: ${markerContent}`, 'info');
+                }
+                
+                // Vibración para feedback táctil (si está disponible)
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+                
+                // Hacer visible cualquier elemento hijo que pueda estar oculto
+                Array.from(marker.children).forEach(child => {
+                    if (child.getAttribute('visible') === false) {
+                        child.setAttribute('visible', true);
+                    }
+                });
             });
             
             // Eventos de marcador perdido
@@ -86,6 +109,11 @@ if (!AFRAME.components.registerevents) {
                 // Comportamiento específico por marcador
                 if (markerId === 'marker1') {
                     handleMarker1Lost();
+                }
+                
+                // Vibración corta para feedback táctil (si está disponible)
+                if (navigator.vibrate) {
+                    navigator.vibrate(100);
                 }
             });
         }
@@ -417,54 +445,91 @@ async function checkResources() {
             { tipo: 'Imagen', ruta: 'media/matematicas.png' }
         ];
         
+        // Contador para seguimiento visual
+        let checkedCount = 0;
+        const totalResources = resources.length;
+        
         // Verificar cada recurso
         let resourcesOk = true;
+        let resourcesWithErrors = [];
+        
         for (const resource of resources) {
             try {
+                checkedCount++;
+                addDebugMessage(`Verificando recurso ${checkedCount}/${totalResources}...`, 'info');
+                
                 const response = await fetch(resource.ruta, { method: 'HEAD' });
                 if (response.ok) {
-                    addDebugMessage(`${resource.tipo} (${resource.ruta}) cargado correctamente`, 'success');
+                    addDebugMessage(`✓ ${resource.tipo} (${resource.ruta.split('/').pop()}) disponible`, 'success');
                 } else {
-                    addDebugMessage(`Error: No se encontró ${resource.tipo} (${resource.ruta})`, 'error');
+                    addDebugMessage(`✗ No se encontró ${resource.tipo} (${resource.ruta})`, 'error');
                     resourcesOk = false;
+                    resourcesWithErrors.push(resource);
                 }
             } catch (e) {
-                addDebugMessage(`Error verificando ${resource.tipo} (${resource.ruta}): ${e.message}`, 'error');
+                addDebugMessage(`✗ Error en ${resource.tipo} (${resource.ruta}): ${e.message}`, 'error');
                 resourcesOk = false;
+                resourcesWithErrors.push(resource);
             }
+            
+            // Pequeña pausa entre verificaciones para no saturar la interfaz
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
         
         if (resourcesOk) {
-            addDebugMessage('Todos los recursos verificados correctamente', 'success');
-            // Tiempo para dejar que el sistema se inicialice completamente
-            setTimeout(() => {
-                addDebugMessage('Sistema AR listo - Apunta a los marcadores', 'success');
-                // Llamar a función de verificación de marcadores
-                checkMarkerValidity();
-            }, 3000);
+            addDebugMessage('✅ Todos los recursos disponibles', 'success');
+            
+            // Verificar si los marcadores se pueden cargar realmente
+            addDebugMessage('Comprobando los patrones de marcadores...', 'info');
+            
+            // Iniciar la configuración del sistema de detección
+            checkMarkerValidity();
+            
+            return true;
         } else {
-            addDebugMessage('Algunos recursos no están disponibles. La experiencia AR puede no funcionar correctamente.', 'warning');
+            addDebugMessage('⚠️ Faltan recursos necesarios:', 'warning');
+            resourcesWithErrors.forEach(resource => {
+                addDebugMessage(`- ${resource.tipo}: ${resource.ruta}`, 'warning');
+            });
+            addDebugMessage('Puedes intentar continuar, pero es posible que la experiencia no funcione correctamente.', 'warning');
+            
+            return false;
         }
         
     } catch (error) {
         addDebugMessage(`Error al verificar recursos: ${error.message}`, 'error');
+        return false;
     }
 }
 
-// Función para verificar la calidad de los marcadores
+// Función para verificar la configuración de los marcadores
 function checkMarkerValidity() {
-    addDebugMessage('Verificando calidad de marcadores...', 'info');
+    addDebugMessage('Preparando sistema de detección...', 'info');
     
-    // Verificar disponibilidad de marcadores
+    // Verificar definición de marcadores en HTML
     const markers = document.querySelectorAll('a-marker');
     if (markers.length === 0) {
-        addDebugMessage('No se encontraron marcadores en la escena', 'error');
+        addDebugMessage('Error: No se encontraron definiciones de marcadores en el código', 'error');
         return;
     }
     
-    addDebugMessage(`Encontrados ${markers.length} marcadores en la escena`, 'success');
+    addDebugMessage(`Configurados ${markers.length} tipos de marcadores para detección`, 'info');
+    addDebugMessage('Esperando que muestres un marcador físico a la cámara...', 'info');
     
-    // Intentar forzar una actualización de marcadores
+    // Variable para rastrear si ya se ha detectado algún marcador
+    window.anyMarkerEverDetected = false;
+    
+    // Agregar un listener global para la primera detección de marcador
+    document.addEventListener('markerFound', function firstMarkerDetected() {
+        if (!window.anyMarkerEverDetected) {
+            window.anyMarkerEverDetected = true;
+            addDebugMessage('¡PRIMER MARCADOR DETECTADO! Sistema funcionando correctamente', 'success');
+            // Eliminar este listener después de la primera detección
+            document.removeEventListener('markerFound', firstMarkerDetected);
+        }
+    });
+    
+    // Intentar configurar parámetros óptimos para la detección
     setTimeout(() => {
         const scene = document.getElementById('ar-scene');
         if (scene && scene.systems['arjs']) {
@@ -476,21 +541,28 @@ function checkMarkerValidity() {
                     arSystem._arController.setThreshold(80);
                     arSystem._arController.setPatternRatio(0.75);
                     
-                    addDebugMessage('Parámetros de detección de marcadores optimizados', 'success');
+                    addDebugMessage('Parámetros de detección optimizados', 'success');
                     
                     // Verificar configuración de procesamiento de imagen
                     const processingMode = arSystem._arController.getProcessingMode();
-                    addDebugMessage(`Modo de procesamiento actual: ${processingMode}`, 'info');
+                    addDebugMessage(`Modo de procesamiento: ${processingMode}`, 'info');
                     
                     // Agregar mensajes de ayuda para mejorar la detección
-                    addDebugMessage('Consejos para mejor detección:', 'info');
+                    addDebugMessage('Consejos para detectar marcadores:', 'info');
                     addDebugMessage('1. Asegúrate de tener buena iluminación', 'info');
                     addDebugMessage('2. Evita reflejos en los marcadores', 'info');
                     addDebugMessage('3. Mantén el marcador completamente visible', 'info');
                     addDebugMessage('4. Distancia óptima: 20-50cm del marcador', 'info');
+                    
+                    // Si después de 15 segundos no se ha detectado ningún marcador, dar un mensaje adicional
+                    setTimeout(() => {
+                        if (!window.anyMarkerEverDetected) {
+                            addDebugMessage('Aún no se ha detectado ningún marcador. Asegúrate de que estás usando los marcadores correctos.', 'warning');
+                        }
+                    }, 15000);
                 }
             } catch (e) {
-                addDebugMessage(`Error al optimizar marcadores: ${e.message}`, 'error');
+                addDebugMessage(`Error al configurar detector: ${e.message}`, 'error');
             }
         }
     }, 5000);
@@ -723,6 +795,10 @@ startArButton.addEventListener('click', async () => {
         arContainer.style.display = 'block';
         announceToScreenReader('Experiencia de realidad aumentada iniciada. Apunte su cámara hacia un marcador.');
         
+        // Mostrar un mensaje de inicio claro
+        addDebugMessage('⚡ INICIANDO SISTEMA AR ⚡', 'info');
+        addDebugMessage('Activando la cámara y preparando todo...', 'info');
+        
         // Inicializar video
         if (videoElement) {
             // Preparar el video pero mantenerlo pausado
@@ -757,13 +833,32 @@ startArButton.addEventListener('click', async () => {
         handleOrientationChange();
         
         // Verificar recursos
-        checkResources();
+        await checkResources();
+        
+        // Añadir un listener para eventos de AR.js
+        document.addEventListener('arjs-video-initialized', () => {
+            addDebugMessage('Sistema de vídeo AR inicializado correctamente', 'success');
+        });
+        
+        document.addEventListener('camera-error', (ev) => {
+            addDebugMessage(`Error en la cámara: ${ev.detail.name}`, 'error');
+        });
+        
+        document.addEventListener('camera-init', (ev) => {
+            addDebugMessage('Cámara AR inicializada correctamente', 'success');
+        });
         
         // Configurar soporte offline
         setupOfflineSupport();
         
         // Mejorar accesibilidad
         enhanceAccessibility();
+        
+        // Tras la inicialización, mostrar un mensaje claro sobre qué hacer
+        setTimeout(() => {
+            addDebugMessage('✅ Sistema AR listo y funcionando', 'success');
+            addDebugMessage('👉 Muestra uno de los 3 marcadores a la cámara', 'info');
+        }, 6000);
         
     } catch (error) {
         addDebugMessage(`Error al iniciar AR: ${error.message}`, 'error');

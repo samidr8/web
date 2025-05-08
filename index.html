@@ -65,10 +65,14 @@
                  detectionMode: mono; 
                  matrixCodeType: 3x3; 
                  patternRatio: 0.75;
-                 maxDetectionRate: 30;"
+                 maxDetectionRate: 30;
+                 canvasWidth: 640; 
+                 canvasHeight: 480;
+                 trackingMethod: best;"
             loading-screen="enabled: false"
             vr-mode-ui="enabled: false"
             renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
+            stats="false"
         >
             <!-- Definición de assets para precargar -->
             <a-assets>
