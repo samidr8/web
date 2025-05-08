@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Experiencia AR Profesional</title>
+    <title>Experiencia AR NFT Profesional</title>
+    <!-- Se actualiza a AR.js con soporte para NFT tracking -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
         body {
             margin: 0;
@@ -243,6 +244,37 @@
             display: none;
         }
         
+        /* Indicador de cargando */
+        #loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            z-index: 9999;
+            border: 2px solid #00dbde;
+            text-align: center;
+        }
+        
+        .loader {
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid #00dbde;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 15px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 768px) {
             #welcome-screen h1 {
                 font-size: 1.8rem;
@@ -269,9 +301,15 @@
 <body>
     <!-- Pantalla de bienvenida -->
     <div id="welcome-screen">
-        <h1>Experiencia de Realidad Aumentada</h1>
-        <p>Para comenzar, haz clic en el botón "Iniciar AR" y permite el acceso a tu cámara. Luego apunta a los marcadores para ver el contenido.</p>
+        <h1>Experiencia de Realidad Aumentada NFT</h1>
+        <p>Para comenzar, haz clic en el botón "Iniciar AR" y permite el acceso a tu cámara. Luego apunta a las imágenes que deseas escanear para ver el contenido aumentado.</p>
         <button id="start-ar">Iniciar AR</button>
+    </div>
+    
+    <!-- Indicador de cargando -->
+    <div id="loading-indicator" style="display:none;">
+        <div class="loader"></div>
+        <div>Cargando recursos AR...</div>
     </div>
     
     <!-- Contenedor AR -->
@@ -281,28 +319,28 @@
         
         <div id="config-panel">
             <div class="config-option">
-                <label for="pattern-ratio">Ratio de detección:</label>
-                <input type="range" id="pattern-ratio" min="0.4" max="0.9" step="0.05" value="0.75">
-                <span id="ratio-value">0.75</span>
+                <label for="confidence-threshold">Umbral de confianza:</label>
+                <input type="range" id="confidence-threshold" min="40" max="90" step="5" value="60">
+                <span id="confidence-value">60</span>
             </div>
             <div class="config-option">
-                <label for="detection-mode">Modo de detección:</label>
-                <select id="detection-mode">
-                    <option value="mono" selected>mono</option>
-                    <option value="color">color</option>
-                    <option value="color_and_matrix">color_and_matrix</option>
+                <label for="smoothing-factor">Factor de suavizado:</label>
+                <input type="range" id="smoothing-factor" min="1" max="10" step="1" value="5">
+                <span id="smoothing-value">5</span>
+            </div>
+            <div class="config-option">
+                <label for="camera-resolution">Resolución de cámara:</label>
+                <select id="camera-resolution">
+                    <option value="high">Alta (HD)</option>
+                    <option value="medium" selected>Media</option>
+                    <option value="low">Baja (para dispositivos lentos)</option>
                 </select>
-            </div>
-            <div class="config-option">
-                <label for="threshold-value">Umbral:</label>
-                <input type="range" id="threshold-value" min="40" max="200" step="5" value="80">
-                <span id="threshold-display">80</span>
             </div>
             <button class="config-button" id="apply-config">Aplicar</button>
             <button class="config-button" id="reset-config">Reset</button>
         </div>
         
-        <div id="marker-indicator">Marcador detectado: <span id="marker-name">ninguno</span></div>
+        <div id="marker-indicator">Imagen detectada: <span id="marker-name">ninguna</span></div>
         
         <div id="debug-panel">
             <div id="debug-header">
@@ -310,20 +348,22 @@
                 <button id="toggle-debug">−</button>
             </div>
             <div id="debug-content">
-                <div class="debug-message debug-info">Sistema AR inicializando...</div>
+                <div class="debug-message debug-info">Sistema AR NFT inicializando...</div>
             </div>
         </div>
         
-        <!-- Escena AR optimizada -->
+        <!-- Escena AR NFT optimizada -->
         <a-scene 
             id="ar-scene"
             embedded 
+            stats="false"
             arjs="sourceType: webcam; 
                  debugUIEnabled: false; 
                  detectionMode: mono; 
-                 matrixCodeType: 3x3; 
-                 patternRatio: 0.75;
-                 maxDetectionRate: 30;"
+                 trackingMethod: best;
+                 smoothCount: 5;
+                 smoothTolerance: 0.01;
+                 smoothThreshold: 2;"
             loading-screen="enabled: false"
             vr-mode-ui="enabled: false"
             renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
@@ -335,9 +375,16 @@
                 <img id="math-image" src="media/matematicas.png" alt="Imagen matemáticas">
             </a-assets>
             
-            <!-- Marcador 1: Video -->
-            <a-marker id="marker1" type="pattern" url="markers/pattern-marker1.patt" 
-                     registerevents>
+            <!-- NFT Marker 1: Video -->
+            <a-nft
+                id="nft-marker1"
+                type="nft"
+                url="nft-markers/marker1"
+                smooth="true"
+                smoothCount="5"
+                smoothTolerance="0.01"
+                smoothThreshold="2"
+            >
                 <a-video 
                     id="animal-video-element"
                     src="#animal-video-asset" 
@@ -346,11 +393,18 @@
                     position="0 0 0" 
                     rotation="-90 0 0"
                 ></a-video>
-            </a-marker>
+            </a-nft>
             
-            <!-- Marcador 2: Modelo 3D (Volcán) -->
-            <a-marker id="marker2" type="pattern" url="markers/pattern-marker2.patt"
-                     registerevents>
+            <!-- NFT Marker 2: Modelo 3D (Volcán) -->
+            <a-nft
+                id="nft-marker2"
+                type="nft"
+                url="nft-markers/marker2"
+                smooth="true"
+                smoothCount="5"
+                smoothTolerance="0.01"
+                smoothThreshold="2"
+            >
                 <a-entity position="0 0.5 0" rotation="0 0 0" scale="0.05 0.05 0.05">
                     <a-entity 
                         gltf-model="#volcano-model"
@@ -358,11 +412,18 @@
                         shadow="cast: true; receive: false"
                     ></a-entity>
                 </a-entity>
-            </a-marker>
+            </a-nft>
             
-            <!-- Marcador 3: Imagen local -->
-            <a-marker id="marker3" type="pattern" url="markers/pattern-marker3.patt"
-                     registerevents>
+            <!-- NFT Marker 3: Imagen local -->
+            <a-nft
+                id="nft-marker3"
+                type="nft"
+                url="nft-markers/marker3"
+                smooth="true"
+                smoothCount="5"
+                smoothTolerance="0.01"
+                smoothThreshold="2"
+            >
                 <a-plane 
                     src="#math-image" 
                     width="1.6" 
@@ -370,7 +431,7 @@
                     position="0 0 0" 
                     rotation="-90 0 0"
                 ></a-plane>
-            </a-marker>
+            </a-nft>
             
             <!-- Usar una cámara con atributos específicos -->
             <a-entity camera></a-entity>
@@ -388,72 +449,82 @@
         const toggleDebug = document.getElementById('toggle-debug');
         const configButton = document.getElementById('config-button');
         const configPanel = document.getElementById('config-panel');
-        const patternRatioSlider = document.getElementById('pattern-ratio');
-        const ratioValue = document.getElementById('ratio-value');
-        const detectionModeSelect = document.getElementById('detection-mode');
-        const thresholdSlider = document.getElementById('threshold-value');
-        const thresholdDisplay = document.getElementById('threshold-display');
+        const confidenceThresholdSlider = document.getElementById('confidence-threshold');
+        const confidenceValue = document.getElementById('confidence-value');
+        const smoothingFactorSlider = document.getElementById('smoothing-factor');
+        const smoothingValue = document.getElementById('smoothing-value');
+        const cameraResolutionSelect = document.getElementById('camera-resolution');
         const applyConfigButton = document.getElementById('apply-config');
         const resetConfigButton = document.getElementById('reset-config');
         const markerIndicator = document.getElementById('marker-indicator');
         const markerName = document.getElementById('marker-name');
+        const loadingIndicator = document.getElementById('loading-indicator');
         
         // Estado y variables globales
         let debugIsMinimized = false;
         let videoElement = null;
-        let markerDetected = {
-            marker1: false,
-            marker2: false,
-            marker3: false
+        let nftDetected = {
+            'nft-marker1': false,
+            'nft-marker2': false,
+            'nft-marker3': false
         };
         
         // Asegurarse de que los valores iniciales son correctos
-        patternRatioSlider.value = 0.75;
-        ratioValue.textContent = '0.75';
-        thresholdSlider.value = 80;
-        thresholdDisplay.textContent = '80';
+        confidenceThresholdSlider.value = 60;
+        confidenceValue.textContent = '60';
+        smoothingFactorSlider.value = 5;
+        smoothingValue.textContent = '5';
         
-        // Componente personalizado de AFRAME para manejo de eventos de marcadores
-        if (!AFRAME.components.registerevents) {
-            AFRAME.registerComponent('registerevents', {
+        // Registrar componentes NFT personalizados para A-Frame
+        if (!AFRAME.components.nft) {
+            AFRAME.registerComponent('nft-events', {
                 init: function () {
-                    const marker = this.el;
-                    const markerId = marker.id;
+                    const entity = this.el;
+                    const markerId = entity.id;
                     
-                    // Eventos de marcador encontrado
-                    marker.addEventListener('markerFound', function() {
-                        markerDetected[markerId] = true;
-                        addDebugMessage(`Marcador detectado: ${markerId}`, 'success');
-                        
-                        // Actualizar indicador visual
-                        markerIndicator.style.display = 'block';
-                        markerName.textContent = markerId;
-                        
-                        // Comportamiento específico por marcador
-                        if (markerId === 'marker1') {
-                            handleMarker1Found();
-                        }
+                    // Registrar evento de seguimiento para NFT
+                    entity.addEventListener('markerFound', function() {
+                        handleMarkerFound(markerId);
                     });
                     
-                    // Eventos de marcador perdido
-                    marker.addEventListener('markerLost', function() {
-                        markerDetected[markerId] = false;
-                        addDebugMessage(`Marcador perdido: ${markerId}`, 'warning');
-                        
-                        // Actualizar indicador visual
-                        let anyMarkerVisible = Object.values(markerDetected).some(detected => detected);
-                        if (!anyMarkerVisible) {
-                            markerIndicator.style.display = 'none';
-                            markerName.textContent = 'ninguno';
-                        }
-                        
-                        // Comportamiento específico por marcador
-                        if (markerId === 'marker1') {
-                            handleMarker1Lost();
-                        }
+                    entity.addEventListener('markerLost', function() {
+                        handleMarkerLost(markerId);
                     });
                 }
             });
+        }
+        
+        // Función para manejar detección de NFT
+        function handleMarkerFound(markerId) {
+            nftDetected[markerId] = true;
+            addDebugMessage(`NFT detectado: ${markerId}`, 'success');
+            
+            // Actualizar indicador visual
+            markerIndicator.style.display = 'block';
+            markerName.textContent = markerId;
+            
+            // Comportamiento específico por marcador
+            if (markerId === 'nft-marker1') {
+                handleMarker1Found();
+            }
+        }
+        
+        // Función para manejar pérdida de NFT
+        function handleMarkerLost(markerId) {
+            nftDetected[markerId] = false;
+            addDebugMessage(`NFT perdido: ${markerId}`, 'warning');
+            
+            // Actualizar indicador visual
+            let anyMarkerVisible = Object.values(nftDetected).some(detected => detected);
+            if (!anyMarkerVisible) {
+                markerIndicator.style.display = 'none';
+                markerName.textContent = 'ninguna';
+            }
+            
+            // Comportamiento específico por marcador
+            if (markerId === 'nft-marker1') {
+                handleMarker1Lost();
+            }
         }
         
         // Función para manejar cuando se encuentra el marcador 1 (video)
@@ -507,66 +578,72 @@
             }
         }
         
-        // Función para obtener todos los parámetros de configuración AR.js
-        function getArJsParameters() {
+        // Función para obtener todos los parámetros de configuración AR.js NFT
+        function getNftParameters() {
             const scene = document.getElementById('ar-scene');
             if (!scene) return null;
             
-            // Obtener la configuración actual
-            const arjsSystem = scene.systems['arjs'];
-            if (!arjsSystem) return null;
-            
             return {
-                patternRatio: patternRatioSlider.value,
-                detectionMode: detectionModeSelect.value,
-                threshold: thresholdSlider.value
+                confidenceThreshold: confidenceThresholdSlider.value,
+                smoothingFactor: smoothingFactorSlider.value,
+                cameraResolution: cameraResolutionSelect.value
             };
         }
         
-        // Función para aplicar configuración AR.js
-        function applyArJsConfig(config) {
+        // Función para aplicar configuración AR.js para NFT
+        function applyNftConfig(config) {
             const scene = document.getElementById('ar-scene');
             if (!scene) {
                 addDebugMessage('Error: No se puede acceder a la escena AR', 'error');
                 return;
             }
             
-            // Construir string de configuración
-            let arjsConfigString = scene.getAttribute('arjs');
-            
-            // Actualizar patternRatio
-            if (arjsConfigString.includes('patternRatio:')) {
-                arjsConfigString = arjsConfigString.replace(/patternRatio: [0-9.]+/, `patternRatio: ${config.patternRatio}`);
-            } else {
-                arjsConfigString += `; patternRatio: ${config.patternRatio}`;
-            }
-            
-            // Actualizar detectionMode
-            if (arjsConfigString.includes('detectionMode:')) {
-                arjsConfigString = arjsConfigString.replace(/detectionMode: [a-zA-Z_]+/, `detectionMode: ${config.detectionMode}`);
-            } else {
-                arjsConfigString += `; detectionMode: ${config.detectionMode}`;
-            }
-            
-            // Aplicar configuración
-            scene.setAttribute('arjs', arjsConfigString);
-            
-            // Reiniciar arjs
             try {
-                const arSystem = scene.systems['arjs'];
-                if (arSystem && arSystem._arSource) {
-                    // Actualizar la configuración
-                    arSystem._arController.setPatternDetectionMode(config.detectionMode === 'mono' ? 0 : 1);
-                    arSystem._arController.setThresholdMode(0); // Auto
-                    arSystem._arController.setThreshold(parseInt(config.threshold)); // Usar valor del slider
-                    arSystem._arController.setPatternRatio(parseFloat(config.patternRatio));
-                    
-                    addDebugMessage(`Configuración actualizada: ratio=${config.patternRatio}, modo=${config.detectionMode}, umbral=${config.threshold}`, 'success');
+                // Actualizar atributos en la escena AR
+                const arjsSystem = scene.getAttribute('arjs');
+                let newArjsConfig = arjsSystem;
+                
+                // Actualizar smoothCount (factor de suavizado)
+                newArjsConfig = newArjsConfig.replace(/smoothCount: [0-9]+/, `smoothCount: ${config.smoothingFactor}`);
+                
+                // Actualizar confidenceThreshold
+                if (newArjsConfig.includes('confidence')) {
+                    newArjsConfig = newArjsConfig.replace(/confidence: [0-9.]+/, `confidence: ${config.confidenceThreshold / 100}`);
                 } else {
-                    addDebugMessage('No se pudo acceder al controlador AR para actualizar la configuración', 'warning');
+                    newArjsConfig += `; confidence: ${config.confidenceThreshold / 100}`;
                 }
+                
+                // Aplicar configuración a la escena
+                scene.setAttribute('arjs', newArjsConfig);
+                
+                // Actualizar configuración en cada marcador NFT
+                document.querySelectorAll('a-nft').forEach(nft => {
+                    nft.setAttribute('smoothCount', config.smoothingFactor);
+                    nft.setAttribute('smoothThreshold', Math.max(2, 11 - config.smoothingFactor)); // Inverso al smoothing
+                    // NFT no tiene un atributo directo de confianza, se maneja a nivel de escena
+                });
+                
+                // Actualizar resolución de cámara
+                let videoConstraints = {};
+                switch(config.cameraResolution) {
+                    case 'high':
+                        videoConstraints = { width: { ideal: 1280 }, height: { ideal: 720 } };
+                        break;
+                    case 'medium':
+                        videoConstraints = { width: { ideal: 640 }, height: { ideal: 480 } };
+                        break;
+                    case 'low':
+                        videoConstraints = { width: { ideal: 320 }, height: { ideal: 240 } };
+                        break;
+                }
+                
+                // No podemos cambiar la resolución en tiempo real, así que solo lo registramos
+                addDebugMessage(`Configuración actualizada: confianza=${config.confidenceThreshold}%, suavizado=${config.smoothingFactor}, cámara=${config.cameraResolution}`, 'success');
+                
+                return true;
             } catch (e) {
-                addDebugMessage(`Error al actualizar configuración AR: ${e.message}`, 'error');
+                addDebugMessage(`Error al actualizar configuración NFT: ${e.message}`, 'error');
+                return false;
             }
         }
         
@@ -606,55 +683,69 @@
             configPanel.style.display = configPanel.style.display === 'none' ? 'block' : 'none';
         });
         
-        // Actualizar valor mostrado del slider
-        patternRatioSlider.addEventListener('input', () => {
-            ratioValue.textContent = patternRatioSlider.value;
+        // Actualizar valor mostrado del slider de confianza
+        confidenceThresholdSlider.addEventListener('input', () => {
+            confidenceValue.textContent = confidenceThresholdSlider.value;
         });
         
-        // Actualizar valor mostrado del slider de umbral
-        thresholdSlider.addEventListener('input', () => {
-            thresholdDisplay.textContent = thresholdSlider.value;
+        // Actualizar valor mostrado del slider de suavizado
+        smoothingFactorSlider.addEventListener('input', () => {
+            smoothingValue.textContent = smoothingFactorSlider.value;
         });
         
         // Aplicar configuración
         applyConfigButton.addEventListener('click', () => {
             const config = {
-                patternRatio: patternRatioSlider.value,
-                detectionMode: detectionModeSelect.value,
-                threshold: thresholdSlider.value
+                confidenceThreshold: confidenceThresholdSlider.value,
+                smoothingFactor: smoothingFactorSlider.value,
+                cameraResolution: cameraResolutionSelect.value
             };
             
-            applyArJsConfig(config);
+            applyNftConfig(config);
             configPanel.style.display = 'none';
         });
         
         // Resetear configuración
         resetConfigButton.addEventListener('click', () => {
-            patternRatioSlider.value = 0.75;
-            ratioValue.textContent = '0.75';
-            detectionModeSelect.value = 'mono';
-            thresholdSlider.value = 80;
-            thresholdDisplay.textContent = '80';
+            confidenceThresholdSlider.value = 60;
+            confidenceValue.textContent = '60';
+            smoothingFactorSlider.value = 5;
+            smoothingValue.textContent = '5';
+            cameraResolutionSelect.value = 'medium';
             
             const config = {
-                patternRatio: 0.75,
-                detectionMode: 'mono',
-                threshold: 80
+                confidenceThreshold: 60,
+                smoothingFactor: 5,
+                cameraResolution: 'medium'
             };
             
-            applyArJsConfig(config);
+            applyNftConfig(config);
             addDebugMessage('Configuración restablecida a valores optimizados', 'info');
         });
+        
+        // Agregar atributos nft-events a todos los NFT
+        function setupNftEvents() {
+            document.querySelectorAll('a-nft').forEach(nft => {
+                if (!nft.hasAttribute('nft-events')) {
+                    nft.setAttribute('nft-events', '');
+                    addDebugMessage(`Registrados eventos para NFT: ${nft.id}`, 'info');
+                }
+            });
+        }
         
         // Evento para iniciar AR
         startArButton.addEventListener('click', async () => {
             try {
                 addDebugMessage('Verificando compatibilidad del dispositivo...', 'info');
                 
+                // Mostrar indicador de carga
+                loadingIndicator.style.display = 'block';
+                
                 // Verificar compatibilidad
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     addDebugMessage('Error: Dispositivo no compatible con acceso a cámara', 'error');
                     alert('Tu dispositivo no soporta acceso a la cámara o el navegador no es compatible.');
+                    loadingIndicator.style.display = 'none';
                     return;
                 }
                 
@@ -664,8 +755,8 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
-                        width: { ideal: 640 },  // Cambiado para coincidir con los parámetros de cámara
-                        height: { ideal: 480 }  // Cambiado para coincidir con los parámetros de cámara
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
                     },
                     audio: false
                 });
@@ -686,54 +777,60 @@
                     addDebugMessage('Video precargado correctamente', 'success');
                 }
                 
-                // Mostrar AR y ocultar pantalla de bienvenida
-                welcomeScreen.style.display = 'none';
-                arContainer.style.display = 'block';
+                // Preparar recursos NFT
+                addDebugMessage('Preparando recursos NFT...', 'info');
                 
-                // Inicializar video
-                if (videoElement) {
-                    // Preparar el video pero mantenerlo pausado
-                    videoElement.currentTime = 0;
-                    
-                    // Manejar eventos de video para depuración
-                    videoElement.addEventListener('play', () => {
-                        addDebugMessage('Evento: Video iniciado', 'info');
-                    });
-                    
-                    videoElement.addEventListener('pause', () => {
-                        addDebugMessage('Evento: Video pausado', 'info');
-                    });
-                    
-                    videoElement.addEventListener('error', (e) => {
-                        addDebugMessage(`Error de video: ${e.message || 'Error desconocido'}`, 'error');
-                    });
-                }
-                
-                // Verificar recursos
-                checkResources();
-                
-                // Agregar listener para el evento ARController ready
-                document.addEventListener('artoolkit-loaded', () => {
-                    addDebugMessage('ARToolkit cargado completamente', 'success');
+                // Registrar eventos de carga NFT
+                document.addEventListener('arjs-nft-loaded', (ev) => {
+                    addDebugMessage(`NFT descriptores cargados: ${ev.detail.name}`, 'success');
                 });
                 
+                // Iniciar la carga de los recursos NFT
+                setTimeout(() => {
+                    // Configurar eventos para NFT
+                    setupNftEvents();
+                    
+                    // Verificar recursos NFT
+                    checkNftResources();
+                    
+                    // Mostrar AR y ocultar pantalla de bienvenida
+                    welcomeScreen.style.display = 'none';
+                    arContainer.style.display = 'block';
+                    loadingIndicator.style.display = 'none';
+                    
+                    // Mostrar consejos de uso
+                    addDebugMessage('Sistema AR NFT listo - Apunta a las imágenes para ver el contenido AR', 'success');
+                    addDebugMessage('Consejos:', 'info');
+                    addDebugMessage('1. Mantén la imagen visible completamente en la cámara', 'info');
+                    addDebugMessage('2. Asegúrate de tener buena iluminación', 'info');
+                    addDebugMessage('3. Evita movimientos bruscos para mejor tracking', 'info');
+                }, 3000);
+                
             } catch (error) {
+                loadingIndicator.style.display = 'none';
                 addDebugMessage(`Error al acceder a la cámara: ${error.message}`, 'error');
                 console.error('Error:', error);
                 alert(`Error al acceder a la cámara: ${error.message}`);
             }
         });
         
-        // Función para verificar recursos
-        async function checkResources() {
+        // Función para verificar recursos NFT
+        async function checkNftResources() {
             try {
-                addDebugMessage('Verificando recursos AR...', 'info');
+                addDebugMessage('Verificando recursos NFT...', 'info');
                 
-                // Lista de recursos que debemos verificar
+                // Lista de recursos NFT que debemos verificar
+                // Para NFT necesitamos verificar los archivos descriptor (.fset), descriptores binarios (.fset3) e imágenes (.iset)
                 const resources = [
-                    { tipo: 'Marcador', ruta: 'markers/pattern-marker1.patt' },
-                    { tipo: 'Marcador', ruta: 'markers/pattern-marker2.patt' },
-                    { tipo: 'Marcador', ruta: 'markers/pattern-marker3.patt' },
+                    { tipo: 'NFT Descriptor', ruta: 'nft-markers/marker1.fset' },
+                    { tipo: 'NFT Descriptor Binario', ruta: 'nft-markers/marker1.fset3' },
+                    { tipo: 'NFT Imagen', ruta: 'nft-markers/marker1.iset' },
+                    { tipo: 'NFT Descriptor', ruta: 'nft-markers/marker2.fset' },
+                    { tipo: 'NFT Descriptor Binario', ruta: 'nft-markers/marker2.fset3' },
+                    { tipo: 'NFT Imagen', ruta: 'nft-markers/marker2.iset' },
+                    { tipo: 'NFT Descriptor', ruta: 'nft-markers/marker3.fset' },
+                    { tipo: 'NFT Descriptor Binario', ruta: 'nft-markers/marker3.fset3' },
+                    { tipo: 'NFT Imagen', ruta: 'nft-markers/marker3.iset' },
                     { tipo: 'Video', ruta: 'media/sonidos_animales.mp4' },
                     { tipo: 'Modelo 3D', ruta: 'media/volcano.glb' },
                     { tipo: 'Imagen', ruta: 'media/matematicas.png' }
@@ -757,65 +854,76 @@
                 }
                 
                 if (resourcesOk) {
-                    addDebugMessage('Todos los recursos verificados correctamente', 'success');
-                    // Tiempo para dejar que el sistema se inicialice completamente
-                    setTimeout(() => {
-                        addDebugMessage('Sistema AR listo - Apunta a los marcadores', 'success');
-                        // Llamar a función de verificación de marcadores
-                        checkMarkerValidity();
-                    }, 3000);
+                    addDebugMessage('Todos los recursos NFT verificados correctamente', 'success');
                 } else {
-                    addDebugMessage('Algunos recursos no están disponibles. La experiencia AR puede no funcionar correctamente.', 'warning');
+                    addDebugMessage('Algunos recursos NFT no están disponibles. La experiencia AR puede no funcionar correctamente.', 'warning');
+                    // Mostrar sugerencias de solución
+                    addDebugMessage('Sugerencias para resolver problemas de recursos:', 'info');
+                    addDebugMessage('1. Verifica que los archivos NFT estén en la carpeta correcta', 'info');
+                    addDebugMessage('2. Asegúrate de que los nombres de archivo no tengan errores', 'info');
+                    addDebugMessage('3. Comprueba que los archivos .fset, .fset3 y .iset existan para cada marcador', 'info');
                 }
                 
+                // Devolver el estado final
+                return resourcesOk;
             } catch (error) {
-                addDebugMessage(`Error al verificar recursos: ${error.message}`, 'error');
+                addDebugMessage(`Error al verificar recursos NFT: ${error.message}`, 'error');
+                return false;
             }
         }
         
-        // Función para verificar la calidad de los marcadores
-        function checkMarkerValidity() {
-            addDebugMessage('Verificando calidad de marcadores...', 'info');
+        // Función para optimizar la detección de NFT
+        function optimizeNftDetection() {
+            const scene = document.getElementById('ar-scene');
+            if (!scene) return;
             
-            // Verificar disponibilidad de marcadores
-            const markers = document.querySelectorAll('a-marker');
-            if (markers.length === 0) {
-                addDebugMessage('No se encontraron marcadores en la escena', 'error');
-                return;
-            }
-            
-            addDebugMessage(`Encontrados ${markers.length} marcadores en la escena`, 'success');
-            
-            // Intentar forzar una actualización de marcadores
-            setTimeout(() => {
-                const scene = document.getElementById('ar-scene');
-                if (scene && scene.systems['arjs']) {
-                    try {
-                        const arSystem = scene.systems['arjs'];
-                        if (arSystem && arSystem._arController) {
-                            // Forzar actualización de parámetros
-                            arSystem._arController.setThresholdMode(0);
-                            arSystem._arController.setThreshold(80);
-                            arSystem._arController.setPatternRatio(0.75);
-                            
-                            addDebugMessage('Parámetros de detección de marcadores optimizados', 'success');
-                            
-                            // Verificar configuración de procesamiento de imagen
-                            const processingMode = arSystem._arController.getProcessingMode();
-                            addDebugMessage(`Modo de procesamiento actual: ${processingMode}`, 'info');
-                            
-                            // Agregar mensajes de ayuda para mejorar la detección
-                            addDebugMessage('Consejos para mejor detección:', 'info');
-                            addDebugMessage('1. Asegúrate de tener buena iluminación', 'info');
-                            addDebugMessage('2. Evita reflejos en los marcadores', 'info');
-                            addDebugMessage('3. Mantén el marcador completamente visible', 'info');
-                            addDebugMessage('4. Distancia óptima: 20-50cm del marcador', 'info');
-                        }
-                    } catch (e) {
-                        addDebugMessage(`Error al optimizar marcadores: ${e.message}`, 'error');
-                    }
+            try {
+                // Obtener sistema AR.js
+                const arjsSystem = scene.systems['arjs'];
+                if (!arjsSystem) {
+                    addDebugMessage('No se puede acceder al sistema AR.js para optimizar', 'warning');
+                    return;
                 }
-            }, 5000);
+                
+                // Aplicar configuración optimizada
+                const config = {
+                    confidenceThreshold: 60,
+                    smoothingFactor: 5,
+                    cameraResolution: 'medium'
+                };
+                
+                applyNftConfig(config);
+                
+                // Identificar dispositivo para posibles optimizaciones específicas
+                const deviceInfo = {
+                    userAgent: navigator.userAgent,
+                    memory: navigator.deviceMemory || 'desconocido',
+                    platform: navigator.platform,
+                    screenResolution: `${window.screen.width}x${window.screen.height}`
+                };
+                
+                // Detectar dispositivos de gama baja
+                const isLowEndDevice = deviceInfo.memory && deviceInfo.memory <= 2;
+                if (isLowEndDevice) {
+                    addDebugMessage('Dispositivo de recursos limitados detectado, aplicando optimizaciones adicionales', 'info');
+                    // Aplicar configuración para dispositivos de recursos limitados
+                    confidenceThresholdSlider.value = 50; // Menor umbral para mayor tolerancia
+                    confidenceValue.textContent = '50';
+                    smoothingFactorSlider.value = 3; // Menos suavizado para reducir carga de procesamiento
+                    smoothingValue.textContent = '3';
+                    cameraResolutionSelect.value = 'low';
+                    
+                    applyNftConfig({
+                        confidenceThreshold: 50,
+                        smoothingFactor: 3,
+                        cameraResolution: 'low'
+                    });
+                }
+                
+                addDebugMessage('Parámetros de detección NFT optimizados', 'success');
+            } catch (e) {
+                addDebugMessage(`Error al optimizar detección NFT: ${e.message}`, 'error');
+            }
         }
         
         // Evento para volver atrás
@@ -843,11 +951,11 @@
                 addDebugMessage(`Error al detener AR: ${e.message}`, 'error');
             }
             
-            // Restablecer indicadores de detección de marcadores
-            markerDetected = {
-                marker1: false,
-                marker2: false,
-                marker3: false
+            // Restablecer indicadores de detección de NFT
+            nftDetected = {
+                'nft-marker1': false,
+                'nft-marker2': false,
+                'nft-marker3': false
             };
             
             // Ocultar indicador de marcador
@@ -859,7 +967,7 @@
             configPanel.style.display = 'none'; // Ocultar panel de configuración
             
             // Reiniciar panel de depuración
-            debugContent.innerHTML = '<div class="debug-message debug-info">Sistema AR inicializando...</div>';
+            debugContent.innerHTML = '<div class="debug-message debug-info">Sistema AR NFT inicializando...</div>';
             if (debugIsMinimized) {
                 debugContent.style.display = 'block';
                 toggleDebug.textContent = '−';
@@ -867,31 +975,33 @@
             }
         });
         
-        // Función para mejorar manualmente la detección de marcadores
-        function forceMarkerDetectionUpdate() {
-            const scene = document.getElementById('ar-scene');
-            if (!scene || !scene.systems['arjs']) return;
-            
+        // Función para mejorar manualmente la detección de NFT
+        function forceNftDetectionUpdate() {
             try {
-                const arSystem = scene.systems['arjs'];
-                if (arSystem && arSystem._arController) {
-                    // Configurar parámetros óptimos
-                    const config = {
-                        patternRatio: parseFloat(patternRatioSlider.value),
-                        detectionMode: detectionModeSelect.value,
-                        threshold: parseInt(thresholdSlider.value)
-                    };
-                    
-                    // Aplicar configuración optimizada
-                    arSystem._arController.setPatternDetectionMode(config.detectionMode === 'mono' ? 0 : 1);
-                    arSystem._arController.setThresholdMode(0); // Auto
-                    arSystem._arController.setThreshold(config.threshold);
-                    arSystem._arController.setPatternRatio(config.patternRatio);
-                    
-                    addDebugMessage('Forzada actualización de parámetros de detección', 'success');
-                }
+                // Obtener configuración actual
+                const config = {
+                    confidenceThreshold: confidenceThresholdSlider.value,
+                    smoothingFactor: smoothingFactorSlider.value,
+                    cameraResolution: cameraResolutionSelect.value
+                };
+                
+                // Aplicar con un valor temporal más bajo para aumentar sensibilidad
+                const tempConfig = {
+                    confidenceThreshold: Math.max(40, config.confidenceThreshold - 10),
+                    smoothingFactor: config.smoothingFactor,
+                    cameraResolution: config.cameraResolution
+                };
+                
+                applyNftConfig(tempConfig);
+                
+                // Volver a la configuración normal después de un breve periodo
+                setTimeout(() => {
+                    applyNftConfig(config);
+                }, 3000);
+                
+                addDebugMessage('Forzada actualización de parámetros de detección NFT', 'success');
             } catch (e) {
-                addDebugMessage(`Error al forzar actualización: ${e.message}`, 'error');
+                addDebugMessage(`Error al forzar actualización NFT: ${e.message}`, 'error');
             }
         }
         
@@ -908,7 +1018,7 @@
         forceUpdateButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
         forceUpdateButton.style.borderRadius = '5px';
         forceUpdateButton.style.color = 'white';
-        forceUpdateButton.addEventListener('click', forceMarkerDetectionUpdate);
+        forceUpdateButton.addEventListener('click', forceNftDetectionUpdate);
         arContainer.appendChild(forceUpdateButton);
         
         // Prevenir comportamientos no deseados en dispositivos táctiles
@@ -926,16 +1036,11 @@
         });
         
         // Mostrar mensaje inicial
-        addDebugMessage('Aplicación AR lista. Haga clic en "Iniciar AR" para comenzar.', 'info');
+        addDebugMessage('Aplicación AR NFT lista. Haga clic en "Iniciar AR" para comenzar.', 'info');
         
         // Configurar manejo de errores global
         window.addEventListener('error', (event) => {
             addDebugMessage(`Error global: ${event.message}`, 'error');
-        });
-        
-        // Agregar función para manejar problemas de inicialización AR.js
-        window.addEventListener('artoolkitNFTCreated', function(ev) {
-            addDebugMessage('ARToolkit NFT inicializado correctamente', 'success');
         });
         
         // Detectar cambios de orientación para actualizar la vista
@@ -944,10 +1049,100 @@
             
             // Dar tiempo a que la pantalla se ajuste
             setTimeout(() => {
-                // Intentar forzar reinicio o actualización de AR.js
-                forceMarkerDetectionUpdate();
+                // Intentar forzar reinicio o actualización de NFT
+                forceNftDetectionUpdate();
             }, 1000);
         });
+        
+        // Agregar un listener para eventos de NFT específicos de AR.js
+        document.addEventListener('artoolkitNFTCreated', function(ev) {
+            addDebugMessage('ARToolkit NFT inicializado correctamente', 'success');
+            optimizeNftDetection();
+        });
+        
+        // Función para generar instrucciones sobre cómo crear archivos NFT
+        function showNftCreationInstructions() {
+            const instructions = `
+Para crear archivos NFT para AR.js, necesitas usar la herramienta "NFT Marker Creator":
+
+1. Visita: https://carnaux.github.io/NFT-Marker-Creator/
+2. Sube una imagen alta calidad (idealmente con buen contraste y detalles)
+3. La herramienta generará los archivos .fset, .fset3 y .iset
+4. Coloca estos archivos en la carpeta "nft-markers" de tu proyecto
+5. Asegúrate de que los archivos se nombren correctamente (marker1, marker2, etc.)
+
+Alternativamente, puedes usar la línea de comandos:
+https://github.com/Carnaux/NFT-Marker-Creator
+
+Características de una buena imagen para NFT:
+- Alta resolución (mínimo 300dpi)
+- Alto contraste
+- Muchas características/detalles distintos
+- Sin patrones repetitivos
+- Formato cuadrado o rectangular
+`;
+            
+            alert(instructions);
+            addDebugMessage('Se mostraron instrucciones para crear marcadores NFT', 'info');
+        }
+        
+        // Agregar botón para mostrar instrucciones NFT
+        const nftHelpButton = document.createElement('button');
+        nftHelpButton.textContent = '❓ Ayuda NFT';
+        nftHelpButton.className = 'config-button';
+        nftHelpButton.style.position = 'fixed';
+        nftHelpButton.style.top = '15px';
+        nftHelpButton.style.left = '120px';
+        nftHelpButton.style.zIndex = '9999';
+        nftHelpButton.style.padding = '12px 20px';
+        nftHelpButton.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+        nftHelpButton.style.border = '2px solid #00dbde';
+        nftHelpButton.style.borderRadius = '5px';
+        nftHelpButton.style.color = 'white';
+        nftHelpButton.addEventListener('click', showNftCreationInstructions);
+        arContainer.appendChild(nftHelpButton);
+        
+        // Verificar compatibilidad de hardware
+        function checkHardwareCapabilities() {
+            addDebugMessage('Verificando capacidades del dispositivo...', 'info');
+            
+            // Verificar acelerómetro y giroscopio (importante para AR)
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', function(event) {
+                    if (event.rotationRate.alpha || event.rotationRate.beta || event.rotationRate.gamma) {
+                        addDebugMessage('Giroscopio detectado - Óptimo para AR', 'success');
+                    } else {
+                        addDebugMessage('Advertencia: Giroscopio limitado o no disponible', 'warning');
+                    }
+                    // Solo verificar una vez
+                    window.removeEventListener('devicemotion', this);
+                }, { once: true });
+            } else {
+                addDebugMessage('Advertencia: DeviceMotion no soportado', 'warning');
+            }
+            
+            // Verificar GL/WebGL para renderizado 3D
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                
+                if (gl) {
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    let renderer = 'desconocido';
+                    if (debugInfo) {
+                        renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    }
+                    addDebugMessage(`WebGL disponible: ${renderer}`, 'success');
+                } else {
+                    addDebugMessage('WebGL no soportado - La experiencia AR puede ser limitada', 'error');
+                }
+            } catch (e) {
+                addDebugMessage(`Error al verificar WebGL: ${e.message}`, 'error');
+            }
+        }
+        
+        // Ejecutar verificación de hardware al cargar
+        window.addEventListener('load', checkHardwareCapabilities);
     </script>
 </body>
 </html>
