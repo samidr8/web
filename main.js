@@ -1,3 +1,40 @@
+// Configuración mejorada para compatibilidad con cámaras móviles
+function setupMobileCameraSupport() {
+    // Reemplazar la solicitud de cámara original
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+        
+        navigator.mediaDevices.getUserMedia = function(constraints) {
+            // Si es una solicitud de video, modificar las restricciones para mayor compatibilidad
+            if (constraints && constraints.video) {
+                // Crear copia para no modificar el objeto original
+                const newConstraints = JSON.parse(JSON.stringify(constraints));
+                
+                // Simplificar las restricciones de video para máxima compatibilidad
+                if (typeof newConstraints.video === 'object') {
+                    // Configuración básica sin resoluciones específicas
+                    newConstraints.video = {
+                        facingMode: 'environment', // Usar cámara trasera
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    };
+                }
+                
+                console.log("Utilizando configuración de cámara simplificada para mayor compatibilidad");
+                return originalGetUserMedia(newConstraints);
+            }
+            
+            // Para solicitudes que no sean de video, usar comportamiento normal
+            return originalGetUserMedia(constraints);
+        };
+        
+        console.log("Soporte para cámara móvil mejorado instalado");
+    }
+}
+
+// Llamar al inicio
+setupMobileCameraSupport();
+
 // Elementos de la interfaz
 const welcomeScreen = document.getElementById('welcome-screen');
 const arContainer = document.getElementById('ar-container');
