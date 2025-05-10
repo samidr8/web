@@ -45,7 +45,7 @@
         }
 
         .debug-info.minimized {
-            height: 20px; /* CORREGIDO: Se eliminó la "A" extra */
+            height: 20px;
             overflow: hidden;
         }
 
@@ -54,7 +54,7 @@
             justify-content: space-between;
             cursor: pointer;
             font-weight: bold;
-            margin-bottom: 5px; /* Añadido para mejorar la apariencia */
+            margin-bottom: 5px;
         }
 
         /* Iframe para contenido web (formularios, GeoGebra, etc.) */
@@ -73,26 +73,38 @@
             display: none;
         }
 
-        /* CORREGIDO: Mejorado el botón de cierre para que sea más visible */
-        .close-button {
+        /* Contenedor de botones para controles de iframe */
+        .iframe-controls {
             position: absolute;
             top: -20px;
             right: -20px;
-            background-color: red;
-            color: white;
-            border: 3px solid white; /* Añadido borde blanco para mayor visibilidad */
-            border-radius: 50%;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Botón de cierre y pantalla completa */
+        .control-button {
             width: 40px;
             height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            color: white;
             font-size: 20px;
+            font-weight: bold;
             cursor: pointer;
-            display: none;
-            z-index: 1001;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Añadida sombra para destacar */
-            font-weight: bold; /* Texto más grueso */
-            display: flex; /* Para centrar el contenido */
+            display: flex;
             justify-content: center;
             align-items: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+        }
+
+        .close-button {
+            background-color: red;
+        }
+
+        .fullscreen-button {
+            background-color: #0066ff;
         }
 
         /* Contenedor de video */
@@ -105,9 +117,9 @@
             max-width: 640px;
             z-index: 1000;
             display: none;
-            background-color: black; /* Fondo para el video */
+            background-color: black;
             border-radius: 10px;
-            overflow: hidden; /* Para mantener las esquinas redondeadas */
+            overflow: hidden;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
@@ -116,7 +128,7 @@
             width: 100%;
             height: 100%;
             border: none;
-            display: block; /* Asegura que no haya espacios extra */
+            display: block;
         }
 
         /* Estilo para el título de contenido */
@@ -162,13 +174,21 @@
     <div id="content-title"></div>
 
     <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
-    <iframe id="web-content" class="web-content" allowfullscreen></iframe>
-    <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
+    <div class="web-content-wrapper">
+        <iframe id="web-content" class="web-content" allowfullscreen></iframe>
+        <div class="iframe-controls">
+            <button class="control-button fullscreen-button" onclick="toggleFullscreen()">⛶</button>
+            <button class="control-button close-button" onclick="closeWebContent()">✕</button>
+        </div>
+    </div>
 
     <!-- Contenedor para videos -->
     <div id="video-container" class="video-container">
         <div id="video-wrapper"></div>
-        <button class="close-button" onclick="closeVideo()">✕</button>
+        <div class="iframe-controls">
+            <button class="control-button fullscreen-button" onclick="toggleVideoFullscreen()">⛶</button>
+            <button class="control-button close-button" onclick="closeVideo()">✕</button>
+        </div>
     </div>
 
     <!-- Escena A-Frame con configuración NFT optimizada -->
@@ -220,18 +240,18 @@
                 url: "https://samidr8.github.io/web/markers/geogebra",
                 type: "iframe",
                 content: {
-                    url: "https://www.geogebra.org/m/DCDmYQ8z",
-                    title: "Applet de GeoGebra"
+                    url: "https://www.geogebra.org/material/iframe/id/DCDmYQ8z", // URL modificada para visualización limpia
+                    title: "Applet de GeoGebra",
+                    isGeoGebra: true
                 }
             }
             // Puedes agregar más marcadores aquí siguiendo el mismo formato
-            //https://carnaux.github.io/NFT-Marker-Creator/#/
         ];
 
         let debugMinimized = false;
         let currentMarkerId = null;
 
-        // CORREGIDO: Función para el panel de depuración
+        // Función para el panel de depuración
         function toggleDebugPanel() {
             const debugPanel = document.querySelector('.debug-info');
             const toggleBtn = document.querySelector('.toggle-btn');
@@ -255,14 +275,70 @@
             console.log(`[${timestamp}] ${message}`);
         }
 
-        // Función para mostrar contenido web (iframe)
-        function showWebContent(url) {
+        // Función para activar/desactivar pantalla completa para iframe
+        function toggleFullscreen() {
             const iframe = document.getElementById('web-content');
-            const closeButton = document.getElementById('close-button');
+            
+            if (!document.fullscreenElement) {
+                if (iframe.requestFullscreen) {
+                    iframe.requestFullscreen();
+                } else if (iframe.webkitRequestFullscreen) { /* Safari */
+                    iframe.webkitRequestFullscreen();
+                } else if (iframe.msRequestFullscreen) { /* IE11 */
+                    iframe.msRequestFullscreen();
+                }
+                log('Iframe en pantalla completa');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
+                log('Saliendo de pantalla completa');
+            }
+        }
+
+        // Función para activar/desactivar pantalla completa para video
+        function toggleVideoFullscreen() {
+            const videoContainer = document.getElementById('video-container');
+            const videoElement = videoContainer.querySelector('iframe') || videoContainer.querySelector('video');
+            
+            if (!document.fullscreenElement) {
+                if (videoElement.requestFullscreen) {
+                    videoElement.requestFullscreen();
+                } else if (videoElement.webkitRequestFullscreen) {
+                    videoElement.webkitRequestFullscreen();
+                } else if (videoElement.msRequestFullscreen) {
+                    videoElement.msRequestFullscreen();
+                }
+                log('Video en pantalla completa');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                log('Saliendo de pantalla completa');
+            }
+        }
+
+        // Función para mostrar contenido web (iframe)
+        function showWebContent(url, isGeoGebra = false) {
+            const iframe = document.getElementById('web-content');
+            const controls = document.querySelector('.web-content-wrapper .iframe-controls');
+            
+            // Si es GeoGebra, usar la URL para visualización limpia
+            if (isGeoGebra) {
+                log(`Mostrando GeoGebra en modo limpio: ${url}`);
+            }
             
             iframe.src = url;
             iframe.style.display = 'block';
-            closeButton.style.display = 'flex';
+            controls.style.display = 'flex';
             
             log(`Mostrando contenido web: ${url}`);
         }
@@ -270,20 +346,20 @@
         // Función para cerrar contenido web
         function closeWebContent() {
             const iframe = document.getElementById('web-content');
-            const closeButton = document.getElementById('close-button');
+            const controls = document.querySelector('.web-content-wrapper .iframe-controls');
             
             iframe.src = '';
             iframe.style.display = 'none';
-            closeButton.style.display = 'none';
+            controls.style.display = 'none';
             
             log('Contenido web cerrado');
         }
 
-        // CORREGIDO: Función para mostrar video (ahora maneja correctamente videos de YouTube)
+        // Función para mostrar video
         function showVideo(url) {
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
-            const closeButton = videoContainer.querySelector('.close-button');
+            const controls = document.querySelector('#video-container .iframe-controls');
             
             // Limpiar el contenedor
             videoWrapper.innerHTML = '';
@@ -330,21 +406,21 @@
                 };
             }
             
-            // Mostrar el contenedor y el botón de cierre
+            // Mostrar el contenedor y los controles
             videoContainer.style.display = 'block';
-            closeButton.style.display = 'flex';
+            controls.style.display = 'flex';
         }
 
         // Función para cerrar video
         function closeVideo() {
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
-            const closeButton = videoContainer.querySelector('.close-button');
+            const controls = document.querySelector('#video-container .iframe-controls');
             
             // Limpiar el contenedor
             videoWrapper.innerHTML = '';
             videoContainer.style.display = 'none';
-            closeButton.style.display = 'none';
+            controls.style.display = 'none';
             
             log('Video cerrado');
         }
@@ -387,7 +463,7 @@
                     break;
                     
                 case "iframe":
-                    showWebContent(marker.content.url);
+                    showWebContent(marker.content.url, marker.content.isGeoGebra);
                     break;
                     
                 default:
