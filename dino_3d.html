@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR.js NFT</title>
+    <title>Libro Interactivo AR</title>
     <!-- Bibliotecas actualizadas -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    
+
     <style>
         .arjs-loader {
             height: 100%;
@@ -21,13 +22,13 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         .arjs-loader div {
             text-align: center;
             font-size: 1.25em;
             color: white;
         }
-        
+
         .debug-info {
             position: fixed;
             bottom: 10px;
@@ -40,41 +41,71 @@
             max-width: 80%;
             max-height: 30%;
             overflow-y: auto;
-            transition: height 0.3s ease, background-color 0.3s ease;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            touch-action: none; /* Evita el scroll para permitir arrastrar */
+            transition: height 0.3s ease;
         }
-        
+
         .debug-info.minimized {
-            height: 20px;
+            height: A20px;
             overflow: hidden;
         }
-        
-        .debug-info.dragging {
-            background-color: rgba(50, 50, 80, 0.8);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-        
+
         .debug-header {
             display: flex;
             justify-content: space-between;
-            cursor: move; /* Indicador visual de que es arrastrable */
-            font-weight: bold;
-            padding-bottom: 5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            user-select: none; /* Evita selección de texto al arrastrar */
-        }
-        
-        .debug-content {
-            padding-top: 5px;
-            font-size: 0.9em;
-        }
-        
-        .toggle-btn {
             cursor: pointer;
+            font-weight: bold;
         }
-        
+
+        /* Iframe para contenido web (formularios, GeoGebra, etc.) */
+        .web-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-color: white;
+            z-index: 1000;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .close-button {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+            z-index: 1001;
+        }
+
+        /* Contenedor de video */
+        .video-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 640px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .video-container video {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
         /* Evitar zoom en mobile */
         body {
             touch-action: manipulation;
@@ -85,79 +116,98 @@
 <body style="margin: 0; overflow: hidden;">
     <!-- Loader -->
     <div class="arjs-loader">
-        <div>Cargando NFT, por favor espere...</div>
+        <div>Cargando, por favor espere...</div>
     </div>
-    
-    <!-- Panel de depuración mejorado -->
-    <div id="debug-panel" class="debug-info">
-        <div id="debug-header" class="debug-header">
+
+    <!-- Panel de depuración -->
+    <div class="debug-info">
+        <div class="debug-header" onclick="toggleDebugPanel()">
             <span>Información de depuración</span>
-            <span class="toggle-btn" onclick="toggleDebugPanel(event)">[-]</span>
+            <span class="toggle-btn">[-]</span>
         </div>
         <div class="debug-content">Iniciando...</div>
     </div>
-    
+
     <!-- Botón de bloqueo -->
-    <button id="lock-button" style="position: fixed; bottom: 10px; right: 10px; padding: 10px; background-color: rgba(0, 0, 0, 0.7); color: white; border: none; border-radius: 5px; z-index: 1000;">
+    <button id="lock-button"
+        style="position: fixed; bottom: 10px; right: 10px; padding: 10px; background-color: rgba(0, 0, 0, 0.7); color: white; border: none; border-radius: 5px; z-index: 1000;">
         🔒 Bloquear modelo
     </button>
-    
+
+    <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
+    <iframe id="web-content" class="web-content" allowfullscreen></iframe>
+    <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
+
+    <!-- Contenedor para videos -->
+    <div id="video-container" class="video-container">
+        <video id="ar-video" controls></video>
+        <button class="close-button" onclick="closeVideo()">✕</button>
+    </div>
+
     <!-- Escena A-Frame con configuración NFT optimizada -->
-    <a-scene
-        vr-mode-ui="enabled: false;"
-        renderer="logarithmicDepthBuffer: true; antialias: true;"
-        embedded
+    <a-scene vr-mode-ui="enabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;" embedded
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
-        
-        <!-- Configuración NFT con parámetros optimizados -->
-        <a-nft
-            type="nft"
-            url="https://samidr8.github.io/web/markers/dinosaurio"
-            smooth="true"
-            smoothCount="10"
-            smoothTolerance="0.01"
-            smoothThreshold="5"
-            raycaster="objects: .clickable"
-            emitevents="true"
-            cursor="fuse: false; rayOrigin: mouse;">
-            
-            <!-- Modelo 3D -->
-            <a-entity 
-                id="model-root" 
-                position="50 0 -150">
-                <a-entity 
-                    id="volcano-model"
-                    gltf-model="https://samidr8.github.io/web/media/volcano.glb"
-                    scale="500 500 500"
-                    position="0 0 0" 
-                    rotation="0 0 0">
-                </a-entity>
-            </a-entity>
-        </a-nft>
-        
+
+        <!-- Los marcadores NFT se agregarán dinámicamente aquí -->
+        <a-entity id="nft-markers-container"></a-entity>
+
         <!-- Cámara -->
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
+        // Configuración de marcadores y sus contenidos
+        const markers = [
+            {
+                id: "dinosaurio",
+                url: "https://samidr8.github.io/web/markers/dinosaurio",
+                type: "3d-model",
+                content: {
+                    url: "https://samidr8.github.io/web/media/volcano.glb",
+                    scale: "500 500 500",
+                    position: "50 0 -150",
+                    rotation: "0 0 0"
+                }
+            },
+            {
+                id: "video-marker",
+                url: "https://samidr8.github.io/web/markers/zenon",
+                type: "video",
+                content: {
+                    url: "https://www.youtube.com/watch?v=7B0Z_JaEGlU"
+                }
+            },
+            {
+                id: "formulario-marker",
+                url: "https://samidr8.github.io/web/markers/formulario",
+                type: "iframe",
+                content: {
+                    url: "https://forms.office.com/r/FLjQhrUKby"
+                }
+            },
+            {
+                id: "geogebra-marker",
+                url: "https://samidr8.github.io/web/markers/geogebra",
+                type: "iframe",
+                content: {
+                    url: "https://www.geogebra.org/m/DCDmYQ8z"
+                }
+            }
+            // Puedes agregar más marcadores aquí siguiendo el mismo formato
+            //https://carnaux.github.io/NFT-Marker-Creator/#/
+        ];
+
         let debugMinimized = false;
         let modelLocked = false;
         let lastValidPosition = { x: 50, y: 0, z: -150 };
-        let isDragging = false;
-        let touchStartY = 0;
-        let initialY = 0;
-        
+        let currentMarkerId = null;
+
         // Función para el panel de depuración
-        function toggleDebugPanel(event) {
-            // Detener la propagación para evitar conflictos con el dragging
-            if (event) {
-                event.stopPropagation();
-            }
-            
-            const debugPanel = document.getElementById('debug-panel');
+        function toggleDebugPanel() {
+            const debugPanel = document.querySelector('.debug-info');
             const toggleBtn = document.querySelector('.toggle-btn');
             debugMinimized = !debugMinimized;
-            
+
             if (debugMinimized) {
                 debugPanel.classList.add('minimized');
                 toggleBtn.textContent = '[+]';
@@ -166,7 +216,7 @@
                 toggleBtn.textContent = '[-]';
             }
         }
-        
+
         // Función para escribir en el panel
         function log(message) {
             const debugContent = document.querySelector('.debug-content');
@@ -175,24 +225,24 @@
             debugContent.scrollTop = debugContent.scrollHeight;
             console.log(`[${timestamp}] ${message}`);
         }
-        
+
         // Función para bloquear/desbloquear modelo
         function toggleModelLock() {
             modelLocked = !modelLocked;
             const lockButton = document.getElementById('lock-button');
-            
+
             if (modelLocked) {
                 lockButton.textContent = "🔓 Desbloquear modelo";
                 log("Modelo bloqueado en posición actual");
-                
+
                 // Guardar la posición actual
-                const modelRoot = document.querySelector('#model-root');
+                const modelRoot = document.querySelector(`#model-root-${currentMarkerId}`);
                 if (modelRoot) {
                     const currentPosition = modelRoot.getAttribute('position');
-                    lastValidPosition = { 
-                        x: currentPosition.x, 
-                        y: currentPosition.y, 
-                        z: currentPosition.z 
+                    lastValidPosition = {
+                        x: currentPosition.x,
+                        y: currentPosition.y,
+                        z: currentPosition.z
                     };
                 }
             } else {
@@ -200,145 +250,235 @@
                 log("Modelo desbloqueado - seguirá el marcador");
             }
         }
-        
-        // Funciones para el arrastre del panel de depuración
-        function initDraggablePanel() {
-            const debugPanel = document.getElementById('debug-panel');
-            const debugHeader = document.getElementById('debug-header');
-            
-            // Touch events para móviles
-            debugHeader.addEventListener('touchstart', startDragging);
-            document.addEventListener('touchmove', dragPanel);
-            document.addEventListener('touchend', stopDragging);
-            
-            // Mouse events para desktop (opcional)
-            debugHeader.addEventListener('mousedown', startDragging);
-            document.addEventListener('mousemove', dragPanel);
-            document.addEventListener('mouseup', stopDragging);
+
+        // Función para mostrar contenido web (iframe)
+        function showWebContent(url) {
+            const iframe = document.getElementById('web-content');
+            const closeButton = document.getElementById('close-button');
+
+            iframe.src = url;
+            iframe.style.display = 'block';
+            closeButton.style.display = 'block';
+
+            log(`Mostrando contenido web: ${url}`);
         }
-        
-        function startDragging(e) {
-            // No iniciar arrastre si se hace clic en el botón de minimizar
-            if (e.target.classList.contains('toggle-btn')) {
-                return;
+
+        // Función para cerrar contenido web
+        function closeWebContent() {
+            const iframe = document.getElementById('web-content');
+            const closeButton = document.getElementById('close-button');
+
+            iframe.src = '';
+            iframe.style.display = 'none';
+            closeButton.style.display = 'none';
+
+            log('Contenido web cerrado');
+        }
+
+        // Función para mostrar video
+        function showVideo(url) {
+            const videoContainer = document.getElementById('video-container');
+            const video = document.getElementById('ar-video');
+
+            video.src = url;
+            videoContainer.style.display = 'block';
+
+            log(`Reproduciendo video: ${url}`);
+        }
+
+        // Función para cerrar video
+        function closeVideo() {
+            const videoContainer = document.getElementById('video-container');
+            const video = document.getElementById('ar-video');
+
+            video.pause();
+            video.src = '';
+            videoContainer.style.display = 'none';
+
+            log('Video cerrado');
+        }
+
+        // Función para activar contenido basado en el tipo de marcador
+        // Función mejorada para activar contenido basado en el tipo de marcador
+        function activateMarkerContent(marker) {
+            currentMarkerId = marker.id;
+            log(`Activando contenido para marcador: ${marker.id}`);
+
+            // Ocultar todo el contenido primero
+            hideAllContent();
+
+            // Mostrar título del contenido si existe
+            if (marker.content.title) {
+                showContentTitle(marker.content.title);
             }
-            
-            isDragging = true;
-            const debugPanel = document.getElementById('debug-panel');
-            debugPanel.classList.add('dragging');
-            
-            // Capturar la posición inicial
-            if (e.type === 'touchstart') {
-                touchStartY = e.touches[0].clientY;
-            } else {
-                touchStartY = e.clientY;
+
+            // Activar el contenido apropiado según el tipo
+            switch (marker.type) {
+                case "3d-model":
+                    // Los modelos 3D ya están en la escena, solo necesitamos asegurarnos de que sean visibles
+                    const modelEntity = document.querySelector(`#model-root-${marker.id}`);
+                    if (modelEntity) {
+                        modelEntity.setAttribute('visible', true);
+
+                        // Mostrar el botón de bloqueo solo para modelos 3D
+                        document.getElementById('lock-button').style.display = 'block';
+                    }
+                    break;
+
+                case "video":
+                    showVideo(marker.content.url);
+                    // Ocultar botón de bloqueo para videos
+                    document.getElementById('lock-button').style.display = 'none';
+                    break;
+
+                case "iframe":
+                    showWebContent(marker.content.url);
+                    // Ocultar botón de bloqueo para iframes
+                    document.getElementById('lock-button').style.display = 'none';
+                    break;
+
+                default:
+                    log(`Tipo de contenido desconocido: ${marker.type}`);
             }
-            
-            // Obtener la posición actual del panel
-            const style = window.getComputedStyle(debugPanel);
-            initialY = parseInt(style.bottom, 10);
         }
-        
-        function dragPanel(e) {
-            if (!isDragging) return;
-            
-            // Prevenir comportamiento por defecto para evitar scroll
-            e.preventDefault();
-            
-            const debugPanel = document.getElementById('debug-panel');
-            let currentY;
-            
-            if (e.type === 'touchmove') {
-                currentY = e.touches[0].clientY;
-            } else {
-                currentY = e.clientY;
+
+        // Función para mostrar el título del contenido
+        function showContentTitle(title) {
+            // Crear elemento de título si no existe
+            let titleEl = document.getElementById('content-title');
+            if (!titleEl) {
+                titleEl = document.createElement('div');
+                titleEl.id = 'content-title';
+                titleEl.style.position = 'fixed';
+                titleEl.style.top = '20px';
+                titleEl.style.left = '50%';
+                titleEl.style.transform = 'translateX(-50%)';
+                titleEl.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                titleEl.style.color = 'white';
+                titleEl.style.padding = '10px 20px';
+                titleEl.style.borderRadius = '20px';
+                titleEl.style.fontFamily = 'Arial, sans-serif';
+                titleEl.style.zIndex = '1000';
+                document.body.appendChild(titleEl);
             }
-            
-            // Calcular el desplazamiento
-            const deltaY = touchStartY - currentY;
-            
-            // Calcular nueva posición (desde la parte inferior)
-            let newBottom = initialY + deltaY;
-            
-            // Asegurar que el panel permanezca en la pantalla
-            const windowHeight = window.innerHeight;
-            const panelHeight = debugPanel.offsetHeight;
-            
-            // Limitar al área visible
-            newBottom = Math.max(10, newBottom); // Mínimo 10px desde abajo
-            newBottom = Math.min(windowHeight - 50, newBottom); // No permite que salga por arriba
-            
-            // Aplicar la nueva posición
-            debugPanel.style.bottom = `${newBottom}px`;
+
+            titleEl.textContent = title;
+            titleEl.style.display = 'block';
         }
-        
-        function stopDragging() {
-            if (!isDragging) return;
-            
-            isDragging = false;
-            const debugPanel = document.getElementById('debug-panel');
-            debugPanel.classList.remove('dragging');
-            
-            // Guardar la posición final como la inicial para el próximo arrastre
-            const style = window.getComputedStyle(debugPanel);
-            initialY = parseInt(style.bottom, 10);
+
+        // Añadir a la función hideAllContent
+        function hideAllContent() {
+            // Ocultar todos los modelos 3D
+            document.querySelectorAll('[id^="model-root-"]').forEach(model => {
+                model.setAttribute('visible', false);
+            });
+
+            // Cerrar contenido web
+            closeWebContent();
+
+            // Cerrar video
+            closeVideo();
+
+            // Ocultar título
+            const titleEl = document.getElementById('content-title');
+            if (titleEl) {
+                titleEl.style.display = 'none';
+            }
         }
-        
+
+        // Función para crear marcadores NFT dinámicamente
+        function createNFTMarkers() {
+            const container = document.getElementById('nft-markers-container');
+
+            markers.forEach(marker => {
+                // Crear elemento a-nft para cada marcador
+                const nftEl = document.createElement('a-nft');
+                nftEl.setAttribute('id', `nft-${marker.id}`);
+                nftEl.setAttribute('type', 'nft');
+                nftEl.setAttribute('url', marker.url);
+                nftEl.setAttribute('smooth', 'true');
+                nftEl.setAttribute('smoothCount', '10');
+                nftEl.setAttribute('smoothTolerance', '0.01');
+                nftEl.setAttribute('smoothThreshold', '5');
+                nftEl.setAttribute('raycaster', 'objects: .clickable');
+                nftEl.setAttribute('emitevents', 'true');
+                nftEl.setAttribute('cursor', 'fuse: false; rayOrigin: mouse;');
+
+                // Si es un modelo 3D, crear la entidad del modelo
+                if (marker.type === "3d-model") {
+                    const modelRoot = document.createElement('a-entity');
+                    modelRoot.setAttribute('id', `model-root-${marker.id}`);
+                    modelRoot.setAttribute('position', marker.content.position);
+                    modelRoot.setAttribute('visible', false); // Inicialmente oculto
+
+                    const model = document.createElement('a-entity');
+                    model.setAttribute('id', `model-${marker.id}`);
+                    model.setAttribute('gltf-model', marker.content.url);
+                    model.setAttribute('scale', marker.content.scale);
+                    model.setAttribute('rotation', marker.content.rotation);
+
+                    modelRoot.appendChild(model);
+                    nftEl.appendChild(modelRoot);
+                }
+
+                // Agregar eventos al marcador
+                nftEl.addEventListener('markerFound', function () {
+                    log(`🎯 Marcador ${marker.id} encontrado`);
+
+                    // Activar contenido para este marcador
+                    activateMarkerContent(marker);
+
+                    // Si el modelo está bloqueado (para modelos 3D)
+                    if (modelLocked && marker.type === "3d-model") {
+                        const modelRoot = document.querySelector(`#model-root-${marker.id}`);
+                        if (modelRoot) {
+                            modelRoot.setAttribute('position', lastValidPosition);
+                        }
+                    }
+                });
+
+                nftEl.addEventListener('markerLost', function () {
+                    log(`❌ Marcador ${marker.id} perdido`);
+
+                    // Si el modelo está bloqueado, mantener la última posición
+                    // No ocultamos el contenido para que el usuario pueda seguir interactuando
+                    if (modelLocked && marker.type === "3d-model") {
+                        const modelRoot = document.querySelector(`#model-root-${marker.id}`);
+                        if (modelRoot) {
+                            modelRoot.setAttribute('position', lastValidPosition);
+                        }
+                    }
+                });
+
+                // Agregar marcador al contenedor
+                container.appendChild(nftEl);
+            });
+
+            log(`${markers.length} marcadores NFT creados`);
+        }
+
         // Al cargar la página
-        window.addEventListener('load', function() {
-            log("Página cargada, NFT configurado");
-            
-            // Inicializar panel arrastrable
-            initDraggablePanel();
-            
+        window.addEventListener('load', function () {
+            log("Página cargada, inicializando sistema AR");
+
+            // Crear marcadores NFT
+            createNFTMarkers();
+
             // Configurar botón de bloqueo
             document.getElementById('lock-button').addEventListener('click', toggleModelLock);
-            
+
             // Ocultar el loader después de inicialización
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
-                log("AR.js inicializado");
+                log("Sistema AR inicializado");
             }, 3000);
-            
+
             // Prevenir zoom en móviles
-            document.addEventListener('touchmove', function(e) {
+            document.addEventListener('touchmove', function (e) {
                 if (e.scale !== 1) { e.preventDefault(); }
             }, { passive: false });
         });
-        
-        // Eventos de marcador NFT
-        document.addEventListener('DOMContentLoaded', function() {
-            const sceneEl = document.querySelector('a-scene');
-            const nft = document.querySelector('a-nft');
-            
-            if (nft) {
-                nft.addEventListener('markerFound', function() {
-                    log("🎯 Marcador NFT encontrado");
-                    
-                    // Si el modelo está bloqueado, restaurar la posición guardada
-                    if (modelLocked) {
-                        const modelRoot = document.querySelector('#model-root');
-                        if (modelRoot) {
-                            modelRoot.setAttribute('position', lastValidPosition);
-                        }
-                    }
-                });
-                
-                nft.addEventListener('markerLost', function() {
-                    log("❌ Marcador NFT perdido");
-                    
-                    // Si el modelo está bloqueado, mantener la última posición
-                    if (modelLocked) {
-                        const modelRoot = document.querySelector('#model-root');
-                        if (modelRoot) {
-                            modelRoot.setAttribute('position', lastValidPosition);
-                        }
-                    }
-                });
-            }
-            
-            log("Sistema AR inicializado");
-        });
     </script>
 </body>
+
 </html>
