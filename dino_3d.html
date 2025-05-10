@@ -4,8 +4,9 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>Image based tracking AR.js demo</title>
-    <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <!-- Bibliotecas actualizadas -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <style>
       .arjs-loader {
@@ -26,9 +27,21 @@
         font-size: 1.25em;
         color: white;
       }
+      
+      .found-message {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: green;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        display: none;
+        z-index: 100;
+      }
     </style>
     
-    <!-- Añadimos detección de eventos para depuración -->
+    <!-- Componentes para depuración -->
     <script>
       AFRAME.registerComponent('model-loaded', {
         init: function() {
@@ -40,6 +53,20 @@
           });
         }
       });
+      
+      AFRAME.registerComponent('markerhandler', {
+        init: function() {
+          this.el.sceneEl.addEventListener('markerFound', (e) => {
+            console.log('¡Marcador encontrado!', e);
+            document.querySelector('.found-message').style.display = 'block';
+          });
+          
+          this.el.sceneEl.addEventListener('markerLost', (e) => {
+            console.log('Marcador perdido', e);
+            document.querySelector('.found-message').style.display = 'none';
+          });
+        }
+      });
     </script>
   </head>
 
@@ -47,22 +74,24 @@
     <div class="arjs-loader">
       <div>Cargando, por favor espere...</div>
     </div>
+    
+    <div class="found-message">¡Marcador detectado!</div>
 
     <a-scene
       vr-mode-ui="enabled: false;"
       renderer="logarithmicDepthBuffer: true;"
       embedded
-      arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: true;">
+      arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3; maxDetectionRate: 60;">
 
       <a-nft
         type="nft"
         url="https://samidr8.github.io/web/markers/dinosaurio"
         smooth="true"
-        smoothcount="10"
-        smoothtolerance=".01"
-        smooththreshold="5">
+        smoothCount="15"
+        smoothTolerance=".005"
+        smoothThreshold="3"
+        markerhandler>
         
-        <!-- CAMBIO IMPORTANTE: Posición corregida a 0 0 0 -->
         <a-entity 
           gltf-model="https://samidr8.github.io/web/media/volcano.glb"
           scale="2 2 2"
