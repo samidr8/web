@@ -62,8 +62,8 @@
 
         .close-button {
             position: absolute;
-            top: 0px;
-            left: 0px;
+            top: 10px;
+            right: 10px;
             background-color: red;
             color: white;
             border: 3px solid white;
@@ -121,13 +121,58 @@
             display: none;
         }
 
+        /* Pantalla de fallback cuando iframe falla */
+        .fallback-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            padding: 20px;
+            background-color: white;
+            z-index: 1000;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .fallback-container h3 {
+            margin-top: 0;
+            color: #444;
+        }
+
+        .fallback-container p {
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .btn {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .btn-secondary {
+            background-color: #666;
+        }
+
         /* Optimización para dispositivos móviles */
         @media (orientation: portrait) {
             .video-container {
                 width: 90%;
             }
 
-            .web-content {
+            .web-content, .fallback-container {
                 width: 95%;
                 height: 70%;
             }
@@ -224,8 +269,16 @@
     <div id="content-title"></div>
 
     <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
-    <iframe id="web-content" class="web-content" allowfullscreen></iframe>
+    <iframe id="web-content" class="web-content" allowfullscreen sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
     <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
+
+    <!-- Pantalla de fallback para cuando iframe falla -->
+    <div id="fallback-container" class="fallback-container">
+        <h3>Esta página no permite ser mostrada en ventana integrada</h3>
+        <p>El sitio web que intentas ver no permite ser mostrado dentro de esta aplicación.</p>
+        <button class="btn" id="open-external-btn">Abrir en nueva ventana</button>
+        <button class="btn btn-secondary" id="close-fallback-btn">Cancelar</button>
+    </div>
 
     <!-- Contenedor para videos -->
     <div id="video-container" class="video-container">
@@ -274,7 +327,8 @@
                 type: "iframe",
                 content: {
                     url: "https://www.mep.go.cr/",
-                    title: "Pagina MEP"
+                    title: "Página MEP",
+                    fallbackEnabled: true // Nueva propiedad para indicar si se debe mostrar fallback
                 }
             },
             {
@@ -292,6 +346,7 @@
 
         let currentMarkerId = null;
         let markerActive = false; // Variable para rastrear si hay un marcador activo
+        let currentUrl = ''; // Variable para almacenar la URL actual
 
         // Función para establecer el estado del indicador
         function setIndicatorStatus(active) {
@@ -340,33 +395,148 @@
             }
         }
 
-        // Función para mostrar contenido web (iframe)
-        function showWebContent(url) {
+        // NUEVA FUNCIÓN: Mostrar pantalla de fallback cuando iframe falla
+        function showFallbackScreen(url) {
+            currentUrl = url;
+            const fallbackContainer = document.getElementById('fallback-container');
+            fallbackContainer.style.display = 'block';
+            
+            // Configurar botón para abrir en nueva ventana
+            document.getElementById('open-external-btn').onclick = function() {
+                window.open(url, '_blank');
+                closeFallbackScreen();
+            };
+            
+            // Configurar botón para cerrar
+            document.getElementById('close-fallback-btn').onclick = closeFallbackScreen;
+            
+            console.log(`Mostrando pantalla de fallback para: ${url}`);
+        }
+        
+        // NUEVA FUNCIÓN: Cerrar pantalla de fallback
+        function closeFallbackScreen() {
+            const fallbackContainer = document.getElementById('fallback-container');
+            fallbackContainer.style.display = 'none';
+            hideContentTitle();
+            console.log('Pantalla de fallback cerrada');
+        }
+
+        // Función mejorada para mostrar contenido web (iframe)
+        function showWebContent(url, fallbackEnabled = false) {
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
             
-            iframe.src = url;
-            iframe.style.display = 'block';
-            closeButton.style.display = 'flex';
+            // Limpiar primero
+            iframe.src = '';
             
-            // Manejar errores de carga del iframe
-            iframe.onerror = function() {
-                console.error('Error: No se pudo cargar el contenido web');
-                showErrorMessage('Error al cargar el contenido. Verifique su conexión a Internet.');
-                hideContentTitle();
-            };
+            // Lista de sitios conocidos que necesitan tratamiento especial
+            const knownPatterns = [
+                {
+                    pattern: 'mep.go.cr',
+                    needsFallback: true
+                },
+                {
+                    pattern: 'geogebra.org/material/iframe',
+                    needsFallback: false // GeoGebra con URL de iframe funciona bien
+                },
+                {
+                    pattern: 'forms.office.com',
+                    transform: function(url) {
+                        // Asegurar que formularios de Microsoft Forms tengan embedded=true
+                        if (!url.includes('embedded=true')) {
+                            return url + (url.includes('?') ? '&' : '?') + 'embedded=true';
+                        }
+                        return url;
+                    }
+                },
+                {
+                    pattern: 'docs.google.com/forms',
+                    transform: function(url) {
+                        // Asegurar que formularios de Google tengan embedded=true
+                        if (!url.includes('embedded=true')) {
+                            return url + (url.includes('?') ? '&' : '?') + 'embedded=true';
+                        }
+                        return url;
+                    }
+                }
+            ];
             
-            console.log(`Mostrando contenido web: ${url}`);
+            // Verificar si el sitio necesita tratamiento especial
+            let useDirectFallback = false;
+            let transformedUrl = url;
+            
+            for (const site of knownPatterns) {
+                if (url.includes(site.pattern)) {
+                    if (site.needsFallback === true) {
+                        useDirectFallback = true;
+                    }
+                    
+                    if (site.transform) {
+                        transformedUrl = site.transform(url);
+                    }
+                    
+                    break;
+                }
+            }
+            
+            // Si sabemos que el sitio no permite iframes, mostrar fallback directamente
+            if (useDirectFallback || (fallbackEnabled === true)) {
+                showFallbackScreen(transformedUrl);
+                return;
+            }
+            
+            // Intentar cargar el iframe
+            try {
+                iframe.src = transformedUrl;
+                iframe.style.display = 'block';
+                closeButton.style.display = 'flex';
+                
+                // Comprobar errores de carga después de un tiempo
+                setTimeout(function() {
+                    // Intentar acceder a contenido para ver si cargó
+                    try {
+                        const iframeContent = iframe.contentWindow || iframe.contentDocument;
+                        if (!iframeContent || !iframeContent.document) {
+                            // Si hay problemas, mostrar fallback
+                            if (fallbackEnabled) {
+                                showFallbackScreen(transformedUrl);
+                                iframe.style.display = 'none';
+                                closeButton.style.display = 'none';
+                            }
+                        }
+                    } catch (e) {
+                        // Error al acceder al contenido (error de seguridad/origen cruzado)
+                        console.error('Error de acceso al iframe: probablemente X-Frame-Options bloqueó carga');
+                        if (fallbackEnabled) {
+                            showFallbackScreen(transformedUrl);
+                            iframe.style.display = 'none';
+                            closeButton.style.display = 'none';
+                        }
+                    }
+                }, 1500);
+                
+                console.log(`Mostrando contenido web: ${transformedUrl}`);
+            } catch (error) {
+                console.error('Error al cargar contenido web:', error);
+                if (fallbackEnabled) {
+                    showFallbackScreen(transformedUrl);
+                } else {
+                    showErrorMessage('Error al cargar el contenido. Verifique su conexión a Internet.');
+                    hideContentTitle();
+                }
+            }
         }
 
         // Función para cerrar contenido web
         function closeWebContent() {
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
+            const fallbackContainer = document.getElementById('fallback-container');
             
             iframe.src = '';
             iframe.style.display = 'none';
             closeButton.style.display = 'none';
+            fallbackContainer.style.display = 'none';
             
             // Ocultar título al cerrar contenido
             hideContentTitle();
@@ -494,7 +664,7 @@
                     break;
                     
                 case "iframe":
-                    showWebContent(marker.content.url);
+                    showWebContent(marker.content.url, marker.content.fallbackEnabled);
                     break;
                     
                 default:
@@ -512,6 +682,7 @@
             // Cerrar contenido web
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
+            const fallbackContainer = document.getElementById('fallback-container');
             
             if (iframe) {
                 iframe.src = '';
@@ -520,6 +691,10 @@
             
             if (closeButton) {
                 closeButton.style.display = 'none';
+            }
+            
+            if (fallbackContainer) {
+                fallbackContainer.style.display = 'none';
             }
             
             // Cerrar video
