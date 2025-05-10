@@ -29,6 +29,7 @@
             color: white;
         }
 
+        /* CORREGIDO: Mejorada la barra de desplazamiento del panel de depuración */
         .debug-info {
             position: fixed;
             bottom: 10px;
@@ -40,8 +41,33 @@
             z-index: 1000;
             max-width: 80%;
             max-height: 30%;
-            overflow-y: auto;
+            overflow-y: scroll; /* Cambiado de auto a scroll para forzar la barra */
             transition: height 0.3s ease;
+            scrollbar-width: thin; /* Para Firefox */
+            scrollbar-color: #666 #333; /* Para Firefox */
+        }
+
+        /* Estilos para la barra de desplazamiento (WebKit/Blink) */
+        .debug-info::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .debug-info::-webkit-scrollbar-track {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        .debug-info::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 4px;
+        }
+
+        .debug-info::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .debug-content {
+            padding-right: 5px; /* Espacio para la barra de desplazamiento */
         }
 
         .debug-info.minimized {
@@ -73,7 +99,6 @@
             display: none;
         }
 
-        /* CORREGIDO: Removida la propiedad duplicada display */
         .close-button {
             position: absolute;
             top: -20px;
@@ -312,6 +337,7 @@
 
         let debugMinimized = false;
         let currentMarkerId = null;
+        let markerActive = false; // Nuevo: Variable para rastrear si hay un marcador activo
 
         // Verificar compatibilidad con AR
         function checkARCompatibility() {
@@ -333,8 +359,21 @@
             
             // Eliminar mensaje después de 5 segundos
             setTimeout(() => {
-                errorDiv.remove();
+                if (errorDiv && errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
             }, 5000);
+            
+            // CORREGIDO: Ocultar título cuando hay un error
+            hideContentTitle();
+        }
+        
+        // NUEVO: Función específica para ocultar el título
+        function hideContentTitle() {
+            const titleEl = document.getElementById('content-title');
+            if (titleEl) {
+                titleEl.style.display = 'none';
+            }
         }
 
         // Función para el panel de depuración
@@ -352,12 +391,21 @@
             }
         }
 
-        // Función para escribir en el panel
+        // CORREGIDO: Función mejorada para escribir en el panel
         function log(message) {
             const debugContent = document.querySelector('.debug-content');
             const timestamp = new Date().toLocaleTimeString();
-            debugContent.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-            debugContent.scrollTop = debugContent.scrollHeight;
+            
+            // Crear un nuevo elemento para el mensaje
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            debugContent.appendChild(logEntry);
+            
+            // Asegurar que el scroll baje automáticamente al último mensaje
+            setTimeout(() => {
+                debugContent.scrollTop = debugContent.scrollHeight;
+            }, 10);
+            
             console.log(`[${timestamp}] ${message}`);
         }
 
@@ -374,6 +422,7 @@
             iframe.onerror = function() {
                 log('Error: No se pudo cargar el contenido web');
                 showErrorMessage('Error al cargar el contenido. Verifique su conexión a Internet.');
+                hideContentTitle(); // CORREGIDO: Ocultar título si hay error
             };
             
             log(`Mostrando contenido web: ${url}`);
@@ -387,6 +436,9 @@
             iframe.src = '';
             iframe.style.display = 'none';
             closeButton.style.display = 'none';
+            
+            // CORREGIDO: Ocultar título al cerrar contenido
+            hideContentTitle();
             
             log('Contenido web cerrado');
         }
@@ -451,6 +503,7 @@
             } catch (error) {
                 log(`Error: ${error.message}`);
                 showErrorMessage(`Error al cargar el video: ${error.message}`);
+                hideContentTitle(); // CORREGIDO: Ocultar título si hay error
             }
         }
 
@@ -464,6 +517,9 @@
             videoWrapper.innerHTML = '';
             videoContainer.style.display = 'none';
             closeButton.style.display = 'none';
+            
+            // CORREGIDO: Ocultar título al cerrar video
+            hideContentTitle();
             
             log('Video cerrado');
         }
@@ -481,6 +537,7 @@
         // Función mejorada para activar contenido basado en el tipo de marcador
         function activateMarkerContent(marker) {
             currentMarkerId = marker.id;
+            markerActive = true; // CORREGIDO: Indicar que hay un marcador activo
             log(`Activando contenido para marcador: ${marker.id}`);
             
             // Ocultar todo el contenido primero
@@ -514,7 +571,7 @@
             }
         }
 
-        // Función para ocultar todo el contenido
+        // CORREGIDO: Función mejorada para ocultar todo el contenido
         function hideAllContent() {
             // Ocultar todos los modelos 3D
             document.querySelectorAll('[id^="model-root-"]').forEach(model => {
@@ -522,14 +579,37 @@
             });
             
             // Cerrar contenido web
-            closeWebContent();
+            const iframe = document.getElementById('web-content');
+            const closeButton = document.getElementById('close-button');
+            
+            if (iframe) {
+                iframe.src = '';
+                iframe.style.display = 'none';
+            }
+            
+            if (closeButton) {
+                closeButton.style.display = 'none';
+            }
             
             // Cerrar video
-            closeVideo();
+            const videoContainer = document.getElementById('video-container');
+            const videoWrapper = document.getElementById('video-wrapper');
+            const videoCloseButton = videoContainer ? videoContainer.querySelector('.close-button') : null;
+            
+            if (videoWrapper) {
+                videoWrapper.innerHTML = '';
+            }
+            
+            if (videoContainer) {
+                videoContainer.style.display = 'none';
+            }
+            
+            if (videoCloseButton) {
+                videoCloseButton.style.display = 'none';
+            }
             
             // Ocultar título
-            const titleEl = document.getElementById('content-title');
-            titleEl.style.display = 'none';
+            hideContentTitle();
             
             // Monitoreo de memoria (si está disponible)
             if (window.performance && window.performance.memory) {
@@ -582,7 +662,7 @@
                     nftEl.appendChild(modelRoot);
                 }
                 
-                // Agregar eventos al marcador
+                // CORREGIDO: Mejorado el manejo de eventos de marcador
                 nftEl.addEventListener('markerFound', function () {
                     log(`🎯 Marcador ${marker.id} encontrado`);
                     
@@ -592,7 +672,22 @@
                 
                 nftEl.addEventListener('markerLost', function () {
                     log(`❌ Marcador ${marker.id} perdido`);
-                    // El contenido permanece visible para permitir la interacción
+                    
+                    // CORREGIDO: Si el contenido no debe mantenerse visible al perder el marcador,
+                    // descomenta estas líneas:
+                    /*
+                    markerActive = false;
+                    // Opcionalmente, ocultar contenido después de un breve retraso
+                    setTimeout(() => {
+                        if (!markerActive) {
+                            hideAllContent();
+                        }
+                    }, 200);
+                    */
+                    
+                    // CORREGIDO: Para este caso, solo ocultamos el título ya que no queremos 
+                    // interrumpir la interacción del usuario con videos/formularios
+                    hideContentTitle();
                 });
                 
                 // Agregar marcador al contenedor
@@ -606,12 +701,19 @@
         window.addEventListener('offline', function() {
             log("Conexión perdida");
             showErrorMessage("Se ha perdido la conexión a Internet. Algunas funciones pueden no estar disponibles.");
+            
+            // CORREGIDO: Ocultar título cuando se pierde la conexión
+            hideContentTitle();
         });
 
         window.addEventListener('online', function() {
             log("Conexión recuperada");
             const errorMessages = document.querySelectorAll('.error-message');
-            errorMessages.forEach(el => el.remove());
+            errorMessages.forEach(el => {
+                if (el && el.parentNode) {
+                    el.remove();
+                }
+            });
         });
 
         // Al cargar la página
