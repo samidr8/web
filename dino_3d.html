@@ -40,6 +40,7 @@
             max-width: 80%;
             max-height: 30%;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Mejor desplazamiento en iOS */
             transition: height 0.3s ease;
         }
         
@@ -53,6 +54,38 @@
             justify-content: space-between;
             cursor: pointer;
             font-weight: bold;
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 5px 0;
+            margin: -5px 0;
+        }
+        
+        .debug-content {
+            max-height: calc(30vh - 30px);
+            overflow-y: auto;
+            padding-bottom: 10px;
+            padding-top: 5px;
+        }
+        
+        /* Controles de desplazamiento para el panel de depuración */
+        .scroll-controls {
+            display: flex;
+            justify-content: space-between;
+            position: sticky;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 5px 0;
+            margin-top: 5px;
+        }
+        
+        .scroll-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            padding: 2px 10px;
+            cursor: pointer;
         }
         
         /* Evitar zoom en mobile */
@@ -75,6 +108,10 @@
             <span class="toggle-btn">[-]</span>
         </div>
         <div class="debug-content">Iniciando...</div>
+        <div class="scroll-controls">
+            <button class="scroll-button" onclick="scrollDebugUp()">▲</button>
+            <button class="scroll-button" onclick="scrollDebugDown()">▼</button>
+        </div>
     </div>
     
     <!-- Botón de bloqueo -->
@@ -88,6 +125,11 @@
         renderer="logarithmicDepthBuffer: true; antialias: true;"
         embedded
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+        
+        <!-- Superficie virtual para que parezca que el modelo está sobre el marcador -->
+        <a-assets>
+            <a-asset-item id="volcano-model" src="https://samidr8.github.io/web/media/volcano.glb"></a-asset-item>
+        </a-assets>
         
         <!-- Configuración NFT con parámetros optimizados -->
         <a-nft
@@ -104,14 +146,24 @@
             <!-- Modelo 3D -->
             <a-entity 
                 id="model-root" 
-                position="50 0 -150">
+                position="0 -100 -100">
                 <a-entity 
                     id="volcano-model"
-                    gltf-model="https://samidr8.github.io/web/media/volcano.glb"
+                    gltf-model="#volcano-model"
                     scale="500 500 500"
                     position="0 0 0" 
-                    rotation="0 0 0">
+                    rotation="-90 0 0">
                 </a-entity>
+                
+                <!-- Plano invisible para crear efecto de sombra -->
+                <a-plane 
+                    position="0 -0.5 0" 
+                    rotation="-90 0 0" 
+                    width="200" 
+                    height="200" 
+                    color="#7BC8A4" 
+                    opacity="0.2">
+                </a-plane>
             </a-entity>
         </a-nft>
         
@@ -122,7 +174,7 @@
     <script>
         let debugMinimized = false;
         let modelLocked = false;
-        let lastValidPosition = { x: 50, y: 0, z: -150 };
+        let lastValidPosition = { x: 0, y: -100, z: -100 };
         
         // Función para el panel de depuración
         function toggleDebugPanel() {
@@ -137,6 +189,23 @@
                 debugPanel.classList.remove('minimized');
                 toggleBtn.textContent = '[-]';
             }
+        }
+        
+        // Funciones de desplazamiento para panel de depuración
+        function scrollDebugUp() {
+            const debugContent = document.querySelector('.debug-content');
+            debugContent.scrollBy({
+                top: -100,
+                behavior: 'smooth'
+            });
+        }
+        
+        function scrollDebugDown() {
+            const debugContent = document.querySelector('.debug-content');
+            debugContent.scrollBy({
+                top: 100,
+                behavior: 'smooth'
+            });
         }
         
         // Función para escribir en el panel
