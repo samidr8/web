@@ -29,58 +29,19 @@
             color: white;
         }
 
-        /* CORREGIDO: Mejorada la barra de desplazamiento del panel de depuración */
-        .debug-info {
+        /* Nuevo indicador de estado (círculo) */
+        #status-indicator {
             position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            font-family: monospace;
-            z-index: 1000;
-            max-width: 80%;
-            max-height: 30%;
-            overflow-y: scroll; /* Cambiado de auto a scroll para forzar la barra */
-            transition: height 0.3s ease;
-            scrollbar-width: thin; /* Para Firefox */
-            scrollbar-color: #666 #333; /* Para Firefox */
-        }
-
-        /* Estilos para la barra de desplazamiento (WebKit/Blink) */
-        .debug-info::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .debug-info::-webkit-scrollbar-track {
-            background: #333;
-            border-radius: 4px;
-        }
-
-        .debug-info::-webkit-scrollbar-thumb {
-            background: #666;
-            border-radius: 4px;
-        }
-
-        .debug-info::-webkit-scrollbar-thumb:hover {
-            background: #999;
-        }
-
-        .debug-content {
-            padding-right: 5px; /* Espacio para la barra de desplazamiento */
-        }
-
-        .debug-info.minimized {
+            top: 15px;
+            left: 15px;
+            width: 20px;
             height: 20px;
-            overflow: hidden;
-        }
-
-        .debug-header {
-            display: flex;
-            justify-content: space-between;
-            cursor: pointer;
-            font-weight: bold;
-            margin-bottom: 5px;
+            border-radius: 50%;
+            background-color: red; /* Color inicial: rojo (sin detección) */
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            transition: background-color 0.3s ease;
         }
 
         /* Iframe para contenido web (formularios, GeoGebra, etc.) */
@@ -101,8 +62,8 @@
 
         .close-button {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 0px;
+            left: 0px;
             background-color: red;
             color: white;
             border: 3px solid white;
@@ -256,14 +217,8 @@
         </div>
     </div>
 
-    <!-- Panel de depuración -->
-    <div class="debug-info">
-        <div class="debug-header" onclick="toggleDebugPanel()">
-            <span>Información de depuración</span>
-            <span class="toggle-btn">[-]</span>
-        </div>
-        <div class="debug-content">Iniciando...</div>
-    </div>
+    <!-- Indicador de estado - Nuevo -->
+    <div id="status-indicator"></div>
 
     <!-- Título de contenido -->
     <div id="content-title"></div>
@@ -335,9 +290,18 @@
             //https://carnaux.github.io/NFT-Marker-Creator/#/
         ];
 
-        let debugMinimized = false;
         let currentMarkerId = null;
-        let markerActive = false; // Nuevo: Variable para rastrear si hay un marcador activo
+        let markerActive = false; // Variable para rastrear si hay un marcador activo
+
+        // Función para establecer el estado del indicador
+        function setIndicatorStatus(active) {
+            const indicator = document.getElementById('status-indicator');
+            if (indicator) {
+                indicator.style.backgroundColor = active ? '#4CAF50' : 'red'; // Verde si activo, rojo si no
+            }
+            markerActive = active;
+            console.log(active ? "Marcador detectado" : "Sin marcador");
+        }
 
         // Verificar compatibilidad con AR
         function checkARCompatibility() {
@@ -364,49 +328,16 @@
                 }
             }, 5000);
             
-            // CORREGIDO: Ocultar título cuando hay un error
+            // Ocultar título cuando hay un error
             hideContentTitle();
         }
         
-        // NUEVO: Función específica para ocultar el título
+        // Función específica para ocultar el título
         function hideContentTitle() {
             const titleEl = document.getElementById('content-title');
             if (titleEl) {
                 titleEl.style.display = 'none';
             }
-        }
-
-        // Función para el panel de depuración
-        function toggleDebugPanel() {
-            const debugPanel = document.querySelector('.debug-info');
-            const toggleBtn = document.querySelector('.toggle-btn');
-            debugMinimized = !debugMinimized;
-            
-            if (debugMinimized) {
-                debugPanel.classList.add('minimized');
-                toggleBtn.textContent = '[+]';
-            } else {
-                debugPanel.classList.remove('minimized');
-                toggleBtn.textContent = '[-]';
-            }
-        }
-
-        // CORREGIDO: Función mejorada para escribir en el panel
-        function log(message) {
-            const debugContent = document.querySelector('.debug-content');
-            const timestamp = new Date().toLocaleTimeString();
-            
-            // Crear un nuevo elemento para el mensaje
-            const logEntry = document.createElement('div');
-            logEntry.innerHTML = `[${timestamp}] ${message}`;
-            debugContent.appendChild(logEntry);
-            
-            // Asegurar que el scroll baje automáticamente al último mensaje
-            setTimeout(() => {
-                debugContent.scrollTop = debugContent.scrollHeight;
-            }, 10);
-            
-            console.log(`[${timestamp}] ${message}`);
         }
 
         // Función para mostrar contenido web (iframe)
@@ -420,12 +351,12 @@
             
             // Manejar errores de carga del iframe
             iframe.onerror = function() {
-                log('Error: No se pudo cargar el contenido web');
+                console.error('Error: No se pudo cargar el contenido web');
                 showErrorMessage('Error al cargar el contenido. Verifique su conexión a Internet.');
-                hideContentTitle(); // CORREGIDO: Ocultar título si hay error
+                hideContentTitle();
             };
             
-            log(`Mostrando contenido web: ${url}`);
+            console.log(`Mostrando contenido web: ${url}`);
         }
 
         // Función para cerrar contenido web
@@ -437,10 +368,10 @@
             iframe.style.display = 'none';
             closeButton.style.display = 'none';
             
-            // CORREGIDO: Ocultar título al cerrar contenido
+            // Ocultar título al cerrar contenido
             hideContentTitle();
             
-            log('Contenido web cerrado');
+            console.log('Contenido web cerrado');
         }
 
         // Función mejorada para mostrar video
@@ -474,7 +405,7 @@
                         iframe.style.height = '360px'; // Altura estándar para proporción 16:9
                         
                         videoWrapper.appendChild(iframe);
-                        log(`Reproduciendo video de YouTube: ${videoId}`);
+                        console.log(`Reproduciendo video de YouTube: ${videoId}`);
                     } else {
                         throw new Error('No se pudo extraer el ID del video de YouTube');
                     }
@@ -488,7 +419,7 @@
                     video.style.width = '100%';
                     
                     videoWrapper.appendChild(video);
-                    log(`Reproduciendo video directo: ${url}`);
+                    console.log(`Reproduciendo video directo: ${url}`);
                     
                     // Manejo de errores
                     video.onerror = function() {
@@ -501,9 +432,9 @@
                 closeButton.style.display = 'flex';
                 
             } catch (error) {
-                log(`Error: ${error.message}`);
+                console.error(`Error: ${error.message}`);
                 showErrorMessage(`Error al cargar el video: ${error.message}`);
-                hideContentTitle(); // CORREGIDO: Ocultar título si hay error
+                hideContentTitle();
             }
         }
 
@@ -518,10 +449,10 @@
             videoContainer.style.display = 'none';
             closeButton.style.display = 'none';
             
-            // CORREGIDO: Ocultar título al cerrar video
+            // Ocultar título al cerrar video
             hideContentTitle();
             
-            log('Video cerrado');
+            console.log('Video cerrado');
         }
 
         // Función para mostrar el título del contenido
@@ -531,14 +462,14 @@
             titleEl.textContent = title;
             titleEl.style.display = 'block';
             
-            log(`Mostrando título: ${title}`);
+            console.log(`Mostrando título: ${title}`);
         }
 
         // Función mejorada para activar contenido basado en el tipo de marcador
         function activateMarkerContent(marker) {
             currentMarkerId = marker.id;
-            markerActive = true; // CORREGIDO: Indicar que hay un marcador activo
-            log(`Activando contenido para marcador: ${marker.id}`);
+            setIndicatorStatus(true); // Cambiar indicador a verde
+            console.log(`Activando contenido para marcador: ${marker.id}`);
             
             // Ocultar todo el contenido primero
             hideAllContent();
@@ -567,11 +498,11 @@
                     break;
                     
                 default:
-                    log(`Tipo de contenido desconocido: ${marker.type}`);
+                    console.log(`Tipo de contenido desconocido: ${marker.type}`);
             }
         }
 
-        // CORREGIDO: Función mejorada para ocultar todo el contenido
+        // Función mejorada para ocultar todo el contenido
         function hideAllContent() {
             // Ocultar todos los modelos 3D
             document.querySelectorAll('[id^="model-root-"]').forEach(model => {
@@ -610,11 +541,6 @@
             
             // Ocultar título
             hideContentTitle();
-            
-            // Monitoreo de memoria (si está disponible)
-            if (window.performance && window.performance.memory) {
-                log(`Uso de memoria: ${Math.round(performance.memory.usedJSHeapSize/1048576)}MB`);
-            }
         }
 
         // Función para crear marcadores NFT dinámicamente
@@ -650,11 +576,11 @@
                     
                     // Añadir manejo de eventos para carga de modelos
                     model.addEventListener('model-loaded', function() {
-                        log(`Modelo 3D cargado correctamente: ${marker.id}`);
+                        console.log(`Modelo 3D cargado correctamente: ${marker.id}`);
                     });
                     
                     model.addEventListener('model-error', function(e) {
-                        log(`Error al cargar modelo 3D: ${marker.id}`);
+                        console.error(`Error al cargar modelo 3D: ${marker.id}`);
                         showErrorMessage(`Error al cargar el modelo 3D. Inténtalo de nuevo.`);
                     });
                     
@@ -662,30 +588,21 @@
                     nftEl.appendChild(modelRoot);
                 }
                 
-                // CORREGIDO: Mejorado el manejo de eventos de marcador
+                // Mejorado el manejo de eventos de marcador
                 nftEl.addEventListener('markerFound', function () {
-                    log(`🎯 Marcador ${marker.id} encontrado`);
+                    console.log(`🎯 Marcador ${marker.id} encontrado`);
                     
                     // Activar contenido para este marcador
                     activateMarkerContent(marker);
                 });
                 
                 nftEl.addEventListener('markerLost', function () {
-                    log(`❌ Marcador ${marker.id} perdido`);
+                    console.log(`❌ Marcador ${marker.id} perdido`);
                     
-                    // CORREGIDO: Si el contenido no debe mantenerse visible al perder el marcador,
-                    // descomenta estas líneas:
-                    /*
-                    markerActive = false;
-                    // Opcionalmente, ocultar contenido después de un breve retraso
-                    setTimeout(() => {
-                        if (!markerActive) {
-                            hideAllContent();
-                        }
-                    }, 200);
-                    */
+                    // Cambiar el indicador a rojo
+                    setIndicatorStatus(false);
                     
-                    // CORREGIDO: Para este caso, solo ocultamos el título ya que no queremos 
+                    // Para este caso, solo ocultamos el título ya que no queremos 
                     // interrumpir la interacción del usuario con videos/formularios
                     hideContentTitle();
                 });
@@ -694,20 +611,20 @@
                 container.appendChild(nftEl);
             });
             
-            log(`${markers.length} marcadores NFT creados`);
+            console.log(`${markers.length} marcadores NFT creados`);
         }
 
         // Manejo de conexión
         window.addEventListener('offline', function() {
-            log("Conexión perdida");
+            console.warn("Conexión perdida");
             showErrorMessage("Se ha perdido la conexión a Internet. Algunas funciones pueden no estar disponibles.");
             
-            // CORREGIDO: Ocultar título cuando se pierde la conexión
+            // Ocultar título cuando se pierde la conexión
             hideContentTitle();
         });
 
         window.addEventListener('online', function() {
-            log("Conexión recuperada");
+            console.log("Conexión recuperada");
             const errorMessages = document.querySelectorAll('.error-message');
             errorMessages.forEach(el => {
                 if (el && el.parentNode) {
@@ -718,14 +635,17 @@
 
         // Al cargar la página
         window.addEventListener('load', function () {
-            log("Página cargada, verificando compatibilidad...");
+            console.log("Página cargada, verificando compatibilidad...");
+            
+            // Inicializar el indicador en rojo (sin marcador)
+            setIndicatorStatus(false);
             
             // Verificar compatibilidad
             if (!checkARCompatibility()) {
                 return; // Detener inicialización si no es compatible
             }
             
-            log("Inicializando sistema AR");
+            console.log("Inicializando sistema AR");
             
             // Crear marcadores NFT
             createNFTMarkers();
@@ -744,7 +664,7 @@
             // Ocultar el loader después de inicialización
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
-                log("Sistema AR inicializado");
+                console.log("Sistema AR inicializado");
             }, 3000);
             
             // Prevenir zoom en móviles
@@ -755,9 +675,9 @@
             // Manejar casos donde el navegador pierde foco
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
-                    log("Aplicación en segundo plano");
+                    console.log("Aplicación en segundo plano");
                 } else {
-                    log("Aplicación en primer plano");
+                    console.log("Aplicación en primer plano");
                 }
             });
         });
