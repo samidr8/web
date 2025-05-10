@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>AR.js NFT con Modelo 3D Visible</title>
     <!-- Versiones específicas que sabemos que funcionan -->
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.0.4/dist/aframe-master.min.js"></script>
@@ -40,6 +40,24 @@
             max-width: 80%;
             max-height: 30%;
             overflow-y: auto;
+            transition: height 0.3s ease;
+        }
+        
+        .debug-info.minimized {
+            height: 20px;
+            overflow: hidden;
+        }
+
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .debug-content {
+            margin-top: 5px;
         }
 
         /* Nueva info de posición para depuración */
@@ -53,6 +71,17 @@
             font-family: monospace;
             font-size: 12px;
             z-index: 1000;
+            transition: height 0.3s ease;
+        }
+        
+        .position-info.minimized {
+            height: 20px;
+            overflow: hidden;
+        }
+        
+        /* Prevenir zoom en móviles */
+        body {
+            touch-action: manipulation;
         }
     </style>
 </head>
@@ -63,45 +92,23 @@
         <div>Cargando NFT, por favor espere...</div>
     </div>
     
-    <!-- Panel de depuración -->
-    <div class="debug-info">Inicializando AR.js NFT...</div>
-    <div class="position-info">Esperando marcador...</div>
+    <!-- Panel de depuración con botón para minimizar -->
+    <div class="debug-info">
+        <div class="debug-header" onclick="toggleDebugPanel()">
+            <span>Información de depuración</span>
+            <span class="toggle-btn">[-]</span>
+        </div>
+        <div class="debug-content">Inicializando AR.js NFT...</div>
+    </div>
     
-    <!-- Registramos componentes personalizados -->
-    <script>
-        // Componente para mostrar la posición del modelo
-        AFRAME.registerComponent('model-handler', {
-            init: function() {
-                this.el.addEventListener('model-loaded', () => {
-                    console.log('Modelo 3D cargado correctamente');
-                    log('✅ Modelo 3D cargado correctamente');
-                });
-                
-                this.el.addEventListener('model-error', (e) => {
-                    console.error('Error al cargar el modelo 3D:', e);
-                    log('❌ Error al cargar el modelo 3D: ' + e.detail.message);
-                });
-            },
-            
-            tick: function() {
-                if (this.el.object3D) {
-                    const position = this.el.object3D.position;
-                    const rotation = this.el.object3D.rotation;
-                    const scale = this.el.object3D.scale;
-                    
-                    // Actualizar información de posición
-                    const infoEl = document.querySelector('.position-info');
-                    if (infoEl) {
-                        infoEl.innerHTML = `
-                            Pos: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}<br>
-                            Rot: ${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}<br>
-                            Scale: ${scale.x.toFixed(2)}, ${scale.y.toFixed(2)}, ${scale.z.toFixed(2)}
-                        `;
-                    }
-                }
-            }
-        });
-    </script>
+    <!-- Panel de posición con botón para minimizar -->
+    <div class="position-info">
+        <div class="debug-header" onclick="togglePositionPanel()">
+            <span>Estado del marcador</span>
+            <span class="position-toggle-btn">[-]</span>
+        </div>
+        <div class="position-content">Esperando marcador...</div>
+    </div>
     
     <!-- Escena A-Frame con configuración específica para NFT -->
     <a-scene
@@ -109,11 +116,11 @@
         renderer="logarithmicDepthBuffer: true; colorManagement: true; precision: medium;"
         embedded
         arjs="sourceType: webcam; 
-              debugUIEnabled: true; 
+              debugUIEnabled: false; 
               detectionMode: mono_and_matrix; 
               maxDetectionRate: 30;
-              canvasWidth: 1280; 
-              canvasHeight: 720;
+              canvasWidth: 640; 
+              canvasHeight: 480;
               trackingMethod: best;">
         
         <!-- Configuración específica del NFT -->
@@ -128,8 +135,8 @@
             <!-- Modelo 3D con ajustes importantes -->
             <a-entity 
                 gltf-model="https://samidr8.github.io/web/media/volcano.glb"
-                scale="100 100 100"  
-                position="0 0 0" 
+                scale="500 500 500"  
+                position="50 0 -150" 
                 rotation="0 0 0"
                 model-handler >
             </a-entity>
@@ -140,12 +147,45 @@
     </a-scene>
 
     <script>
+        // Variables para los paneles
+        let debugMinimized = false;
+        let positionMinimized = false;
+        
+        // Funciones para minimizar/maximizar paneles
+        function toggleDebugPanel() {
+            const debugPanel = document.querySelector('.debug-info');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            debugMinimized = !debugMinimized;
+            
+            if (debugMinimized) {
+                debugPanel.classList.add('minimized');
+                toggleBtn.textContent = '[+]';
+            } else {
+                debugPanel.classList.remove('minimized');
+                toggleBtn.textContent = '[-]';
+            }
+        }
+        
+        function togglePositionPanel() {
+            const positionPanel = document.querySelector('.position-info');
+            const toggleBtn = document.querySelector('.position-toggle-btn');
+            positionMinimized = !positionMinimized;
+            
+            if (positionMinimized) {
+                positionPanel.classList.add('minimized');
+                toggleBtn.textContent = '[+]';
+            } else {
+                positionPanel.classList.remove('minimized');
+                toggleBtn.textContent = '[-]';
+            }
+        }
+        
         // Función para agregar logs al panel de depuración
         function log(message) {
-            const debugPanel = document.querySelector('.debug-info');
+            const debugContent = document.querySelector('.debug-content');
             const timestamp = new Date().toLocaleTimeString();
-            debugPanel.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-            debugPanel.scrollTop = debugPanel.scrollHeight;
+            debugContent.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugContent.scrollTop = debugContent.scrollHeight;
             console.log(`[${timestamp}] ${message}`);
         }
         
@@ -158,6 +198,13 @@
                 document.querySelector('.arjs-loader').style.display = 'none';
                 log("Loader ocultado, AR.js funcionando");
             }, 5000);
+            
+            // Desactivar zoom en dispositivos móviles
+            document.addEventListener('touchmove', function(e) {
+                if (e.scale !== 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
         });
         
         // Eventos de marcador NFT
@@ -166,11 +213,13 @@
             
             sceneEl.addEventListener('markerFound', function() {
                 log("🎯 MARCADOR NFT ENCONTRADO!");
+                document.querySelector('.position-content').innerHTML = "🎯 Marcador detectado";
                 document.querySelector('.position-info').style.backgroundColor = 'rgba(0, 255, 0, 0.7)';
             });
             
             sceneEl.addEventListener('markerLost', function() {
                 log("❌ Marcador NFT perdido");
+                document.querySelector('.position-content').innerHTML = "❌ Marcador perdido";
                 document.querySelector('.position-info').style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
             });
             
