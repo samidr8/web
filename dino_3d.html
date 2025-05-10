@@ -54,8 +54,10 @@
           <!-- as a child of the a-nft entity, you can define the content to show. here's a GLTF model entity -->
           <a-entity 
           gltf-model="https://samidr8.github.io/web/media/volcano.glb"
-          scale="5 5 5"
-          position="50 150 0">
+          scale="2 2 2"
+          position="50 50 0">
+          gltf-model-loaded="console.log('Modelo cargado correctamente')"
+          gltf-model-error="console.error('Error al cargar el modelo', event.detail)">          
         </a-entity>
       </a-nft>
 
