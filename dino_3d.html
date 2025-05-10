@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>AR Dinosaurio</title>
+    <title>AR Dinosaurio - Modo de Diagnóstico</title>
     <!-- Versiones compatibles -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.0/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.0/aframe/build/aframe-ar.js"></script>
     
     <style>
       .arjs-loader {
@@ -37,6 +37,35 @@
         display: none;
         z-index: 100;
       }
+      
+      .debug-panel {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        max-width: 80%;
+        max-height: 30%;
+        overflow-y: auto;
+        z-index: 9998;
+      }
+      
+      .mode-toggle {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background-color: blue;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 9998;
+        cursor: pointer;
+      }
     </style>
     
     <script>
@@ -44,17 +73,87 @@
       document.addEventListener('DOMContentLoaded', () => {
         const scene = document.querySelector('a-scene');
         const loader = document.querySelector('.arjs-loader');
+        const debugPanel = document.querySelector('.debug-panel');
         
+        // Función para agregar mensajes de depuración
+        function log(message) {
+          const time = new Date().toLocaleTimeString();
+          debugPanel.innerHTML += `<div>[${time}] ${message}</div>`;
+          debugPanel.scrollTop = debugPanel.scrollHeight;
+          console.log(message);
+        }
+        
+        // Verificar URLs del marcador
+        function checkMarkerFiles() {
+          log("Verificando archivos de marcador...");
+          // Lista de URLs a verificar
+          const urls = [
+            './markers/dinosaurio.fset',
+            './markers/dinosaurio.fset3',
+            './markers/dinosaurio.iset',
+            './media/volcano.glb'
+          ];
+          
+          urls.forEach(url => {
+            fetch(url)
+              .then(response => {
+                if (response.ok) {
+                  log(`✅ ${url} - Accesible (${response.status})`);
+                } else {
+                  log(`❌ ${url} - Error (${response.status})`);
+                }
+              })
+              .catch(error => {
+                log(`❌ ${url} - Error: ${error.message}`);
+              });
+          });
+        }
+        
+        // Cambiar entre modos (patrón/NFT)
+        document.querySelector('.mode-toggle').addEventListener('click', function() {
+          const isNFTMode = this.getAttribute('data-mode') === 'nft';
+          if (isNFTMode) {
+            // Cambiar a modo patrón
+            this.setAttribute('data-mode', 'pattern');
+            this.textContent = "Cambiar a NFT";
+            document.querySelector('#marker-nft').setAttribute('visible', 'false');
+            document.querySelector('#marker-pattern').setAttribute('visible', 'true');
+            log("Cambiado a modo PATRÓN");
+          } else {
+            // Cambiar a modo NFT
+            this.setAttribute('data-mode', 'nft');
+            this.textContent = "Cambiar a Patrón";
+            document.querySelector('#marker-pattern').setAttribute('visible', 'false');
+            document.querySelector('#marker-nft').setAttribute('visible', 'true');
+            log("Cambiado a modo NFT");
+          }
+        });
+        
+        // Iniciar escena
         scene.addEventListener('loaded', () => {
+          log("Escena A-Frame cargada correctamente");
           setTimeout(() => {
             loader.style.display = 'none';
+            log("Pantalla de carga ocultada");
+            checkMarkerFiles();
           }, 2000);
         });
         
         // Manejar errores
         scene.addEventListener('error', (e) => {
-          console.error('Error en la escena:', e.detail);
+          log(`❌ Error en la escena: ${e.detail}`);
           loader.querySelector('div').textContent = 'Error al cargar. Recarga la página.';
+        });
+        
+        // Detectar eventos de marcador
+        scene.addEventListener('markerFound', (e) => {
+          log("¡Marcador detectado!");
+          document.querySelector('.found-message').style.display = 'block';
+        });
+        
+        scene.addEventListener('markerLost', (e) => {
+          log("Marcador perdido");
+          document.querySelector('.found-message').style.display = 'none';
         });
       });
     </script>
@@ -66,20 +165,31 @@
     </div>
     
     <div class="found-message">¡Marcador detectado!</div>
+    <div class="debug-panel">Iniciando depuración...</div>
+    <button class="mode-toggle" data-mode="pattern">Cambiar a NFT</button>
 
     <a-scene
       vr-mode-ui="enabled: false"
       renderer="logarithmicDepthBuffer: true; precision: medium;"
       embedded
-      arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-    >
+      arjs="sourceType: webcam; debugUIEnabled: true;">
+      
+      <!-- Marcador de patrón HIRO (activo inicialmente) -->
+      <a-marker id="marker-pattern" preset="hiro">
+        <a-box position="0 0.5 0" color="blue" scale="0.3 0.3 0.3"></a-box>
+        <a-text value="Marcador HIRO detectado!" position="0 1 0" align="center" color="white" scale="0.5 0.5 0.5"></a-text>
+      </a-marker>
+
+      <!-- Marcador NFT (inicialmente oculto) -->
       <a-nft
+        id="marker-nft"
         type="nft"
         url="./markers/dinosaurio"
         smooth="true"
         smoothCount="10"
         smoothTolerance=".01"
-        smoothThreshold="5">
+        smoothThreshold="5"
+        visible="false">
         
         <a-entity 
           gltf-model="./media/volcano.glb"
@@ -88,11 +198,10 @@
           rotation="0 0 0">
         </a-entity>
         
-        <!-- Elemento simple para verificar el tracking -->
         <a-box position="0 0.5 0" color="red" scale="0.3 0.3 0.3"></a-box>
       </a-nft>
 
-      <a-entity camera="fov: 60; near: 0.1; far: 1000;"></a-entity>
+      <a-entity camera></a-entity>
     </a-scene>
   </body>
 </html>
