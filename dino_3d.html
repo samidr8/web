@@ -45,7 +45,7 @@
         }
 
         .debug-info.minimized {
-            height: A20px;
+            height: 20px; /* CORREGIDO: Se eliminó la "A" extra */
             overflow: hidden;
         }
 
@@ -54,6 +54,7 @@
             justify-content: space-between;
             cursor: pointer;
             font-weight: bold;
+            margin-bottom: 5px; /* Añadido para mejorar la apariencia */
         }
 
         /* Iframe para contenido web (formularios, GeoGebra, etc.) */
@@ -72,20 +73,26 @@
             display: none;
         }
 
+        /* CORREGIDO: Mejorado el botón de cierre para que sea más visible */
         .close-button {
             position: absolute;
-            top: -15px;
-            right: -15px;
+            top: -20px;
+            right: -20px;
             background-color: red;
             color: white;
-            border: none;
+            border: 3px solid white; /* Añadido borde blanco para mayor visibilidad */
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
             cursor: pointer;
             display: none;
             z-index: 1001;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Añadida sombra para destacar */
+            font-weight: bold; /* Texto más grueso */
+            display: flex; /* Para centrar el contenido */
+            justify-content: center;
+            align-items: center;
         }
 
         /* Contenedor de video */
@@ -98,12 +105,35 @@
             max-width: 640px;
             z-index: 1000;
             display: none;
+            background-color: black; /* Fondo para el video */
+            border-radius: 10px;
+            overflow: hidden; /* Para mantener las esquinas redondeadas */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
-        .video-container video {
+        .video-container video,
+        .video-container iframe {
             width: 100%;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            height: 100%;
+            border: none;
+            display: block; /* Asegura que no haya espacios extra */
+        }
+
+        /* Estilo para el título de contenido */
+        #content-title {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+            text-align: center;
+            font-weight: bold;
+            display: none;
         }
 
         /* Evitar zoom en mobile */
@@ -128,11 +158,8 @@
         <div class="debug-content">Iniciando...</div>
     </div>
 
-    <!-- Botón de bloqueo -->
-    <button id="lock-button"
-        style="position: fixed; bottom: 10px; right: 10px; padding: 10px; background-color: rgba(0, 0, 0, 0.7); color: white; border: none; border-radius: 5px; z-index: 1000;">
-        🔒 Bloquear modelo
-    </button>
+    <!-- Título de contenido -->
+    <div id="content-title"></div>
 
     <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
     <iframe id="web-content" class="web-content" allowfullscreen></iframe>
@@ -140,7 +167,7 @@
 
     <!-- Contenedor para videos -->
     <div id="video-container" class="video-container">
-        <video id="ar-video" controls></video>
+        <div id="video-wrapper"></div>
         <button class="close-button" onclick="closeVideo()">✕</button>
     </div>
 
@@ -166,7 +193,8 @@
                     url: "https://samidr8.github.io/web/media/volcano.glb",
                     scale: "500 500 500",
                     position: "50 0 -150",
-                    rotation: "0 0 0"
+                    rotation: "0 0 0",
+                    title: "Modelo 3D de Volcán"
                 }
             },
             {
@@ -174,7 +202,8 @@
                 url: "https://samidr8.github.io/web/markers/zenon",
                 type: "video",
                 content: {
-                    url: "https://www.youtube.com/watch?v=7B0Z_JaEGlU"
+                    url: "https://www.youtube.com/watch?v=7B0Z_JaEGlU",
+                    title: "Video de YouTube"
                 }
             },
             {
@@ -182,7 +211,8 @@
                 url: "https://samidr8.github.io/web/markers/formulario",
                 type: "iframe",
                 content: {
-                    url: "https://forms.office.com/r/FLjQhrUKby"
+                    url: "https://forms.office.com/r/FLjQhrUKby",
+                    title: "Formulario de Microsoft Forms"
                 }
             },
             {
@@ -199,16 +229,14 @@
         ];
 
         let debugMinimized = false;
-        let modelLocked = false;
-        let lastValidPosition = { x: 50, y: 0, z: -150 };
         let currentMarkerId = null;
 
-        // Función para el panel de depuración
+        // CORREGIDO: Función para el panel de depuración
         function toggleDebugPanel() {
             const debugPanel = document.querySelector('.debug-info');
             const toggleBtn = document.querySelector('.toggle-btn');
             debugMinimized = !debugMinimized;
-
+            
             if (debugMinimized) {
                 debugPanel.classList.add('minimized');
                 toggleBtn.textContent = '[+]';
@@ -227,40 +255,15 @@
             console.log(`[${timestamp}] ${message}`);
         }
 
-        // Función para bloquear/desbloquear modelo
-        function toggleModelLock() {
-            modelLocked = !modelLocked;
-            const lockButton = document.getElementById('lock-button');
-
-            if (modelLocked) {
-                lockButton.textContent = "🔓 Desbloquear modelo";
-                log("Modelo bloqueado en posición actual");
-
-                // Guardar la posición actual
-                const modelRoot = document.querySelector(`#model-root-${currentMarkerId}`);
-                if (modelRoot) {
-                    const currentPosition = modelRoot.getAttribute('position');
-                    lastValidPosition = {
-                        x: currentPosition.x,
-                        y: currentPosition.y,
-                        z: currentPosition.z
-                    };
-                }
-            } else {
-                lockButton.textContent = "🔒 Bloquear modelo";
-                log("Modelo desbloqueado - seguirá el marcador");
-            }
-        }
-
         // Función para mostrar contenido web (iframe)
         function showWebContent(url) {
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
-
+            
             iframe.src = url;
             iframe.style.display = 'block';
-            closeButton.style.display = 'block';
-
+            closeButton.style.display = 'flex';
+            
             log(`Mostrando contenido web: ${url}`);
         }
 
@@ -268,51 +271,107 @@
         function closeWebContent() {
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
-
+            
             iframe.src = '';
             iframe.style.display = 'none';
             closeButton.style.display = 'none';
-
+            
             log('Contenido web cerrado');
         }
 
-        // Función para mostrar video
+        // CORREGIDO: Función para mostrar video (ahora maneja correctamente videos de YouTube)
         function showVideo(url) {
             const videoContainer = document.getElementById('video-container');
-            const video = document.getElementById('ar-video');
-
-            video.src = url;
+            const videoWrapper = document.getElementById('video-wrapper');
+            const closeButton = videoContainer.querySelector('.close-button');
+            
+            // Limpiar el contenedor
+            videoWrapper.innerHTML = '';
+            
+            // Verificar si es un enlace de YouTube
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                // Extraer el ID del video de YouTube
+                let videoId = '';
+                if (url.includes('youtube.com/watch?v=')) {
+                    videoId = url.split('v=')[1].split('&')[0];
+                } else if (url.includes('youtu.be/')) {
+                    videoId = url.split('youtu.be/')[1];
+                }
+                
+                if (videoId) {
+                    // Crear un iframe para el video de YouTube
+                    const iframe = document.createElement('iframe');
+                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                    iframe.setAttribute('allowfullscreen', 'true');
+                    iframe.setAttribute('allow', 'autoplay; encrypted-media');
+                    
+                    videoWrapper.appendChild(iframe);
+                    log(`Reproduciendo video de YouTube: ${videoId}`);
+                } else {
+                    log('Error: No se pudo extraer el ID del video de YouTube');
+                    alert('No se pudo cargar el video de YouTube');
+                    return;
+                }
+            } else {
+                // Es un video MP4 u otro formato directo
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.autoplay = true;
+                video.playsInline = true;
+                
+                videoWrapper.appendChild(video);
+                log(`Reproduciendo video directo: ${url}`);
+                
+                // Manejo de errores
+                video.onerror = function() {
+                    log('Error: No se pudo cargar el video');
+                    alert('No se pudo cargar el video. Verifique la URL.');
+                };
+            }
+            
+            // Mostrar el contenedor y el botón de cierre
             videoContainer.style.display = 'block';
-
-            log(`Reproduciendo video: ${url}`);
+            closeButton.style.display = 'flex';
         }
 
         // Función para cerrar video
         function closeVideo() {
             const videoContainer = document.getElementById('video-container');
-            const video = document.getElementById('ar-video');
-
-            video.pause();
-            video.src = '';
+            const videoWrapper = document.getElementById('video-wrapper');
+            const closeButton = videoContainer.querySelector('.close-button');
+            
+            // Limpiar el contenedor
+            videoWrapper.innerHTML = '';
             videoContainer.style.display = 'none';
-
+            closeButton.style.display = 'none';
+            
             log('Video cerrado');
         }
 
-        // Función para activar contenido basado en el tipo de marcador
+        // Función para mostrar el título del contenido
+        function showContentTitle(title) {
+            const titleEl = document.getElementById('content-title');
+            
+            titleEl.textContent = title;
+            titleEl.style.display = 'block';
+            
+            log(`Mostrando título: ${title}`);
+        }
+
         // Función mejorada para activar contenido basado en el tipo de marcador
         function activateMarkerContent(marker) {
             currentMarkerId = marker.id;
             log(`Activando contenido para marcador: ${marker.id}`);
-
+            
             // Ocultar todo el contenido primero
             hideAllContent();
-
+            
             // Mostrar título del contenido si existe
             if (marker.content.title) {
                 showContentTitle(marker.content.title);
             }
-
+            
             // Activar el contenido apropiado según el tipo
             switch (marker.type) {
                 case "3d-model":
@@ -320,77 +379,44 @@
                     const modelEntity = document.querySelector(`#model-root-${marker.id}`);
                     if (modelEntity) {
                         modelEntity.setAttribute('visible', true);
-
-                        // Mostrar el botón de bloqueo solo para modelos 3D
-                        document.getElementById('lock-button').style.display = 'block';
                     }
                     break;
-
+                    
                 case "video":
                     showVideo(marker.content.url);
-                    // Ocultar botón de bloqueo para videos
-                    document.getElementById('lock-button').style.display = 'none';
                     break;
-
+                    
                 case "iframe":
                     showWebContent(marker.content.url);
-                    // Ocultar botón de bloqueo para iframes
-                    document.getElementById('lock-button').style.display = 'none';
                     break;
-
+                    
                 default:
                     log(`Tipo de contenido desconocido: ${marker.type}`);
             }
         }
 
-        // Función para mostrar el título del contenido
-        function showContentTitle(title) {
-            // Crear elemento de título si no existe
-            let titleEl = document.getElementById('content-title');
-            if (!titleEl) {
-                titleEl = document.createElement('div');
-                titleEl.id = 'content-title';
-                titleEl.style.position = 'fixed';
-                titleEl.style.top = '20px';
-                titleEl.style.left = '50%';
-                titleEl.style.transform = 'translateX(-50%)';
-                titleEl.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                titleEl.style.color = 'white';
-                titleEl.style.padding = '10px 20px';
-                titleEl.style.borderRadius = '20px';
-                titleEl.style.fontFamily = 'Arial, sans-serif';
-                titleEl.style.zIndex = '1000';
-                document.body.appendChild(titleEl);
-            }
-
-            titleEl.textContent = title;
-            titleEl.style.display = 'block';
-        }
-
-        // Añadir a la función hideAllContent
+        // Función para ocultar todo el contenido
         function hideAllContent() {
             // Ocultar todos los modelos 3D
             document.querySelectorAll('[id^="model-root-"]').forEach(model => {
                 model.setAttribute('visible', false);
             });
-
+            
             // Cerrar contenido web
             closeWebContent();
-
+            
             // Cerrar video
             closeVideo();
-
+            
             // Ocultar título
             const titleEl = document.getElementById('content-title');
-            if (titleEl) {
-                titleEl.style.display = 'none';
-            }
+            titleEl.style.display = 'none';
         }
 
         // Función para crear marcadores NFT dinámicamente
         function createNFTMarkers() {
             const container = document.getElementById('nft-markers-container');
-
+            
             markers.forEach(marker => {
                 // Crear elemento a-nft para cada marcador
                 const nftEl = document.createElement('a-nft');
@@ -404,76 +430,57 @@
                 nftEl.setAttribute('raycaster', 'objects: .clickable');
                 nftEl.setAttribute('emitevents', 'true');
                 nftEl.setAttribute('cursor', 'fuse: false; rayOrigin: mouse;');
-
+                
                 // Si es un modelo 3D, crear la entidad del modelo
                 if (marker.type === "3d-model") {
                     const modelRoot = document.createElement('a-entity');
                     modelRoot.setAttribute('id', `model-root-${marker.id}`);
                     modelRoot.setAttribute('position', marker.content.position);
                     modelRoot.setAttribute('visible', false); // Inicialmente oculto
-
+                    
                     const model = document.createElement('a-entity');
                     model.setAttribute('id', `model-${marker.id}`);
                     model.setAttribute('gltf-model', marker.content.url);
                     model.setAttribute('scale', marker.content.scale);
                     model.setAttribute('rotation', marker.content.rotation);
-
+                    
                     modelRoot.appendChild(model);
                     nftEl.appendChild(modelRoot);
                 }
-
+                
                 // Agregar eventos al marcador
                 nftEl.addEventListener('markerFound', function () {
                     log(`🎯 Marcador ${marker.id} encontrado`);
-
+                    
                     // Activar contenido para este marcador
                     activateMarkerContent(marker);
-
-                    // Si el modelo está bloqueado (para modelos 3D)
-                    if (modelLocked && marker.type === "3d-model") {
-                        const modelRoot = document.querySelector(`#model-root-${marker.id}`);
-                        if (modelRoot) {
-                            modelRoot.setAttribute('position', lastValidPosition);
-                        }
-                    }
                 });
-
+                
                 nftEl.addEventListener('markerLost', function () {
                     log(`❌ Marcador ${marker.id} perdido`);
-
-                    // Si el modelo está bloqueado, mantener la última posición
-                    // No ocultamos el contenido para que el usuario pueda seguir interactuando
-                    if (modelLocked && marker.type === "3d-model") {
-                        const modelRoot = document.querySelector(`#model-root-${marker.id}`);
-                        if (modelRoot) {
-                            modelRoot.setAttribute('position', lastValidPosition);
-                        }
-                    }
+                    // El contenido permanece visible para permitir la interacción
                 });
-
+                
                 // Agregar marcador al contenedor
                 container.appendChild(nftEl);
             });
-
+            
             log(`${markers.length} marcadores NFT creados`);
         }
 
         // Al cargar la página
         window.addEventListener('load', function () {
             log("Página cargada, inicializando sistema AR");
-
+            
             // Crear marcadores NFT
             createNFTMarkers();
-
-            // Configurar botón de bloqueo
-            document.getElementById('lock-button').addEventListener('click', toggleModelLock);
-
+            
             // Ocultar el loader después de inicialización
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
                 log("Sistema AR inicializado");
             }, 3000);
-
+            
             // Prevenir zoom en móviles
             document.addEventListener('touchmove', function (e) {
                 if (e.scale !== 1) { e.preventDefault(); }
