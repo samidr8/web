@@ -2,22 +2,13 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR.js NFT con Modelo 3D Visible</title>
     <!-- Versiones específicas que sabemos que funcionan -->
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.0.4/dist/aframe-master.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
         .arjs-loader {
             height: 100%;
             width: 100%;
@@ -66,7 +57,7 @@
     </style>
 </head>
 
-<body>
+<body style="margin: 0; overflow: hidden;">
     <!-- Loader mientras se inicializa -->
     <div class="arjs-loader">
         <div>Cargando NFT, por favor espere...</div>
@@ -110,13 +101,6 @@
                 }
             }
         });
-        
-        // Registro componente para controles de orientación del dispositivo
-        AFRAME.registerComponent('arjs-device-orientation-controls', {
-            init: function() {
-                log('Controles de orientación del dispositivo inicializados');
-            }
-        });
     </script>
     
     <!-- Escena A-Frame con configuración específica para NFT -->
@@ -125,14 +109,12 @@
         renderer="logarithmicDepthBuffer: true; colorManagement: true; precision: medium;"
         embedded
         arjs="sourceType: webcam; 
-              debugUIEnabled: false; 
+              debugUIEnabled: true; 
               detectionMode: mono_and_matrix; 
               maxDetectionRate: 30;
-              trackingMethod: best;
-              sourceWidth: 1280;
-              sourceHeight: 960;
-              displayWidth: window.innerWidth;
-              displayHeight: window.innerHeight;">
+              canvasWidth: 1280; 
+              canvasHeight: 720;
+              trackingMethod: best;">
         
         <!-- Configuración específica del NFT -->
         <a-nft
@@ -143,34 +125,18 @@
             smoothTolerance="0.01"
             smoothThreshold="5">
             
-            <!-- Cubo rojo simple para pruebas -->
-            <a-box 
-                position="0 0 0" 
-                material="color: red;" 
-                scale="50 50 50">
-            </a-box>
-            
             <!-- Modelo 3D con ajustes importantes -->
             <a-entity 
                 gltf-model="https://samidr8.github.io/web/media/volcano.glb"
-                scale="150 150 150"  
-                position="250 300 0" 
+                scale="100 100 100"  
+                position="0 0 0" 
                 rotation="0 0 0"
                 model-handler >
             </a-entity>
-            
-            <!-- Texto para confirmar visualmente que el marcador funciona -->
-            <a-text 
-                value="NFT DETECTADO!" 
-                position="0 100 0" 
-                scale="100 100 100" 
-                align="center" 
-                color="white">
-            </a-text>
         </a-nft>
         
-        <!-- Cámara con configuración mejorada -->
-        <a-entity camera look-controls="enabled: false" arjs-device-orientation-controls></a-entity>
+        <!-- Cámara con límites razonables -->
+        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
@@ -183,40 +149,20 @@
             console.log(`[${timestamp}] ${message}`);
         }
         
-        // Al cargar, configurar la escena
+        // Al cargar, configurar el servidor
         window.addEventListener('load', function() {
             log("Página cargada, NFT configurado");
             
-            // Ocultar el loader después de 3 segundos
+            // Ocultar el loader después de 5 segundos
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
                 log("Loader ocultado, AR.js funcionando");
-            }, 3000);
-            
-            // Ajustar tamaño al de la ventana
-            const scene = document.querySelector('a-scene');
-            if (scene.hasLoaded) {
-                scene.resize();
-                log("Escena redimensionada al tamaño de la ventana");
-            }
-        });
-        
-        // Evento de redimensionamiento de ventana
-        window.addEventListener('resize', function() {
-            const scene = document.querySelector('a-scene');
-            if (scene.hasLoaded) {
-                scene.resize();
-                log("Escena redimensionada al tamaño de la ventana");
-            }
+            }, 5000);
         });
         
         // Eventos de marcador NFT
         document.addEventListener('DOMContentLoaded', function() {
             const sceneEl = document.querySelector('a-scene');
-            
-            sceneEl.addEventListener('arjs-nft-loaded', function() {
-                log("✅ Sistema NFT cargado correctamente");
-            });
             
             sceneEl.addEventListener('markerFound', function() {
                 log("🎯 MARCADOR NFT ENCONTRADO!");
