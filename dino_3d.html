@@ -1,207 +1,155 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>AR Dinosaurio - Modo de Diagnóstico</title>
-    <!-- Versiones compatibles -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.0/aframe/build/aframe-ar.js"></script>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR.js NFT Ejemplo Simple</title>
+    <!-- Versión específica de A-Frame que funciona bien con NFT -->
+    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.0.4/dist/aframe-master.min.js"></script>
+    <!-- Versión específica de AR.js optimizada para NFT -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     
     <style>
-      .arjs-loader {
-        height: 100%;
-        width: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        background-color: rgba(0, 0, 0, 0.8);
-        z-index: 9999;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      .arjs-loader div {
-        text-align: center;
-        font-size: 1.25em;
-        color: white;
-      }
-      .found-message {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background-color: green;
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        display: none;
-        z-index: 100;
-      }
-      
-      .debug-panel {
-        position: fixed;
-        bottom: 10px;
-        left: 10px;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        font-family: monospace;
-        font-size: 12px;
-        max-width: 80%;
-        max-height: 30%;
-        overflow-y: auto;
-        z-index: 9998;
-      }
-      
-      .mode-toggle {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background-color: blue;
-        color: white;
-        border: none;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 9998;
-        cursor: pointer;
-      }
+        .arjs-loader {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .arjs-loader div {
+            text-align: center;
+            font-size: 1.25em;
+            color: white;
+        }
+        
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 80%;
+            max-height: 30%;
+            overflow-y: auto;
+        }
     </style>
-    
-    <script>
-      // Ocultar loader cuando la escena esté lista
-      document.addEventListener('DOMContentLoaded', () => {
-        const scene = document.querySelector('a-scene');
-        const loader = document.querySelector('.arjs-loader');
-        const debugPanel = document.querySelector('.debug-panel');
-        
-        // Función para agregar mensajes de depuración
-        function log(message) {
-          const time = new Date().toLocaleTimeString();
-          debugPanel.innerHTML += `<div>[${time}] ${message}</div>`;
-          debugPanel.scrollTop = debugPanel.scrollHeight;
-          console.log(message);
-        }
-        
-        // Verificar URLs del marcador
-        function checkMarkerFiles() {
-          log("Verificando archivos de marcador...");
-          // Lista de URLs a verificar
-          const urls = [
-            './markers/dinosaurio.fset',
-            './markers/dinosaurio.fset3',
-            './markers/dinosaurio.iset',
-            './media/volcano.glb'
-          ];
-          
-          urls.forEach(url => {
-            fetch(url)
-              .then(response => {
-                if (response.ok) {
-                  log(`✅ ${url} - Accesible (${response.status})`);
-                } else {
-                  log(`❌ ${url} - Error (${response.status})`);
-                }
-              })
-              .catch(error => {
-                log(`❌ ${url} - Error: ${error.message}`);
-              });
-          });
-        }
-        
-        // Cambiar entre modos (patrón/NFT)
-        document.querySelector('.mode-toggle').addEventListener('click', function() {
-          const isNFTMode = this.getAttribute('data-mode') === 'nft';
-          if (isNFTMode) {
-            // Cambiar a modo patrón
-            this.setAttribute('data-mode', 'pattern');
-            this.textContent = "Cambiar a NFT";
-            document.querySelector('#marker-nft').setAttribute('visible', 'false');
-            document.querySelector('#marker-pattern').setAttribute('visible', 'true');
-            log("Cambiado a modo PATRÓN");
-          } else {
-            // Cambiar a modo NFT
-            this.setAttribute('data-mode', 'nft');
-            this.textContent = "Cambiar a Patrón";
-            document.querySelector('#marker-pattern').setAttribute('visible', 'false');
-            document.querySelector('#marker-nft').setAttribute('visible', 'true');
-            log("Cambiado a modo NFT");
-          }
-        });
-        
-        // Iniciar escena
-        scene.addEventListener('loaded', () => {
-          log("Escena A-Frame cargada correctamente");
-          setTimeout(() => {
-            loader.style.display = 'none';
-            log("Pantalla de carga ocultada");
-            checkMarkerFiles();
-          }, 2000);
-        });
-        
-        // Manejar errores
-        scene.addEventListener('error', (e) => {
-          log(`❌ Error en la escena: ${e.detail}`);
-          loader.querySelector('div').textContent = 'Error al cargar. Recarga la página.';
-        });
-        
-        // Detectar eventos de marcador
-        scene.addEventListener('markerFound', (e) => {
-          log("¡Marcador detectado!");
-          document.querySelector('.found-message').style.display = 'block';
-        });
-        
-        scene.addEventListener('markerLost', (e) => {
-          log("Marcador perdido");
-          document.querySelector('.found-message').style.display = 'none';
-        });
-      });
-    </script>
-  </head>
+</head>
 
-  <body style="margin: 0; overflow: hidden;">
+<body style="margin: 0; overflow: hidden;">
+    <!-- Loader mientras se inicializa -->
     <div class="arjs-loader">
-      <div>Inicializando cámara AR...</div>
+        <div>Cargando NFT, por favor espere...</div>
     </div>
     
-    <div class="found-message">¡Marcador detectado!</div>
-    <div class="debug-panel">Iniciando depuración...</div>
-    <button class="mode-toggle" data-mode="pattern">Cambiar a NFT</button>
-
+    <!-- Panel de depuración -->
+    <div class="debug-info">Inicializando AR.js NFT...</div>
+    
+    <!-- Escena A-Frame con configuración específica para NFT -->
     <a-scene
-      vr-mode-ui="enabled: false"
-      renderer="logarithmicDepthBuffer: true; precision: medium;"
-      embedded
-      arjs="sourceType: webcam; debugUIEnabled: true;">
-      
-      <!-- Marcador de patrón HIRO (activo inicialmente) -->
-      <a-marker id="marker-pattern" preset="hiro">
-        <a-box position="0 0.5 0" color="blue" scale="0.3 0.3 0.3"></a-box>
-        <a-text value="Marcador HIRO detectado!" position="0 1 0" align="center" color="white" scale="0.5 0.5 0.5"></a-text>
-      </a-marker>
-
-      <!-- Marcador NFT (inicialmente oculto) -->
-      <a-nft
-        id="marker-nft"
-        type="nft"
-        url="./markers/dinosaurio"
-        smooth="true"
-        smoothCount="10"
-        smoothTolerance=".01"
-        smoothThreshold="5"
-        visible="false">
+        vr-mode-ui="enabled: false;"
+        renderer="logarithmicDepthBuffer: true;"
+        embedded
+        arjs="sourceType: webcam; 
+              debugUIEnabled: true; 
+              detectionMode: mono_and_matrix; 
+              maxDetectionRate: 30;
+              canvasWidth: 640; 
+              canvasHeight: 480;
+              trackingMethod: best;">
         
-        <a-entity 
-          gltf-model="./media/volcano.glb"
-          scale="1 1 1"
-          position="0 0 0"
-          rotation="0 0 0">
-        </a-entity>
+        <!-- Configuración específica del NFT -->
+        <a-nft
+            type="nft"
+            url="./markers/dinosaurio"
+            smooth="true"
+            smoothCount="5"
+            smoothTolerance="0.01"
+            smoothThreshold="5">
+            
+            <!-- Modelo 3D simplificado para pruebas -->
+            <a-box position="0 0.5 0" material="color: red;" scale="1 1 1"></a-box>
+            <a-text value="NFT DETECTADO!" position="0 1.5 0" scale="2 2 2" align="center" color="white"></a-text>
+        </a-nft>
         
-        <a-box position="0 0.5 0" color="red" scale="0.3 0.3 0.3"></a-box>
-      </a-nft>
-
-      <a-entity camera></a-entity>
+        <!-- Cámara con límites razonables -->
+        <a-entity camera></a-entity>
     </a-scene>
-  </body>
+
+    <script>
+        // Función para agregar logs al panel de depuración
+        function log(message) {
+            const debugPanel = document.querySelector('.debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugPanel.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugPanel.scrollTop = debugPanel.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        // Verificar la presencia de los archivos del marcador
+        window.addEventListener('load', function() {
+            log("Página cargada, verificando archivos...");
+            
+            // Verificar los archivos del marcador
+            const baseUrl = './markers/dinosaurio';
+            const extensions = ['.fset', '.fset3', '.iset'];
+            
+            extensions.forEach(ext => {
+                const url = baseUrl + ext;
+                fetch(url)
+                    .then(response => {
+                        if (response.ok) {
+                            log(`✅ ${url} - OK (${response.status})`);
+                        } else {
+                            log(`❌ ${url} - Error (${response.status})`);
+                        }
+                    })
+                    .catch(error => {
+                        log(`❌ ${url} - Error: ${error.message}`);
+                    });
+            });
+            
+            // Ocultar el loader después de 5 segundos
+            setTimeout(() => {
+                document.querySelector('.arjs-loader').style.display = 'none';
+                log("Loader ocultado, AR.js debería estar funcionando");
+            }, 5000);
+        });
+        
+        // Eventos de marcador NFT
+        document.addEventListener('DOMContentLoaded', function() {
+            const sceneEl = document.querySelector('a-scene');
+            
+            sceneEl.addEventListener('markerFound', function() {
+                log("🎯 MARCADOR NFT ENCONTRADO!");
+            });
+            
+            sceneEl.addEventListener('markerLost', function() {
+                log("❌ Marcador NFT perdido");
+            });
+            
+            const nft = document.querySelector('a-nft');
+            if (nft) {
+                nft.addEventListener('markerFound', function() {
+                    log("🎯 a-nft: Marcador encontrado!");
+                });
+                
+                nft.addEventListener('markerLost', function() {
+                    log("❌ a-nft: Marcador perdido");
+                });
+            }
+            
+            log("Eventos de marcador registrados");
+        });
+    </script>
+</body>
 </html>
