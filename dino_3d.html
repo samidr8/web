@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR.js NFT con Modelo 3D Optimizado</title>
+    <title>AR.js NFT</title>
     <!-- Bibliotecas actualizadas -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
@@ -29,7 +29,7 @@
         }
         
         .debug-info {
-            position: fixed;
+            position: absolute; /* Cambiado de fixed a absolute para permitir posicionamiento dinámico */
             bottom: 10px;
             left: 10px;
             background-color: rgba(0, 0, 0, 0.7);
@@ -40,8 +40,10 @@
             max-width: 80%;
             max-height: 30%;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* Mejor desplazamiento en iOS */
             transition: height 0.3s ease;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            touch-action: none; /* Evita acciones táctiles por defecto para permitir drag */
         }
         
         .debug-info.minimized {
@@ -52,40 +54,22 @@
         .debug-header {
             display: flex;
             justify-content: space-between;
-            cursor: pointer;
+            cursor: move; /* Indica que es arrastrable */
             font-weight: bold;
-            position: sticky;
-            top: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 5px 0;
-            margin: -5px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            user-select: none; /* Evita selección de texto al arrastrar */
+        }
+
+        .debug-header::before {
+            content: "⋮⋮"; /* Indicador visual de que se puede arrastrar */
+            margin-right: 5px;
+            color: #aaa;
         }
         
         .debug-content {
-            max-height: calc(30vh - 30px);
-            overflow-y: auto;
-            padding-bottom: 10px;
-            padding-top: 5px;
-        }
-        
-        /* Controles de desplazamiento para el panel de depuración */
-        .scroll-controls {
-            display: flex;
-            justify-content: space-between;
-            position: sticky;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 5px 0;
             margin-top: 5px;
-        }
-        
-        .scroll-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 18px;
-            padding: 2px 10px;
-            cursor: pointer;
+            font-size: 0.9em;
         }
         
         /* Evitar zoom en mobile */
@@ -101,17 +85,13 @@
         <div>Cargando NFT, por favor espere...</div>
     </div>
     
-    <!-- Panel de depuración -->
+    <!-- Panel de depuración mejorado -->
     <div class="debug-info">
-        <div class="debug-header" onclick="toggleDebugPanel()">
+        <div class="debug-header">
             <span>Información de depuración</span>
-            <span class="toggle-btn">[-]</span>
+            <span class="toggle-btn" onclick="toggleDebugPanel(event)">[-]</span>
         </div>
         <div class="debug-content">Iniciando...</div>
-        <div class="scroll-controls">
-            <button class="scroll-button" onclick="scrollDebugUp()">▲</button>
-            <button class="scroll-button" onclick="scrollDebugDown()">▼</button>
-        </div>
     </div>
     
     <!-- Botón de bloqueo -->
@@ -125,11 +105,6 @@
         renderer="logarithmicDepthBuffer: true; antialias: true;"
         embedded
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
-        
-        <!-- Superficie virtual para que parezca que el modelo está sobre el marcador -->
-        <a-assets>
-            <a-asset-item id="volcano-model" src="https://samidr8.github.io/web/media/volcano.glb"></a-asset-item>
-        </a-assets>
         
         <!-- Configuración NFT con parámetros optimizados -->
         <a-nft
@@ -146,24 +121,14 @@
             <!-- Modelo 3D -->
             <a-entity 
                 id="model-root" 
-                position="0 -100 -100">
+                position="50 0 -150">
                 <a-entity 
                     id="volcano-model"
-                    gltf-model="#volcano-model"
+                    gltf-model="https://samidr8.github.io/web/media/volcano.glb"
                     scale="500 500 500"
                     position="0 0 0" 
-                    rotation="-90 0 0">
+                    rotation="0 0 0">
                 </a-entity>
-                
-                <!-- Plano invisible para crear efecto de sombra -->
-                <a-plane 
-                    position="0 -0.5 0" 
-                    rotation="-90 0 0" 
-                    width="200" 
-                    height="200" 
-                    color="#7BC8A4" 
-                    opacity="0.2">
-                </a-plane>
             </a-entity>
         </a-nft>
         
@@ -174,10 +139,18 @@
     <script>
         let debugMinimized = false;
         let modelLocked = false;
-        let lastValidPosition = { x: 0, y: -100, z: -100 };
+        let lastValidPosition = { x: 50, y: 0, z: -150 };
+        
+        // Variables para el drag and drop
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
         
         // Función para el panel de depuración
-        function toggleDebugPanel() {
+        function toggleDebugPanel(event) {
+            // Detener la propagación para no interferir con el drag
+            event.stopPropagation();
+            
             const debugPanel = document.querySelector('.debug-info');
             const toggleBtn = document.querySelector('.toggle-btn');
             debugMinimized = !debugMinimized;
@@ -189,23 +162,6 @@
                 debugPanel.classList.remove('minimized');
                 toggleBtn.textContent = '[-]';
             }
-        }
-        
-        // Funciones de desplazamiento para panel de depuración
-        function scrollDebugUp() {
-            const debugContent = document.querySelector('.debug-content');
-            debugContent.scrollBy({
-                top: -100,
-                behavior: 'smooth'
-            });
-        }
-        
-        function scrollDebugDown() {
-            const debugContent = document.querySelector('.debug-content');
-            debugContent.scrollBy({
-                top: 100,
-                behavior: 'smooth'
-            });
         }
         
         // Función para escribir en el panel
@@ -242,12 +198,83 @@
             }
         }
         
+        // Iniciar el arrastre del panel
+        function startDrag(e) {
+            // Uso de e.touches[0] para evento touch, o e para evento mouse
+            const event = e.touches ? e.touches[0] : e;
+            
+            const debugPanel = document.querySelector('.debug-info');
+            const rect = debugPanel.getBoundingClientRect();
+            
+            isDragging = true;
+            
+            // Calcular el offset del ratón/dedo dentro del elemento
+            dragOffsetX = event.clientX - rect.left;
+            dragOffsetY = event.clientY - rect.top;
+            
+            // Prevenir otros eventos
+            e.preventDefault();
+            
+            log("Comenzando a mover panel");
+        }
+        
+        // Mover el panel durante el arrastre
+        function doDrag(e) {
+            if (!isDragging) return;
+            
+            // Uso de e.touches[0] para evento touch, o e para evento mouse
+            const event = e.touches ? e.touches[0] : e;
+            
+            const debugPanel = document.querySelector('.debug-info');
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const panelWidth = debugPanel.offsetWidth;
+            const panelHeight = debugPanel.offsetHeight;
+            
+            // Calcular nueva posición
+            let newLeft = event.clientX - dragOffsetX;
+            let newTop = event.clientY - dragOffsetY;
+            
+            // Limitar al viewport para que no salga de la pantalla
+            newLeft = Math.max(0, Math.min(windowWidth - panelWidth, newLeft));
+            newTop = Math.max(0, Math.min(windowHeight - panelHeight, newTop));
+            
+            // Aplicar la nueva posición
+            debugPanel.style.left = newLeft + 'px';
+            debugPanel.style.top = newTop + 'px';
+            debugPanel.style.bottom = 'auto'; // Quitar posición bottom cuando se está moviendo
+            
+            // Prevenir scroll y otros eventos
+            e.preventDefault();
+        }
+        
+        // Finalizar el arrastre
+        function endDrag() {
+            if (isDragging) {
+                isDragging = false;
+                log("Panel posicionado");
+            }
+        }
+        
         // Al cargar la página
         window.addEventListener('load', function() {
             log("Página cargada, NFT configurado");
             
             // Configurar botón de bloqueo
             document.getElementById('lock-button').addEventListener('click', toggleModelLock);
+            
+            // Configurar eventos para arrastrar el panel de depuración
+            const debugHeader = document.querySelector('.debug-header');
+            
+            // Soporte para eventos touch (móvil)
+            debugHeader.addEventListener('touchstart', startDrag, { passive: false });
+            document.addEventListener('touchmove', doDrag, { passive: false });
+            document.addEventListener('touchend', endDrag);
+            
+            // Soporte para eventos de ratón (desktop)
+            debugHeader.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', doDrag);
+            document.addEventListener('mouseup', endDrag);
             
             // Ocultar el loader después de inicialización
             setTimeout(() => {
