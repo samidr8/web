@@ -45,7 +45,7 @@
         }
 
         .debug-info.minimized {
-            height: 20px; /* CORREGIDO: Se eliminó la "A" extra */
+            height: 20px;
             overflow: hidden;
         }
 
@@ -54,7 +54,7 @@
             justify-content: space-between;
             cursor: pointer;
             font-weight: bold;
-            margin-bottom: 5px; /* Añadido para mejorar la apariencia */
+            margin-bottom: 5px;
         }
 
         /* Iframe para contenido web (formularios, GeoGebra, etc.) */
@@ -73,14 +73,14 @@
             display: none;
         }
 
-        /* CORREGIDO: Mejorado el botón de cierre para que sea más visible */
+        /* CORREGIDO: Removida la propiedad duplicada display */
         .close-button {
             position: absolute;
             top: -20px;
             right: -20px;
             background-color: red;
             color: white;
-            border: 3px solid white; /* Añadido borde blanco para mayor visibilidad */
+            border: 3px solid white;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -88,9 +88,8 @@
             cursor: pointer;
             display: none;
             z-index: 1001;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Añadida sombra para destacar */
-            font-weight: bold; /* Texto más grueso */
-            display: flex; /* Para centrar el contenido */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            font-weight: bold;
             justify-content: center;
             align-items: center;
         }
@@ -105,9 +104,9 @@
             max-width: 640px;
             z-index: 1000;
             display: none;
-            background-color: black; /* Fondo para el video */
+            background-color: black;
             border-radius: 10px;
-            overflow: hidden; /* Para mantener las esquinas redondeadas */
+            overflow: hidden;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
@@ -116,7 +115,7 @@
             width: 100%;
             height: 100%;
             border: none;
-            display: block; /* Asegura que no haya espacios extra */
+            display: block;
         }
 
         /* Estilo para el título de contenido */
@@ -136,6 +135,78 @@
             display: none;
         }
 
+        /* Optimización para dispositivos móviles */
+        @media (orientation: portrait) {
+            .video-container {
+                width: 90%;
+            }
+
+            .web-content {
+                width: 95%;
+                height: 70%;
+            }
+        }
+
+        @media (max-height: 500px) {
+            #content-title {
+                font-size: 14px;
+                padding: 5px 10px;
+            }
+        }
+
+        /* Mensaje de error */
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(200, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            z-index: 10000;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        /* Instrucciones */
+        .instructions {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .instructions-content {
+            background-color: rgba(50, 50, 50, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .instructions button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
         /* Evitar zoom en mobile */
         body {
             touch-action: manipulation;
@@ -147,6 +218,17 @@
     <!-- Loader -->
     <div class="arjs-loader">
         <div>Cargando, por favor espere...</div>
+    </div>
+
+    <!-- Instrucciones para el usuario -->
+    <div class="instructions" id="instructions">
+        <div class="instructions-content">
+            <h2>Instrucciones</h2>
+            <p>Apunta la cámara a un marcador del libro para ver contenido interactivo.</p>
+            <p>Cada página activará diferentes tipos de contenido: modelos 3D, videos, formularios o aplicaciones
+                interactivas.</p>
+            <button onclick="document.getElementById('instructions').style.display='none'">Entendido</button>
+        </div>
     </div>
 
     <!-- Panel de depuración -->
@@ -186,7 +268,7 @@
         // Configuración de marcadores y sus contenidos
         const markers = [
             {
-                id: "dinosaurio",
+                id: "3D-marker",
                 url: "https://samidr8.github.io/web/markers/dinosaurio",
                 type: "3d-model",
                 content: {
@@ -231,7 +313,31 @@
         let debugMinimized = false;
         let currentMarkerId = null;
 
-        // CORREGIDO: Función para el panel de depuración
+        // Verificar compatibilidad con AR
+        function checkARCompatibility() {
+            // Verificar soporte para WebAR
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showErrorMessage("Tu navegador no soporta acceso a la cámara, necesario para AR.");
+                return false;
+            }
+            return true;
+        }
+
+        // Mostrar mensaje de error
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `<p>${message}</p>`;
+            document.body.appendChild(errorDiv);
+            document.querySelector('.arjs-loader').style.display = 'none';
+            
+            // Eliminar mensaje después de 5 segundos
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        // Función para el panel de depuración
         function toggleDebugPanel() {
             const debugPanel = document.querySelector('.debug-info');
             const toggleBtn = document.querySelector('.toggle-btn');
@@ -264,6 +370,12 @@
             iframe.style.display = 'block';
             closeButton.style.display = 'flex';
             
+            // Manejar errores de carga del iframe
+            iframe.onerror = function() {
+                log('Error: No se pudo cargar el contenido web');
+                showErrorMessage('Error al cargar el contenido. Verifique su conexión a Internet.');
+            };
+            
             log(`Mostrando contenido web: ${url}`);
         }
 
@@ -279,7 +391,7 @@
             log('Contenido web cerrado');
         }
 
-        // CORREGIDO: Función para mostrar video (ahora maneja correctamente videos de YouTube)
+        // Función mejorada para mostrar video
         function showVideo(url) {
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
@@ -288,51 +400,58 @@
             // Limpiar el contenedor
             videoWrapper.innerHTML = '';
             
-            // Verificar si es un enlace de YouTube
-            if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                // Extraer el ID del video de YouTube
-                let videoId = '';
-                if (url.includes('youtube.com/watch?v=')) {
-                    videoId = url.split('v=')[1].split('&')[0];
-                } else if (url.includes('youtu.be/')) {
-                    videoId = url.split('youtu.be/')[1];
-                }
-                
-                if (videoId) {
-                    // Crear un iframe para el video de YouTube
-                    const iframe = document.createElement('iframe');
-                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-                    iframe.setAttribute('allowfullscreen', 'true');
-                    iframe.setAttribute('allow', 'autoplay; encrypted-media');
+            try {
+                // Verificar si es un enlace de YouTube
+                if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                    // Extraer el ID del video de YouTube con mejor manejo de formatos
+                    let videoId = '';
+                    if (url.includes('youtube.com/watch?v=')) {
+                        videoId = url.split('v=')[1].split(/[&?]/)[0];
+                    } else if (url.includes('youtu.be/')) {
+                        videoId = url.split('youtu.be/')[1].split(/[&?]/)[0];
+                    } else if (url.includes('youtube.com/embed/')) {
+                        videoId = url.split('embed/')[1].split(/[&?]/)[0];
+                    }
                     
-                    videoWrapper.appendChild(iframe);
-                    log(`Reproduciendo video de YouTube: ${videoId}`);
+                    if (videoId) {
+                        // Crear un iframe para el video de YouTube con mejores opciones
+                        const iframe = document.createElement('iframe');
+                        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+                        iframe.setAttribute('allowfullscreen', 'true');
+                        iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+                        iframe.style.height = '360px'; // Altura estándar para proporción 16:9
+                        
+                        videoWrapper.appendChild(iframe);
+                        log(`Reproduciendo video de YouTube: ${videoId}`);
+                    } else {
+                        throw new Error('No se pudo extraer el ID del video de YouTube');
+                    }
                 } else {
-                    log('Error: No se pudo extraer el ID del video de YouTube');
-                    alert('No se pudo cargar el video de YouTube');
-                    return;
+                    // Es un video MP4 u otro formato directo
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.controls = true;
+                    video.autoplay = true;
+                    video.playsInline = true;
+                    video.style.width = '100%';
+                    
+                    videoWrapper.appendChild(video);
+                    log(`Reproduciendo video directo: ${url}`);
+                    
+                    // Manejo de errores
+                    video.onerror = function() {
+                        throw new Error('Error al cargar el video');
+                    };
                 }
-            } else {
-                // Es un video MP4 u otro formato directo
-                const video = document.createElement('video');
-                video.src = url;
-                video.controls = true;
-                video.autoplay = true;
-                video.playsInline = true;
                 
-                videoWrapper.appendChild(video);
-                log(`Reproduciendo video directo: ${url}`);
+                // Mostrar el contenedor y el botón de cierre
+                videoContainer.style.display = 'block';
+                closeButton.style.display = 'flex';
                 
-                // Manejo de errores
-                video.onerror = function() {
-                    log('Error: No se pudo cargar el video');
-                    alert('No se pudo cargar el video. Verifique la URL.');
-                };
+            } catch (error) {
+                log(`Error: ${error.message}`);
+                showErrorMessage(`Error al cargar el video: ${error.message}`);
             }
-            
-            // Mostrar el contenedor y el botón de cierre
-            videoContainer.style.display = 'block';
-            closeButton.style.display = 'flex';
         }
 
         // Función para cerrar video
@@ -411,6 +530,11 @@
             // Ocultar título
             const titleEl = document.getElementById('content-title');
             titleEl.style.display = 'none';
+            
+            // Monitoreo de memoria (si está disponible)
+            if (window.performance && window.performance.memory) {
+                log(`Uso de memoria: ${Math.round(performance.memory.usedJSHeapSize/1048576)}MB`);
+            }
         }
 
         // Función para crear marcadores NFT dinámicamente
@@ -444,6 +568,16 @@
                     model.setAttribute('scale', marker.content.scale);
                     model.setAttribute('rotation', marker.content.rotation);
                     
+                    // Añadir manejo de eventos para carga de modelos
+                    model.addEventListener('model-loaded', function() {
+                        log(`Modelo 3D cargado correctamente: ${marker.id}`);
+                    });
+                    
+                    model.addEventListener('model-error', function(e) {
+                        log(`Error al cargar modelo 3D: ${marker.id}`);
+                        showErrorMessage(`Error al cargar el modelo 3D. Inténtalo de nuevo.`);
+                    });
+                    
                     modelRoot.appendChild(model);
                     nftEl.appendChild(modelRoot);
                 }
@@ -468,12 +602,42 @@
             log(`${markers.length} marcadores NFT creados`);
         }
 
+        // Manejo de conexión
+        window.addEventListener('offline', function() {
+            log("Conexión perdida");
+            showErrorMessage("Se ha perdido la conexión a Internet. Algunas funciones pueden no estar disponibles.");
+        });
+
+        window.addEventListener('online', function() {
+            log("Conexión recuperada");
+            const errorMessages = document.querySelectorAll('.error-message');
+            errorMessages.forEach(el => el.remove());
+        });
+
         // Al cargar la página
         window.addEventListener('load', function () {
-            log("Página cargada, inicializando sistema AR");
+            log("Página cargada, verificando compatibilidad...");
+            
+            // Verificar compatibilidad
+            if (!checkARCompatibility()) {
+                return; // Detener inicialización si no es compatible
+            }
+            
+            log("Inicializando sistema AR");
             
             // Crear marcadores NFT
             createNFTMarkers();
+            
+            // Comprobar si es la primera visita
+            const firstVisit = !localStorage.getItem('ar_book_visited');
+            if (firstVisit) {
+                // Mostrar instrucciones solo la primera vez
+                document.getElementById('instructions').style.display = 'flex';
+                localStorage.setItem('ar_book_visited', 'true');
+            } else {
+                // Ocultar instrucciones
+                document.getElementById('instructions').style.display = 'none';
+            }
             
             // Ocultar el loader después de inicialización
             setTimeout(() => {
@@ -485,6 +649,15 @@
             document.addEventListener('touchmove', function (e) {
                 if (e.scale !== 1) { e.preventDefault(); }
             }, { passive: false });
+            
+            // Manejar casos donde el navegador pierde foco
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    log("Aplicación en segundo plano");
+                } else {
+                    log("Aplicación en primer plano");
+                }
+            });
         });
     </script>
 </body>
