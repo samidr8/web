@@ -3,10 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR.js NFT Ejemplo Simple</title>
-    <!-- Versión específica de A-Frame que funciona bien con NFT -->
+    <title>AR.js NFT Solución Final</title>
+    <!-- Versión específica que funciona mejor -->
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.0.4/dist/aframe-master.min.js"></script>
-    <!-- Versión específica de AR.js optimizada para NFT -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     
     <style>
@@ -67,10 +66,10 @@
               canvasHeight: 480;
               trackingMethod: best;">
         
-        <!-- Configuración específica del NFT -->
+        <!-- CAMBIAMOS A URL ABSOLUTA CON ORIGEN CORRECTO -->
         <a-nft
             type="nft"
-            url="./markers/dinosaurio"
+            url="https://samidr8.github.io/web//markers/dinosaurio"
             smooth="true"
             smoothCount="5"
             smoothTolerance="0.01"
@@ -95,34 +94,37 @@
             console.log(`[${timestamp}] ${message}`);
         }
         
-        // Verificar la presencia de los archivos del marcador
+        // Al cargar, configurar el servidor
         window.addEventListener('load', function() {
-            log("Página cargada, verificando archivos...");
+            log("Página cargada. Importante: debes reemplazar 'YOUR_SERVER_URL' con la URL real de tu servidor.");
+            
+            // Determinar la URL base del proyecto
+            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+            log(`URL base detectada: ${baseUrl}`);
+            
+            // Sugerir la URL correcta para los marcadores
+            log(`URL sugerida para marcadores: ${baseUrl}markers/dinosaurio`);
             
             // Verificar los archivos del marcador
-            const baseUrl = './markers/dinosaurio';
-            const extensions = ['.fset', '.fset3', '.iset'];
+            const testUrl = baseUrl + 'markers/dinosaurio.fset';
+            fetch(testUrl)
+                .then(response => {
+                    if (response.ok) {
+                        log(`✅ Archivo de marcador accesible: ${testUrl}`);
+                        log("Debes editar este HTML y reemplazar 'YOUR_SERVER_URL' con: " + baseUrl);
+                    } else {
+                        log(`❌ Error accediendo al marcador: ${testUrl} (${response.status})`);
+                    }
+                })
+                .catch(error => {
+                    log(`❌ Error: ${error.message}`);
+                });
             
-            extensions.forEach(ext => {
-                const url = baseUrl + ext;
-                fetch(url)
-                    .then(response => {
-                        if (response.ok) {
-                            log(`✅ ${url} - OK (${response.status})`);
-                        } else {
-                            log(`❌ ${url} - Error (${response.status})`);
-                        }
-                    })
-                    .catch(error => {
-                        log(`❌ ${url} - Error: ${error.message}`);
-                    });
-            });
-            
-            // Ocultar el loader después de 5 segundos
+            // Ocultar el loader después de 8 segundos
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
-                log("Loader ocultado, AR.js debería estar funcionando");
-            }, 5000);
+                log("Loader ocultado, AR.js debería estar funcionando si configuraste la URL correctamente");
+            }, 8000);
         });
         
         // Eventos de marcador NFT
