@@ -3,60 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR.js NFT con Modelo 3D Visible</title>
-    <!-- Versiones específicas que sabemos que funcionan -->
-    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.0.4/dist/aframe-master.min.js"></script>
+    <title>AR.js NFT con Modelo 3D Optimizado</title>
+    <!-- Bibliotecas actualizadas -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    
-    <!-- Componente personalizado para estabilización de movimiento -->
-    <script>
-        AFRAME.registerComponent('model-stabilizer', {
-            schema: {
-                damping: {type: 'number', default: 0.95},
-                maxChange: {type: 'number', default: 0.02}
-            },
-            
-            init: function() {
-                this.lastPosition = new THREE.Vector3();
-                this.lastRotation = new THREE.Euler();
-                this.isFirstUpdate = true;
-            },
-            
-            tick: function() {
-                if (this.el.object3D) {
-                    const currentPosition = this.el.object3D.position;
-                    const currentRotation = this.el.object3D.rotation;
-                    
-                    if (this.isFirstUpdate) {
-                        this.lastPosition.copy(currentPosition);
-                        this.lastRotation.copy(currentRotation);
-                        this.isFirstUpdate = false;
-                        return;
-                    }
-                    
-                    // Aplicar amortiguación a la posición
-                    currentPosition.x = this.lastPosition.x + (currentPosition.x - this.lastPosition.x) * (1 - this.data.damping);
-                    currentPosition.y = this.lastPosition.y + (currentPosition.y - this.lastPosition.y) * (1 - this.data.damping);
-                    currentPosition.z = this.lastPosition.z + (currentPosition.z - this.lastPosition.z) * (1 - this.data.damping);
-                    
-                    // Limitar cambios máximos por frame
-                    if (Math.abs(currentPosition.x - this.lastPosition.x) > this.data.maxChange) {
-                        currentPosition.x = this.lastPosition.x + Math.sign(currentPosition.x - this.lastPosition.x) * this.data.maxChange;
-                    }
-                    if (Math.abs(currentPosition.y - this.lastPosition.y) > this.data.maxChange) {
-                        currentPosition.y = this.lastPosition.y + Math.sign(currentPosition.y - this.lastPosition.y) * this.data.maxChange;
-                    }
-                    if (Math.abs(currentPosition.z - this.lastPosition.z) > this.data.maxChange) {
-                        currentPosition.z = this.lastPosition.z + Math.sign(currentPosition.z - this.lastPosition.z) * this.data.maxChange;
-                    }
-                    
-                    // Guardar posición actual para el próximo frame
-                    this.lastPosition.copy(currentPosition);
-                    this.lastRotation.copy(currentRotation);
-                }
-            }
-        });
-    </script>
     
     <style>
         .arjs-loader {
@@ -71,6 +21,7 @@
             justify-content: center;
             align-items: center;
         }
+        
         .arjs-loader div {
             text-align: center;
             font-size: 1.25em;
@@ -85,7 +36,6 @@
             color: white;
             padding: 10px;
             font-family: monospace;
-            font-size: 12px;
             z-index: 1000;
             max-width: 80%;
             max-height: 30%;
@@ -97,39 +47,15 @@
             height: 20px;
             overflow: hidden;
         }
-
+        
         .debug-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
             cursor: pointer;
             font-weight: bold;
         }
-
-        .debug-content {
-            margin-top: 5px;
-        }
-
-        /* Nueva info de posición para depuración */
-        .position-info {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 1000;
-            transition: height 0.3s ease;
-        }
         
-        .position-info.minimized {
-            height: 20px;
-            overflow: hidden;
-        }
-        
-        /* Prevenir zoom en móviles */
+        /* Evitar zoom en mobile */
         body {
             touch-action: manipulation;
         }
@@ -137,86 +63,68 @@
 </head>
 
 <body style="margin: 0; overflow: hidden;">
-    <!-- Loader mientras se inicializa -->
+    <!-- Loader -->
     <div class="arjs-loader">
         <div>Cargando NFT, por favor espere...</div>
     </div>
     
-    <!-- Panel de depuración con botón para minimizar -->
+    <!-- Panel de depuración -->
     <div class="debug-info">
         <div class="debug-header" onclick="toggleDebugPanel()">
             <span>Información de depuración</span>
             <span class="toggle-btn">[-]</span>
         </div>
-        <div class="debug-content">Inicializando AR.js NFT...</div>
+        <div class="debug-content">Iniciando...</div>
     </div>
     
-    <!-- Panel de posición con botón para minimizar -->
-    <div class="position-info">
-        <div class="debug-header" onclick="togglePositionPanel()">
-            <span>Estado del marcador</span>
-            <span class="position-toggle-btn">[-]</span>
-        </div>
-        <div class="position-content">Esperando marcador...</div>
-    </div>
+    <!-- Botón de bloqueo -->
+    <button id="lock-button" style="position: fixed; bottom: 10px; right: 10px; padding: 10px; background-color: rgba(0, 0, 0, 0.7); color: white; border: none; border-radius: 5px; z-index: 1000;">
+        🔒 Bloquear modelo
+    </button>
     
-    <!-- Escena A-Frame con configuración optimizada para NFT -->
+    <!-- Escena A-Frame con configuración NFT optimizada -->
     <a-scene
         vr-mode-ui="enabled: false;"
-        renderer="logarithmicDepthBuffer: true; colorManagement: true; precision: medium;"
+        renderer="logarithmicDepthBuffer: true; antialias: true;"
         embedded
-        arjs="sourceType: webcam; 
-              debugUIEnabled: false; 
-              detectionMode: mono_and_matrix; 
-              maxDetectionRate: 60;
-              canvasWidth: 480; 
-              canvasHeight: 360;
-              trackingMethod: best;
-              matrixCodeType: 3x3;">
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
         
-        <!-- Configuración específica del NFT con mayor estabilidad -->
+        <!-- Configuración NFT con parámetros optimizados -->
         <a-nft
             type="nft"
             url="https://samidr8.github.io/web/markers/dinosaurio"
             smooth="true"
             smoothCount="10"
-            smoothTolerance="0.005"
-            smoothThreshold="2">
+            smoothTolerance="0.01"
+            smoothThreshold="5"
+            raycaster="objects: .clickable"
+            emitevents="true"
+            cursor="fuse: false; rayOrigin: mouse;">
             
-            <!-- Contenedor para estabilización con componente de estabilizador -->
+            <!-- Modelo 3D -->
             <a-entity 
                 id="model-root" 
-                position="50 0 -150"
-                model-stabilizer="damping: 0.9; maxChange: 0.01">
-                <!-- Modelo 3D con ajustes importantes -->
+                position="50 0 -150">
                 <a-entity 
                     id="volcano-model"
                     gltf-model="https://samidr8.github.io/web/media/volcano.glb"
-                    scale="500 500 500"  
+                    scale="500 500 500"
                     position="0 0 0" 
-                    rotation="0 0 0"
-                    model-handler >
+                    rotation="0 0 0">
                 </a-entity>
             </a-entity>
         </a-nft>
         
-        <!-- Cámara con límites razonables -->
+        <!-- Cámara -->
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // Variables para los paneles y sistema de estabilización
         let debugMinimized = false;
-        let positionMinimized = false;
-        let isMarkerVisible = false;
-        let stabilizationActive = false;
-        let lockButton = null;
         let modelLocked = false;
         let lastValidPosition = { x: 50, y: 0, z: -150 };
-        let positionBuffer = [];
-        const BUFFER_SIZE = 10;
         
-        // Funciones para minimizar/maximizar paneles
+        // Función para el panel de depuración
         function toggleDebugPanel() {
             const debugPanel = document.querySelector('.debug-info');
             const toggleBtn = document.querySelector('.toggle-btn');
@@ -231,82 +139,7 @@
             }
         }
         
-        function togglePositionPanel() {
-            const positionPanel = document.querySelector('.position-info');
-            const toggleBtn = document.querySelector('.position-toggle-btn');
-            positionMinimized = !positionMinimized;
-            
-            if (positionMinimized) {
-                positionPanel.classList.add('minimized');
-                toggleBtn.textContent = '[+]';
-            } else {
-                positionPanel.classList.remove('minimized');
-                toggleBtn.textContent = '[-]';
-            }
-        }
-        
-        // Función para estabilizar el modelo usando promedio móvil
-        function stabilizeModel() {
-            if (!isMarkerVisible || modelLocked) return;
-            
-            const modelRoot = document.querySelector('#model-root');
-            if (!modelRoot) return;
-            
-            // Obtener posición actual
-            const currentPosition = modelRoot.getAttribute('position');
-            
-            // Añadir a buffer
-            positionBuffer.push({
-                x: currentPosition.x,
-                y: currentPosition.y,
-                z: currentPosition.z
-            });
-            
-            // Mantener buffer al tamaño correcto
-            if (positionBuffer.length > BUFFER_SIZE) {
-                positionBuffer.shift();
-            }
-            
-            // Si tenemos suficientes muestras, aplicar promedio
-            if (positionBuffer.length >= 3) {
-                let avgX = 0, avgY = 0, avgZ = 0;
-                
-                positionBuffer.forEach(pos => {
-                    avgX += pos.x;
-                    avgY += pos.y;
-                    avgZ += pos.z;
-                });
-                
-                avgX /= positionBuffer.length;
-                avgY /= positionBuffer.length;
-                avgZ /= positionBuffer.length;
-                
-                // Aplicar posición suavizada
-                modelRoot.setAttribute('position', {
-                    x: avgX,
-                    y: avgY,
-                    z: avgZ
-                });
-                
-                // Guardar última posición válida
-                lastValidPosition = { x: avgX, y: avgY, z: avgZ };
-            }
-        }
-        
-        // Función para bloquear/desbloquear el modelo en su posición actual
-        function toggleModelLock() {
-            modelLocked = !modelLocked;
-            
-            if (modelLocked) {
-                lockButton.textContent = "🔓 Desbloquear modelo";
-                log("Modelo bloqueado en posición actual");
-            } else {
-                lockButton.textContent = "🔒 Bloquear modelo";
-                log("Modelo desbloqueado - seguirá el marcador");
-            }
-        }
-        
-        // Función para agregar logs al panel de depuración
+        // Función para escribir en el panel
         function log(message) {
             const debugContent = document.querySelector('.debug-content');
             const timestamp = new Date().toLocaleTimeString();
@@ -315,84 +148,82 @@
             console.log(`[${timestamp}] ${message}`);
         }
         
-        // Al cargar, configurar la aplicación
+        // Función para bloquear/desbloquear modelo
+        function toggleModelLock() {
+            modelLocked = !modelLocked;
+            const lockButton = document.getElementById('lock-button');
+            
+            if (modelLocked) {
+                lockButton.textContent = "🔓 Desbloquear modelo";
+                log("Modelo bloqueado en posición actual");
+                
+                // Guardar la posición actual
+                const modelRoot = document.querySelector('#model-root');
+                if (modelRoot) {
+                    const currentPosition = modelRoot.getAttribute('position');
+                    lastValidPosition = { 
+                        x: currentPosition.x, 
+                        y: currentPosition.y, 
+                        z: currentPosition.z 
+                    };
+                }
+            } else {
+                lockButton.textContent = "🔒 Bloquear modelo";
+                log("Modelo desbloqueado - seguirá el marcador");
+            }
+        }
+        
+        // Al cargar la página
         window.addEventListener('load', function() {
             log("Página cargada, NFT configurado");
             
-            // Crear botón de bloqueo y añadirlo a la interfaz
-            lockButton = document.createElement('button');
-            lockButton.textContent = "🔒 Bloquear modelo";
-            lockButton.style.position = "fixed";
-            lockButton.style.bottom = "10px";
-            lockButton.style.right = "10px";
-            lockButton.style.padding = "10px";
-            lockButton.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-            lockButton.style.color = "white";
-            lockButton.style.border = "none";
-            lockButton.style.borderRadius = "5px";
-            lockButton.style.zIndex = "1000";
-            lockButton.addEventListener('click', toggleModelLock);
-            document.body.appendChild(lockButton);
+            // Configurar botón de bloqueo
+            document.getElementById('lock-button').addEventListener('click', toggleModelLock);
             
-            // Iniciar sistema de estabilización
-            stabilizationActive = true;
-            setInterval(stabilizeModel, 16); // Aproximadamente 60fps
-            
-            // Ocultar el loader después de 5 segundos
+            // Ocultar el loader después de inicialización
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
-                log("Loader ocultado, AR.js funcionando");
-            }, 5000);
+                log("AR.js inicializado");
+            }, 3000);
             
-            // Desactivar zoom en dispositivos móviles
+            // Prevenir zoom en móviles
             document.addEventListener('touchmove', function(e) {
-                if (e.scale !== 1) {
-                    e.preventDefault();
-                }
+                if (e.scale !== 1) { e.preventDefault(); }
             }, { passive: false });
         });
         
         // Eventos de marcador NFT
         document.addEventListener('DOMContentLoaded', function() {
             const sceneEl = document.querySelector('a-scene');
-            
-            sceneEl.addEventListener('markerFound', function() {
-                isMarkerVisible = true;
-                log("🎯 MARCADOR NFT ENCONTRADO!");
-                document.querySelector('.position-content').innerHTML = "🎯 Marcador detectado";
-                document.querySelector('.position-info').style.backgroundColor = 'rgba(0, 255, 0, 0.7)';
-                
-                // Reiniciar buffer de estabilización
-                positionBuffer = [];
-            });
-            
-            sceneEl.addEventListener('markerLost', function() {
-                isMarkerVisible = false;
-                log("❌ Marcador NFT perdido");
-                document.querySelector('.position-content').innerHTML = "❌ Marcador perdido";
-                document.querySelector('.position-info').style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                
-                // Si no está bloqueado, mantener la última posición válida
-                if (!modelLocked) {
-                    const modelRoot = document.querySelector('#model-root');
-                    if (modelRoot) {
-                        modelRoot.setAttribute('position', lastValidPosition);
-                    }
-                }
-            });
-            
             const nft = document.querySelector('a-nft');
+            
             if (nft) {
                 nft.addEventListener('markerFound', function() {
-                    log("🎯 a-nft: Marcador encontrado!");
+                    log("🎯 Marcador NFT encontrado");
+                    
+                    // Si el modelo está bloqueado, restaurar la posición guardada
+                    if (modelLocked) {
+                        const modelRoot = document.querySelector('#model-root');
+                        if (modelRoot) {
+                            modelRoot.setAttribute('position', lastValidPosition);
+                        }
+                    }
                 });
                 
                 nft.addEventListener('markerLost', function() {
-                    log("❌ a-nft: Marcador perdido");
+                    log("❌ Marcador NFT perdido");
+                    
+                    // Si el modelo está bloqueado, mantener la última posición
+                    if (modelLocked) {
+                        const modelRoot = document.querySelector('#model-root');
+                        if (modelRoot) {
+                            modelRoot.setAttribute('position', lastValidPosition);
+                        }
+                    }
                 });
             }
             
-            log("Eventos de marcador registrados y sistema de estabilización activo");
+            log("Sistema AR inicializado");
         });
     </script>
 </body>
