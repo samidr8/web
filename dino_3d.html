@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Libro Interactivo AR</title>
     <!-- Bibliotecas actualizadas -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -58,15 +58,20 @@
         }
 
         /* Iframe para contenido web (formularios, GeoGebra, etc.) */
-        .web-content {
+        .web-content-wrapper {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%;
-            height: 80%;
-            background-color: white;
+            width: 85%;  /* Ajustado para dejar más espacio para los botones */
+            height: 85%; /* Ajustado para dejar más espacio para los botones */
             z-index: 1000;
+        }
+
+        .web-content {
+            width: 100%;
+            height: 100%;
+            background-color: white;
             border: none;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
@@ -76,26 +81,26 @@
         /* Contenedor de botones para controles de iframe */
         .iframe-controls {
             position: absolute;
-            top: -20px;
-            right: -20px;
-            display: flex;
-            gap: 10px;
+            top: -25px;  /* Movido más arriba */
+            right: -25px; /* Movido más a la derecha */
+            display: none;
+            gap: 15px;  /* Más espacio entre botones */
         }
 
         /* Botón de cierre y pantalla completa */
         .control-button {
-            width: 40px;
-            height: 40px;
+            width: 50px;  /* Más grande */
+            height: 50px; /* Más grande */
             border-radius: 50%;
-            border: 3px solid white;
+            border: 4px solid white; /* Borde más grueso */
             color: white;
-            font-size: 20px;
+            font-size: 24px; /* Texto más grande */
             font-weight: bold;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7); /* Sombra más notoria */
             z-index: 1001;
         }
 
@@ -113,7 +118,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%;
+            width: 85%;
+            height: auto;
             max-width: 640px;
             z-index: 1000;
             display: none;
@@ -121,6 +127,13 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            aspect-ratio: 16/9; /* Mantener proporción de aspecto */
+        }
+
+        .video-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
         }
 
         .video-container video,
@@ -148,14 +161,29 @@
             display: none;
         }
 
-        /* Evitar zoom en mobile */
+        /* Evitar zoom en mobile - modificado para mayor seguridad */
         body {
-            touch-action: manipulation;
+            touch-action: none;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Estilo específico para GeoGebra */
+        .geogebra-wrapper {
+            overflow: hidden; /* Evitar scrollbars */
+            border-radius: 10px;
+            background-color: white;
+        }
+
+        .a-enter-vr-button {
+            display: none !important; /* Ocultar botón de VR de A-Frame */
         }
     </style>
 </head>
 
-<body style="margin: 0; overflow: hidden;">
+<body>
     <!-- Loader -->
     <div class="arjs-loader">
         <div>Cargando, por favor espere...</div>
@@ -184,7 +212,7 @@
 
     <!-- Contenedor para videos -->
     <div id="video-container" class="video-container">
-        <div id="video-wrapper"></div>
+        <div id="video-wrapper" class="video-wrapper"></div>
         <div class="iframe-controls">
             <button class="control-button fullscreen-button" onclick="toggleVideoFullscreen()">⛶</button>
             <button class="control-button close-button" onclick="closeVideo()">✕</button>
@@ -240,7 +268,7 @@
                 url: "https://samidr8.github.io/web/markers/geogebra",
                 type: "iframe",
                 content: {
-                    url: "https://www.geogebra.org/material/iframe/id/DCDmYQ8z", // URL modificada para visualización limpia
+                    url: "https://www.geogebra.org/material/iframe/id/DCDmYQ8z/width/1280/height/720/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false",
                     title: "Applet de GeoGebra",
                     isGeoGebra: true
                 }
@@ -331,9 +359,12 @@
             const iframe = document.getElementById('web-content');
             const controls = document.querySelector('.web-content-wrapper .iframe-controls');
             
-            // Si es GeoGebra, usar la URL para visualización limpia
+            // Aplicar clases para GeoGebra si es necesario
             if (isGeoGebra) {
-                log(`Mostrando GeoGebra en modo limpio: ${url}`);
+                iframe.classList.add('geogebra-wrapper');
+                log(`Mostrando GeoGebra en modo optimizado: ${url}`);
+            } else {
+                iframe.classList.remove('geogebra-wrapper');
             }
             
             iframe.src = url;
@@ -377,7 +408,7 @@
                 if (videoId) {
                     // Crear un iframe para el video de YouTube
                     const iframe = document.createElement('iframe');
-                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&showinfo=0`;
                     iframe.setAttribute('allowfullscreen', 'true');
                     iframe.setAttribute('allow', 'autoplay; encrypted-media');
                     
@@ -544,6 +575,21 @@
             log(`${markers.length} marcadores NFT creados`);
         }
 
+        // Función para evitar el zoom del navegador en dispositivos táctiles
+        function preventZoom(e) {
+            const t2 = e.timeStamp;
+            const t1 = e.currentTarget.dataset.lastTouch || t2;
+            const dt = t2 - t1;
+            const fingers = e.touches.length;
+            
+            e.currentTarget.dataset.lastTouch = t2;
+            
+            if (!dt || dt > 500 || fingers > 1) return; // No prevenir si no es doble toque o multitoque
+            
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
         // Al cargar la página
         window.addEventListener('load', function () {
             log("Página cargada, inicializando sistema AR");
@@ -557,10 +603,25 @@
                 log("Sistema AR inicializado");
             }, 3000);
             
-            // Prevenir zoom en móviles
-            document.addEventListener('touchmove', function (e) {
-                if (e.scale !== 1) { e.preventDefault(); }
+            // Prevenir zoom en móviles - eventos múltiples para mayor seguridad
+            document.addEventListener('touchstart', preventZoom, { passive: false });
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
             }, { passive: false });
+            
+            // Forzar redimensionamiento del viewport en orientación móvil
+            window.addEventListener('orientationchange', function() {
+                // Pequeño retraso para permitir que el navegador termine de cambiar la orientación
+                setTimeout(function() {
+                    const viewportMeta = document.querySelector('meta[name="viewport"]');
+                    if (viewportMeta) {
+                        viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+                    }
+                    log("Orientación cambiada, viewport ajustado");
+                }, 300);
+            });
         });
     </script>
 </body>
