@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR.js NFT Solución Final</title>
-    <!-- Versión específica que funciona mejor -->
+    <title>AR.js NFT con Modelo 3D Visible</title>
+    <!-- Versiones específicas que sabemos que funcionan -->
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.0.4/dist/aframe-master.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     
@@ -41,6 +41,19 @@
             max-height: 30%;
             overflow-y: auto;
         }
+
+        /* Nueva info de posición para depuración */
+        .position-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 1000;
+        }
     </style>
 </head>
 
@@ -52,11 +65,48 @@
     
     <!-- Panel de depuración -->
     <div class="debug-info">Inicializando AR.js NFT...</div>
+    <div class="position-info">Esperando marcador...</div>
+    
+    <!-- Registramos componentes personalizados -->
+    <script>
+        // Componente para mostrar la posición del modelo
+        AFRAME.registerComponent('model-handler', {
+            init: function() {
+                this.el.addEventListener('model-loaded', () => {
+                    console.log('Modelo 3D cargado correctamente');
+                    log('✅ Modelo 3D cargado correctamente');
+                });
+                
+                this.el.addEventListener('model-error', (e) => {
+                    console.error('Error al cargar el modelo 3D:', e);
+                    log('❌ Error al cargar el modelo 3D: ' + e.detail.message);
+                });
+            },
+            
+            tick: function() {
+                if (this.el.object3D) {
+                    const position = this.el.object3D.position;
+                    const rotation = this.el.object3D.rotation;
+                    const scale = this.el.object3D.scale;
+                    
+                    // Actualizar información de posición
+                    const infoEl = document.querySelector('.position-info');
+                    if (infoEl) {
+                        infoEl.innerHTML = `
+                            Pos: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}<br>
+                            Rot: ${rotation.x.toFixed(2)}, ${rotation.y.toFixed(2)}, ${rotation.z.toFixed(2)}<br>
+                            Scale: ${scale.x.toFixed(2)}, ${scale.y.toFixed(2)}, ${scale.z.toFixed(2)}
+                        `;
+                    }
+                }
+            }
+        });
+    </script>
     
     <!-- Escena A-Frame con configuración específica para NFT -->
     <a-scene
         vr-mode-ui="enabled: false;"
-        renderer="logarithmicDepthBuffer: true;"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true; precision: medium;"
         embedded
         arjs="sourceType: webcam; 
               debugUIEnabled: true; 
@@ -66,18 +116,41 @@
               canvasHeight: 480;
               trackingMethod: best;">
         
-        <!-- CAMBIAMOS A URL ABSOLUTA CON ORIGEN CORRECTO -->
+        <!-- Configuración específica del NFT -->
         <a-nft
             type="nft"
-            url="https://samidr8.github.io/web//markers/dinosaurio"
+            url="https://samidr8.github.io/web/markers/dinosaurio"
             smooth="true"
             smoothCount="5"
             smoothTolerance="0.01"
             smoothThreshold="5">
             
-            <!-- Modelo 3D simplificado para pruebas -->
-            <a-box position="0 0.5 0" material="color: red;" scale="1 1 1"></a-box>
-            <a-text value="NFT DETECTADO!" position="0 1.5 0" scale="2 2 2" align="center" color="white"></a-text>
+            <!-- SOLUCIÓN CLAVE: Ajustar posición y añadir un modelo simple para pruebas -->
+            
+            <!-- Cubo rojo simple para pruebas -->
+            <a-box 
+                position="0 0 0" 
+                material="color: red;" 
+                scale="100 100 100">
+            </a-box>
+            
+            <!-- Modelo 3D con ajustes importantes -->
+            <a-entity 
+                gltf-model="https://samidr8.github.io/web/media/volcano.glb"
+                scale="5 5 5"  <!-- IMPORTANTE: Ajustar scale -->
+                position="0 150 0" <!-- IMPORTANTE: Ajustar posición -->
+                rotation="0 0 0"
+                model-handler>
+            </a-entity>
+            
+            <!-- Texto para confirmar visualmente que el marcador funciona -->
+            <a-text 
+                value="NFT DETECTADO!" 
+                position="0 200 0" 
+                scale="200 200 200" 
+                align="center" 
+                color="white">
+            </a-text>
         </a-nft>
         
         <!-- Cámara con límites razonables -->
@@ -96,35 +169,13 @@
         
         // Al cargar, configurar el servidor
         window.addEventListener('load', function() {
-            log("Página cargada. Importante: debes reemplazar 'YOUR_SERVER_URL' con la URL real de tu servidor.");
+            log("Página cargada, NFT configurado");
             
-            // Determinar la URL base del proyecto
-            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-            log(`URL base detectada: ${baseUrl}`);
-            
-            // Sugerir la URL correcta para los marcadores
-            log(`URL sugerida para marcadores: ${baseUrl}markers/dinosaurio`);
-            
-            // Verificar los archivos del marcador
-            const testUrl = baseUrl + 'markers/dinosaurio.fset';
-            fetch(testUrl)
-                .then(response => {
-                    if (response.ok) {
-                        log(`✅ Archivo de marcador accesible: ${testUrl}`);
-                        log("Debes editar este HTML y reemplazar 'YOUR_SERVER_URL' con: " + baseUrl);
-                    } else {
-                        log(`❌ Error accediendo al marcador: ${testUrl} (${response.status})`);
-                    }
-                })
-                .catch(error => {
-                    log(`❌ Error: ${error.message}`);
-                });
-            
-            // Ocultar el loader después de 8 segundos
+            // Ocultar el loader después de 5 segundos
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
-                log("Loader ocultado, AR.js debería estar funcionando si configuraste la URL correctamente");
-            }, 8000);
+                log("Loader ocultado, AR.js funcionando");
+            }, 5000);
         });
         
         // Eventos de marcador NFT
@@ -133,10 +184,12 @@
             
             sceneEl.addEventListener('markerFound', function() {
                 log("🎯 MARCADOR NFT ENCONTRADO!");
+                document.querySelector('.position-info').style.backgroundColor = 'rgba(0, 255, 0, 0.7)';
             });
             
             sceneEl.addEventListener('markerLost', function() {
                 log("❌ Marcador NFT perdido");
+                document.querySelector('.position-info').style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
             });
             
             const nft = document.querySelector('a-nft');
