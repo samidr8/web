@@ -3,10 +3,10 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Libro Interactivo AR</title>
-    <!-- Bibliotecas actualizadas - usando versiones específicas para mayor compatibilidad -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <!-- Bibliotecas actualizadas -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
     <style>
@@ -29,8 +29,7 @@
             color: white;
         }
 
-        /* Panel de depuración - simplificado */
-        #debug-info {
+        .debug-info {
             position: fixed;
             bottom: 10px;
             left: 10px;
@@ -39,83 +38,61 @@
             padding: 10px;
             font-family: monospace;
             z-index: 1000;
-            width: 80%;
-            max-height: 30vh;
+            max-width: 80%;
+            max-height: 30%;
+            overflow-y: auto;
+            transition: height 0.3s ease;
+        }
+
+        .debug-info.minimized {
+            height: 20px; /* CORREGIDO: Se eliminó la "A" extra */
             overflow: hidden;
-            border-radius: 5px;
         }
 
-        #debug-info.collapsed {
-            max-height: 30px;
-        }
-
-        #debug-header {
+        .debug-header {
             display: flex;
             justify-content: space-between;
             cursor: pointer;
             font-weight: bold;
-            padding-bottom: 5px;
+            margin-bottom: 5px; /* Añadido para mejorar la apariencia */
         }
 
-        #debug-content {
-            overflow-y: auto;
-            max-height: calc(30vh - 30px);
-            margin-top: 5px;
-        }
-
-        /* Iframe para contenido web */
-        .web-content-wrapper {
+        /* Iframe para contenido web (formularios, GeoGebra, etc.) */
+        .web-content {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 85%;
-            height: 85%;
-            z-index: 1000;
-        }
-
-        .web-content {
-            width: 100%;
-            height: 100%;
+            width: 80%;
+            height: 80%;
             background-color: white;
+            z-index: 1000;
             border: none;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             display: none;
         }
 
-        /* Contenedor de botones */
-        .iframe-controls {
+        /* CORREGIDO: Mejorado el botón de cierre para que sea más visible */
+        .close-button {
             position: absolute;
-            top: -30px;
-            right: -30px;
-            display: none;
-            gap: 15px;
-        }
-
-        /* Botones de control */
-        .control-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 5px solid white;
+            top: -20px;
+            right: -20px;
+            background-color: red;
             color: white;
-            font-size: 28px;
-            font-weight: bold;
+            border: 3px solid white; /* Añadido borde blanco para mayor visibilidad */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
             cursor: pointer;
-            display: flex;
+            display: none;
+            z-index: 1001;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Añadida sombra para destacar */
+            font-weight: bold; /* Texto más grueso */
+            display: flex; /* Para centrar el contenido */
             justify-content: center;
             align-items: center;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
-            z-index: 1001;
-        }
-
-        .close-button {
-            background-color: red;
-        }
-
-        .fullscreen-button {
-            background-color: #0066ff;
         }
 
         /* Contenedor de video */
@@ -124,22 +101,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 85%;
-            height: auto;
+            width: 80%;
             max-width: 640px;
             z-index: 1000;
             display: none;
-            background-color: black;
+            background-color: black; /* Fondo para el video */
             border-radius: 10px;
-            overflow: hidden;
+            overflow: hidden; /* Para mantener las esquinas redondeadas */
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            aspect-ratio: 16/9;
-        }
-
-        .video-wrapper {
-            width: 100%;
-            height: 100%;
-            position: relative;
         }
 
         .video-container video,
@@ -147,10 +116,10 @@
             width: 100%;
             height: 100%;
             border: none;
-            display: block;
+            display: block; /* Asegura que no haya espacios extra */
         }
 
-        /* Título de contenido */
+        /* Estilo para el título de contenido */
         #content-title {
             position: fixed;
             top: 20px;
@@ -167,70 +136,49 @@
             display: none;
         }
 
-        /* Arreglos para A-Frame y AR.js */
+        /* Evitar zoom en mobile */
         body {
-            margin: 0;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .a-enter-vr, 
-        .a-enter-ar {
-            display: none !important;
+            touch-action: manipulation;
         }
     </style>
 </head>
 
-<body>
+<body style="margin: 0; overflow: hidden;">
     <!-- Loader -->
     <div class="arjs-loader">
         <div>Cargando, por favor espere...</div>
     </div>
 
-    <!-- Panel de depuración simplificado con IDs en lugar de clases -->
-    <div id="debug-info">
-        <div id="debug-header">
+    <!-- Panel de depuración -->
+    <div class="debug-info">
+        <div class="debug-header" onclick="toggleDebugPanel()">
             <span>Información de depuración</span>
-            <span id="toggle-btn">[-]</span>
+            <span class="toggle-btn">[-]</span>
         </div>
-        <div id="debug-content">Iniciando...</div>
+        <div class="debug-content">Iniciando...</div>
     </div>
 
     <!-- Título de contenido -->
     <div id="content-title"></div>
 
-    <!-- Contenedor para iframe -->
-    <div class="web-content-wrapper">
-        <iframe id="web-content" class="web-content" allowfullscreen></iframe>
-        <div class="iframe-controls">
-            <button class="control-button fullscreen-button" onclick="toggleFullscreen()">⛶</button>
-            <button class="control-button close-button" onclick="closeWebContent()">✕</button>
-        </div>
-    </div>
+    <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
+    <iframe id="web-content" class="web-content" allowfullscreen></iframe>
+    <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
 
     <!-- Contenedor para videos -->
     <div id="video-container" class="video-container">
-        <div id="video-wrapper" class="video-wrapper"></div>
-        <div class="iframe-controls">
-            <button class="control-button fullscreen-button" onclick="toggleVideoFullscreen()">⛶</button>
-            <button class="control-button close-button" onclick="closeVideo()">✕</button>
-        </div>
+        <div id="video-wrapper"></div>
+        <button class="close-button" onclick="closeVideo()">✕</button>
     </div>
 
-    <!-- Escena A-Frame simplificada -->
-    <a-scene 
-        embedded
-        vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+    <!-- Escena A-Frame con configuración NFT optimizada -->
+    <a-scene vr-mode-ui="enabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;" embedded
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
         <!-- Los marcadores NFT se agregarán dinámicamente aquí -->
         <a-entity id="nft-markers-container"></a-entity>
 
-        <!-- Cámara con lookcontrols desactivados -->
+        <!-- Cámara -->
         <a-entity camera></a-entity>
     </a-scene>
 
@@ -273,95 +221,48 @@
                 type: "iframe",
                 content: {
                     url: "https://www.geogebra.org/material/iframe/id/DCDmYQ8z/width/1280/height/720/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false",
-                    title: "Applet de GeoGebra",
-                    isGeoGebra: true
+                    title: "Applet de GeoGebra"
                 }
             }
+            // Puedes agregar más marcadores aquí siguiendo el mismo formato
+            //https://carnaux.github.io/NFT-Marker-Creator/#/
         ];
 
-        let isDebugCollapsed = false;
+        let debugMinimized = false;
         let currentMarkerId = null;
 
-        // Función simplificada para toggle del panel de depuración
+        // CORREGIDO: Función para el panel de depuración
         function toggleDebugPanel() {
-            const debugPanel = document.getElementById('debug-info');
-            const toggleBtn = document.getElementById('toggle-btn');
+            const debugPanel = document.querySelector('.debug-info');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            debugMinimized = !debugMinimized;
             
-            isDebugCollapsed = !isDebugCollapsed;
-            
-            if (isDebugCollapsed) {
-                debugPanel.classList.add('collapsed');
+            if (debugMinimized) {
+                debugPanel.classList.add('minimized');
                 toggleBtn.textContent = '[+]';
             } else {
-                debugPanel.classList.remove('collapsed');
+                debugPanel.classList.remove('minimized');
                 toggleBtn.textContent = '[-]';
             }
         }
 
         // Función para escribir en el panel
         function log(message) {
-            const debugContent = document.getElementById('debug-content');
+            const debugContent = document.querySelector('.debug-content');
             const timestamp = new Date().toLocaleTimeString();
             debugContent.innerHTML += `<div>[${timestamp}] ${message}</div>`;
             debugContent.scrollTop = debugContent.scrollHeight;
             console.log(`[${timestamp}] ${message}`);
         }
 
-        // Función para pantalla completa de iframe
-        function toggleFullscreen() {
+        // Función para mostrar contenido web (iframe)
+        function showWebContent(url) {
             const iframe = document.getElementById('web-content');
-            
-            if (!document.fullscreenElement) {
-                if (iframe.requestFullscreen) {
-                    iframe.requestFullscreen();
-                } else if (iframe.webkitRequestFullscreen) {
-                    iframe.webkitRequestFullscreen();
-                } else if (iframe.msRequestFullscreen) {
-                    iframe.msRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-            }
-        }
-
-        // Función para pantalla completa de video
-        function toggleVideoFullscreen() {
-            const videoContainer = document.getElementById('video-container');
-            const videoElement = videoContainer.querySelector('iframe') || videoContainer.querySelector('video');
-            
-            if (!document.fullscreenElement) {
-                if (videoElement.requestFullscreen) {
-                    videoElement.requestFullscreen();
-                } else if (videoElement.webkitRequestFullscreen) {
-                    videoElement.webkitRequestFullscreen();
-                } else if (videoElement.msRequestFullscreen) {
-                    videoElement.msRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-            }
-        }
-
-        // Función para mostrar contenido web
-        function showWebContent(url, isGeoGebra = false) {
-            const iframe = document.getElementById('web-content');
-            const controls = document.querySelector('.web-content-wrapper .iframe-controls');
+            const closeButton = document.getElementById('close-button');
             
             iframe.src = url;
             iframe.style.display = 'block';
-            controls.style.display = 'flex';
+            closeButton.style.display = 'flex';
             
             log(`Mostrando contenido web: ${url}`);
         }
@@ -369,20 +270,20 @@
         // Función para cerrar contenido web
         function closeWebContent() {
             const iframe = document.getElementById('web-content');
-            const controls = document.querySelector('.web-content-wrapper .iframe-controls');
+            const closeButton = document.getElementById('close-button');
             
             iframe.src = '';
             iframe.style.display = 'none';
-            controls.style.display = 'none';
+            closeButton.style.display = 'none';
             
             log('Contenido web cerrado');
         }
 
-        // Función para mostrar video
+        // CORREGIDO: Función para mostrar video (ahora maneja correctamente videos de YouTube)
         function showVideo(url) {
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
-            const controls = document.querySelector('#video-container .iframe-controls');
+            const closeButton = videoContainer.querySelector('.close-button');
             
             // Limpiar el contenedor
             videoWrapper.innerHTML = '';
@@ -400,9 +301,9 @@
                 if (videoId) {
                     // Crear un iframe para el video de YouTube
                     const iframe = document.createElement('iframe');
-                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&showinfo=0`;
-                    iframe.setAttribute('allowfullscreen', '');
-                    iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                    iframe.setAttribute('allowfullscreen', 'true');
+                    iframe.setAttribute('allow', 'autoplay; encrypted-media');
                     
                     videoWrapper.appendChild(iframe);
                     log(`Reproduciendo video de YouTube: ${videoId}`);
@@ -429,21 +330,21 @@
                 };
             }
             
-            // Mostrar el contenedor y los controles
+            // Mostrar el contenedor y el botón de cierre
             videoContainer.style.display = 'block';
-            controls.style.display = 'flex';
+            closeButton.style.display = 'flex';
         }
 
         // Función para cerrar video
         function closeVideo() {
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
-            const controls = document.querySelector('#video-container .iframe-controls');
+            const closeButton = videoContainer.querySelector('.close-button');
             
             // Limpiar el contenedor
             videoWrapper.innerHTML = '';
             videoContainer.style.display = 'none';
-            controls.style.display = 'none';
+            closeButton.style.display = 'none';
             
             log('Video cerrado');
         }
@@ -458,7 +359,7 @@
             log(`Mostrando título: ${title}`);
         }
 
-        // Función para activar contenido basado en el tipo de marcador
+        // Función mejorada para activar contenido basado en el tipo de marcador
         function activateMarkerContent(marker) {
             currentMarkerId = marker.id;
             log(`Activando contenido para marcador: ${marker.id}`);
@@ -486,7 +387,7 @@
                     break;
                     
                 case "iframe":
-                    showWebContent(marker.content.url, marker.content.isGeoGebra);
+                    showWebContent(marker.content.url);
                     break;
                     
                 default:
@@ -522,10 +423,13 @@
                 nftEl.setAttribute('id', `nft-${marker.id}`);
                 nftEl.setAttribute('type', 'nft');
                 nftEl.setAttribute('url', marker.url);
-                nftEl.setAttribute('smooth', true);
-                nftEl.setAttribute('smoothCount', 10);
-                nftEl.setAttribute('smoothTolerance', 0.01);
-                nftEl.setAttribute('smoothThreshold', 5);
+                nftEl.setAttribute('smooth', 'true');
+                nftEl.setAttribute('smoothCount', '10');
+                nftEl.setAttribute('smoothTolerance', '0.01');
+                nftEl.setAttribute('smoothThreshold', '5');
+                nftEl.setAttribute('raycaster', 'objects: .clickable');
+                nftEl.setAttribute('emitevents', 'true');
+                nftEl.setAttribute('cursor', 'fuse: false; rayOrigin: mouse;');
                 
                 // Si es un modelo 3D, crear la entidad del modelo
                 if (marker.type === "3d-model") {
@@ -568,28 +472,8 @@
         window.addEventListener('load', function () {
             log("Página cargada, inicializando sistema AR");
             
-            // Configurar toggle del panel de depuración
-            document.getElementById('debug-header').addEventListener('click', toggleDebugPanel);
-            
             // Crear marcadores NFT
             createNFTMarkers();
-            
-            // Verificar permisos de cámara
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        log("Permisos de cámara concedidos");
-                        // Liberar el stream inmediatamente para que AR.js pueda usarlo
-                        stream.getTracks().forEach(track => track.stop());
-                    })
-                    .catch(function(error) {
-                        log(`Error al acceder a la cámara: ${error.message}`);
-                        alert("Se requiere acceso a la cámara para la experiencia AR");
-                    });
-            } else {
-                log("navigator.mediaDevices no disponible en este navegador");
-                alert("Tu navegador no soporta acceso a la cámara");
-            }
             
             // Ocultar el loader después de inicialización
             setTimeout(() => {
@@ -597,28 +481,10 @@
                 log("Sistema AR inicializado");
             }, 3000);
             
-            // Intentar reducir los problemas de visualización
-            const scene = document.querySelector('a-scene');
-            scene.addEventListener('loaded', function() {
-                log("Escena A-Frame cargada");
-                
-                // Ocultar elementos innecesarios
-                const enterVR = document.querySelector('.a-enter-vr');
-                if (enterVR) enterVR.style.display = 'none';
-                
-                // Verificar si hay un canvas creado
-                const canvas = document.querySelector('canvas.a-canvas');
-                if (!canvas) {
-                    log("Error: No se encontró el canvas de A-Frame");
-                } else {
-                    log("Canvas de A-Frame encontrado y configurado");
-                }
-            });
-        });
-
-        // Manejo de errores global
-        window.addEventListener('error', function(event) {
-            log(`Error JavaScript: ${event.message}`);
+            // Prevenir zoom en móviles
+            document.addEventListener('touchmove', function (e) {
+                if (e.scale !== 1) { e.preventDefault(); }
+            }, { passive: false });
         });
     </script>
 </body>
