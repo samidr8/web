@@ -29,7 +29,7 @@
         }
         
         .debug-info {
-            position: absolute; /* Cambiado de fixed a absolute para permitir posicionamiento dinámico */
+            position: fixed;
             bottom: 10px;
             left: 10px;
             background-color: rgba(0, 0, 0, 0.7);
@@ -40,10 +40,10 @@
             max-width: 80%;
             max-height: 30%;
             overflow-y: auto;
-            transition: height 0.3s ease;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-            touch-action: none; /* Evita acciones táctiles por defecto para permitir drag */
+            transition: height 0.3s ease, background-color 0.3s ease;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            touch-action: none; /* Evita el scroll para permitir arrastrar */
         }
         
         .debug-info.minimized {
@@ -51,25 +51,28 @@
             overflow: hidden;
         }
         
+        .debug-info.dragging {
+            background-color: rgba(50, 50, 80, 0.8);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        
         .debug-header {
             display: flex;
             justify-content: space-between;
-            cursor: move; /* Indica que es arrastrable */
+            cursor: move; /* Indicador visual de que es arrastrable */
             font-weight: bold;
             padding-bottom: 5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             user-select: none; /* Evita selección de texto al arrastrar */
-        }
-
-        .debug-header::before {
-            content: "⋮⋮"; /* Indicador visual de que se puede arrastrar */
-            margin-right: 5px;
-            color: #aaa;
         }
         
         .debug-content {
-            margin-top: 5px;
+            padding-top: 5px;
             font-size: 0.9em;
+        }
+        
+        .toggle-btn {
+            cursor: pointer;
         }
         
         /* Evitar zoom en mobile */
@@ -86,8 +89,8 @@
     </div>
     
     <!-- Panel de depuración mejorado -->
-    <div class="debug-info">
-        <div class="debug-header">
+    <div id="debug-panel" class="debug-info">
+        <div id="debug-header" class="debug-header">
             <span>Información de depuración</span>
             <span class="toggle-btn" onclick="toggleDebugPanel(event)">[-]</span>
         </div>
@@ -140,18 +143,18 @@
         let debugMinimized = false;
         let modelLocked = false;
         let lastValidPosition = { x: 50, y: 0, z: -150 };
-        
-        // Variables para el drag and drop
         let isDragging = false;
-        let dragOffsetX = 0;
-        let dragOffsetY = 0;
+        let touchStartY = 0;
+        let initialY = 0;
         
         // Función para el panel de depuración
         function toggleDebugPanel(event) {
-            // Detener la propagación para no interferir con el drag
-            event.stopPropagation();
+            // Detener la propagación para evitar conflictos con el dragging
+            if (event) {
+                event.stopPropagation();
+            }
             
-            const debugPanel = document.querySelector('.debug-info');
+            const debugPanel = document.getElementById('debug-panel');
             const toggleBtn = document.querySelector('.toggle-btn');
             debugMinimized = !debugMinimized;
             
@@ -198,83 +201,98 @@
             }
         }
         
-        // Iniciar el arrastre del panel
-        function startDrag(e) {
-            // Uso de e.touches[0] para evento touch, o e para evento mouse
-            const event = e.touches ? e.touches[0] : e;
+        // Funciones para el arrastre del panel de depuración
+        function initDraggablePanel() {
+            const debugPanel = document.getElementById('debug-panel');
+            const debugHeader = document.getElementById('debug-header');
             
-            const debugPanel = document.querySelector('.debug-info');
-            const rect = debugPanel.getBoundingClientRect();
+            // Touch events para móviles
+            debugHeader.addEventListener('touchstart', startDragging);
+            document.addEventListener('touchmove', dragPanel);
+            document.addEventListener('touchend', stopDragging);
+            
+            // Mouse events para desktop (opcional)
+            debugHeader.addEventListener('mousedown', startDragging);
+            document.addEventListener('mousemove', dragPanel);
+            document.addEventListener('mouseup', stopDragging);
+        }
+        
+        function startDragging(e) {
+            // No iniciar arrastre si se hace clic en el botón de minimizar
+            if (e.target.classList.contains('toggle-btn')) {
+                return;
+            }
             
             isDragging = true;
+            const debugPanel = document.getElementById('debug-panel');
+            debugPanel.classList.add('dragging');
             
-            // Calcular el offset del ratón/dedo dentro del elemento
-            dragOffsetX = event.clientX - rect.left;
-            dragOffsetY = event.clientY - rect.top;
+            // Capturar la posición inicial
+            if (e.type === 'touchstart') {
+                touchStartY = e.touches[0].clientY;
+            } else {
+                touchStartY = e.clientY;
+            }
             
-            // Prevenir otros eventos
-            e.preventDefault();
-            
-            log("Comenzando a mover panel");
+            // Obtener la posición actual del panel
+            const style = window.getComputedStyle(debugPanel);
+            initialY = parseInt(style.bottom, 10);
         }
         
-        // Mover el panel durante el arrastre
-        function doDrag(e) {
+        function dragPanel(e) {
             if (!isDragging) return;
             
-            // Uso de e.touches[0] para evento touch, o e para evento mouse
-            const event = e.touches ? e.touches[0] : e;
+            // Prevenir comportamiento por defecto para evitar scroll
+            e.preventDefault();
             
-            const debugPanel = document.querySelector('.debug-info');
-            const windowWidth = window.innerWidth;
+            const debugPanel = document.getElementById('debug-panel');
+            let currentY;
+            
+            if (e.type === 'touchmove') {
+                currentY = e.touches[0].clientY;
+            } else {
+                currentY = e.clientY;
+            }
+            
+            // Calcular el desplazamiento
+            const deltaY = touchStartY - currentY;
+            
+            // Calcular nueva posición (desde la parte inferior)
+            let newBottom = initialY + deltaY;
+            
+            // Asegurar que el panel permanezca en la pantalla
             const windowHeight = window.innerHeight;
-            const panelWidth = debugPanel.offsetWidth;
             const panelHeight = debugPanel.offsetHeight;
             
-            // Calcular nueva posición
-            let newLeft = event.clientX - dragOffsetX;
-            let newTop = event.clientY - dragOffsetY;
-            
-            // Limitar al viewport para que no salga de la pantalla
-            newLeft = Math.max(0, Math.min(windowWidth - panelWidth, newLeft));
-            newTop = Math.max(0, Math.min(windowHeight - panelHeight, newTop));
+            // Limitar al área visible
+            newBottom = Math.max(10, newBottom); // Mínimo 10px desde abajo
+            newBottom = Math.min(windowHeight - 50, newBottom); // No permite que salga por arriba
             
             // Aplicar la nueva posición
-            debugPanel.style.left = newLeft + 'px';
-            debugPanel.style.top = newTop + 'px';
-            debugPanel.style.bottom = 'auto'; // Quitar posición bottom cuando se está moviendo
-            
-            // Prevenir scroll y otros eventos
-            e.preventDefault();
+            debugPanel.style.bottom = `${newBottom}px`;
         }
         
-        // Finalizar el arrastre
-        function endDrag() {
-            if (isDragging) {
-                isDragging = false;
-                log("Panel posicionado");
-            }
+        function stopDragging() {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            const debugPanel = document.getElementById('debug-panel');
+            debugPanel.classList.remove('dragging');
+            
+            // Guardar la posición final como la inicial para el próximo arrastre
+            const style = window.getComputedStyle(debugPanel);
+            initialY = parseInt(style.bottom, 10);
         }
         
         // Al cargar la página
         window.addEventListener('load', function() {
             log("Página cargada, NFT configurado");
             
+            // Inicializar panel arrastrable
+            initDraggablePanel();
+            
             // Configurar botón de bloqueo
             document.getElementById('lock-button').addEventListener('click', toggleModelLock);
-            
-            // Configurar eventos para arrastrar el panel de depuración
-            const debugHeader = document.querySelector('.debug-header');
-            
-            // Soporte para eventos touch (móvil)
-            debugHeader.addEventListener('touchstart', startDrag, { passive: false });
-            document.addEventListener('touchmove', doDrag, { passive: false });
-            document.addEventListener('touchend', endDrag);
-            
-            // Soporte para eventos de ratón (desktop)
-            debugHeader.addEventListener('mousedown', startDrag);
-            document.addEventListener('mousemove', doDrag);
-            document.addEventListener('mouseup', endDrag);
             
             // Ocultar el loader después de inicialización
             setTimeout(() => {
