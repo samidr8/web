@@ -37,7 +37,8 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background-color: red; /* Color inicial: rojo (sin detección) */
+            background-color: red;
+            /* Color inicial: rojo (sin detección) */
             border: 2px solid white;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
             z-index: 1000;
@@ -172,7 +173,8 @@
                 width: 90%;
             }
 
-            .web-content, .fallback-container {
+            .web-content,
+            .fallback-container {
                 width: 95%;
                 height: 70%;
             }
@@ -269,7 +271,8 @@
     <div id="content-title"></div>
 
     <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
-    <iframe id="web-content" class="web-content" allowfullscreen sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+    <iframe id="web-content" class="web-content" allowfullscreen
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
     <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
 
     <!-- Pantalla de fallback para cuando iframe falla -->
@@ -310,6 +313,18 @@
                     position: "50 0 -150",
                     rotation: "0 0 0",
                     title: "Modelo 3D de Volcán"
+                }
+            },
+            {
+                id: "tierra-marker",
+                url: "https://samidr8.github.io/web/markers/tierra", 
+                type: "3d-model",
+                content: {
+                    url: "https://cdn.https://samidr8.github.io/web/media/tierra.glb",
+                    scale: "400 400 400",
+                    position: "50 0 -150",
+                    rotation: "0 180 0", 
+                    title: "Modelo 3D de la Tierra"
                 }
             },
             {
@@ -375,18 +390,18 @@
             errorDiv.innerHTML = `<p>${message}</p>`;
             document.body.appendChild(errorDiv);
             document.querySelector('.arjs-loader').style.display = 'none';
-            
+
             // Eliminar mensaje después de 5 segundos
             setTimeout(() => {
                 if (errorDiv && errorDiv.parentNode) {
                     errorDiv.remove();
                 }
             }, 5000);
-            
+
             // Ocultar título cuando hay un error
             hideContentTitle();
         }
-        
+
         // Función específica para ocultar el título
         function hideContentTitle() {
             const titleEl = document.getElementById('content-title');
@@ -400,19 +415,19 @@
             currentUrl = url;
             const fallbackContainer = document.getElementById('fallback-container');
             fallbackContainer.style.display = 'block';
-            
+
             // Configurar botón para abrir en nueva ventana
-            document.getElementById('open-external-btn').onclick = function() {
+            document.getElementById('open-external-btn').onclick = function () {
                 window.open(url, '_blank');
                 closeFallbackScreen();
             };
-            
+
             // Configurar botón para cerrar
             document.getElementById('close-fallback-btn').onclick = closeFallbackScreen;
-            
+
             console.log(`Mostrando pantalla de fallback para: ${url}`);
         }
-        
+
         // NUEVA FUNCIÓN: Cerrar pantalla de fallback
         function closeFallbackScreen() {
             const fallbackContainer = document.getElementById('fallback-container');
@@ -425,10 +440,10 @@
         function showWebContent(url, fallbackEnabled = false) {
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
-            
+
             // Limpiar primero
             iframe.src = '';
-            
+
             // Lista de sitios conocidos que necesitan tratamiento especial
             const knownPatterns = [
                 {
@@ -441,7 +456,7 @@
                 },
                 {
                     pattern: 'forms.office.com',
-                    transform: function(url) {
+                    transform: function (url) {
                         // Asegurar que formularios de Microsoft Forms tengan embedded=true
                         if (!url.includes('embedded=true')) {
                             return url + (url.includes('?') ? '&' : '?') + 'embedded=true';
@@ -451,7 +466,7 @@
                 },
                 {
                     pattern: 'docs.google.com/forms',
-                    transform: function(url) {
+                    transform: function (url) {
                         // Asegurar que formularios de Google tengan embedded=true
                         if (!url.includes('embedded=true')) {
                             return url + (url.includes('?') ? '&' : '?') + 'embedded=true';
@@ -460,39 +475,39 @@
                     }
                 }
             ];
-            
+
             // Verificar si el sitio necesita tratamiento especial
             let useDirectFallback = false;
             let transformedUrl = url;
-            
+
             for (const site of knownPatterns) {
                 if (url.includes(site.pattern)) {
                     if (site.needsFallback === true) {
                         useDirectFallback = true;
                     }
-                    
+
                     if (site.transform) {
                         transformedUrl = site.transform(url);
                     }
-                    
+
                     break;
                 }
             }
-            
+
             // Si sabemos que el sitio no permite iframes, mostrar fallback directamente
             if (useDirectFallback || (fallbackEnabled === true)) {
                 showFallbackScreen(transformedUrl);
                 return;
             }
-            
+
             // Intentar cargar el iframe
             try {
                 iframe.src = transformedUrl;
                 iframe.style.display = 'block';
                 closeButton.style.display = 'flex';
-                
+
                 // Comprobar errores de carga después de un tiempo
-                setTimeout(function() {
+                setTimeout(function () {
                     // Intentar acceder a contenido para ver si cargó
                     try {
                         const iframeContent = iframe.contentWindow || iframe.contentDocument;
@@ -514,7 +529,7 @@
                         }
                     }
                 }, 1500);
-                
+
                 console.log(`Mostrando contenido web: ${transformedUrl}`);
             } catch (error) {
                 console.error('Error al cargar contenido web:', error);
@@ -532,15 +547,15 @@
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
             const fallbackContainer = document.getElementById('fallback-container');
-            
+
             iframe.src = '';
             iframe.style.display = 'none';
             closeButton.style.display = 'none';
             fallbackContainer.style.display = 'none';
-            
+
             // Ocultar título al cerrar contenido
             hideContentTitle();
-            
+
             console.log('Contenido web cerrado');
         }
 
@@ -549,10 +564,10 @@
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
             const closeButton = videoContainer.querySelector('.close-button');
-            
+
             // Limpiar el contenedor
             videoWrapper.innerHTML = '';
-            
+
             try {
                 // Verificar si es un enlace de YouTube
                 if (url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -565,7 +580,7 @@
                     } else if (url.includes('youtube.com/embed/')) {
                         videoId = url.split('embed/')[1].split(/[&?]/)[0];
                     }
-                    
+
                     if (videoId) {
                         // Crear un iframe para el video de YouTube con mejores opciones
                         const iframe = document.createElement('iframe');
@@ -573,7 +588,7 @@
                         iframe.setAttribute('allowfullscreen', 'true');
                         iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
                         iframe.style.height = '360px'; // Altura estándar para proporción 16:9
-                        
+
                         videoWrapper.appendChild(iframe);
                         console.log(`Reproduciendo video de YouTube: ${videoId}`);
                     } else {
@@ -587,20 +602,20 @@
                     video.autoplay = true;
                     video.playsInline = true;
                     video.style.width = '100%';
-                    
+
                     videoWrapper.appendChild(video);
                     console.log(`Reproduciendo video directo: ${url}`);
-                    
+
                     // Manejo de errores
-                    video.onerror = function() {
+                    video.onerror = function () {
                         throw new Error('Error al cargar el video');
                     };
                 }
-                
+
                 // Mostrar el contenedor y el botón de cierre
                 videoContainer.style.display = 'block';
                 closeButton.style.display = 'flex';
-                
+
             } catch (error) {
                 console.error(`Error: ${error.message}`);
                 showErrorMessage(`Error al cargar el video: ${error.message}`);
@@ -613,25 +628,25 @@
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
             const closeButton = videoContainer.querySelector('.close-button');
-            
+
             // Limpiar el contenedor
             videoWrapper.innerHTML = '';
             videoContainer.style.display = 'none';
             closeButton.style.display = 'none';
-            
+
             // Ocultar título al cerrar video
             hideContentTitle();
-            
+
             console.log('Video cerrado');
         }
 
         // Función para mostrar el título del contenido
         function showContentTitle(title) {
             const titleEl = document.getElementById('content-title');
-            
+
             titleEl.textContent = title;
             titleEl.style.display = 'block';
-            
+
             console.log(`Mostrando título: ${title}`);
         }
 
@@ -640,15 +655,15 @@
             currentMarkerId = marker.id;
             setIndicatorStatus(true); // Cambiar indicador a verde
             console.log(`Activando contenido para marcador: ${marker.id}`);
-            
+
             // Ocultar todo el contenido primero
             hideAllContent();
-            
+
             // Mostrar título del contenido si existe
             if (marker.content.title) {
                 showContentTitle(marker.content.title);
             }
-            
+
             // Activar el contenido apropiado según el tipo
             switch (marker.type) {
                 case "3d-model":
@@ -658,15 +673,15 @@
                         modelEntity.setAttribute('visible', true);
                     }
                     break;
-                    
+
                 case "video":
                     showVideo(marker.content.url);
                     break;
-                    
+
                 case "iframe":
                     showWebContent(marker.content.url, marker.content.fallbackEnabled);
                     break;
-                    
+
                 default:
                     console.log(`Tipo de contenido desconocido: ${marker.type}`);
             }
@@ -678,42 +693,42 @@
             document.querySelectorAll('[id^="model-root-"]').forEach(model => {
                 model.setAttribute('visible', false);
             });
-            
+
             // Cerrar contenido web
             const iframe = document.getElementById('web-content');
             const closeButton = document.getElementById('close-button');
             const fallbackContainer = document.getElementById('fallback-container');
-            
+
             if (iframe) {
                 iframe.src = '';
                 iframe.style.display = 'none';
             }
-            
+
             if (closeButton) {
                 closeButton.style.display = 'none';
             }
-            
+
             if (fallbackContainer) {
                 fallbackContainer.style.display = 'none';
             }
-            
+
             // Cerrar video
             const videoContainer = document.getElementById('video-container');
             const videoWrapper = document.getElementById('video-wrapper');
             const videoCloseButton = videoContainer ? videoContainer.querySelector('.close-button') : null;
-            
+
             if (videoWrapper) {
                 videoWrapper.innerHTML = '';
             }
-            
+
             if (videoContainer) {
                 videoContainer.style.display = 'none';
             }
-            
+
             if (videoCloseButton) {
                 videoCloseButton.style.display = 'none';
             }
-            
+
             // Ocultar título
             hideContentTitle();
         }
@@ -721,7 +736,7 @@
         // Función para crear marcadores NFT dinámicamente
         function createNFTMarkers() {
             const container = document.getElementById('nft-markers-container');
-            
+
             markers.forEach(marker => {
                 // Crear elemento a-nft para cada marcador
                 const nftEl = document.createElement('a-nft');
@@ -735,70 +750,70 @@
                 nftEl.setAttribute('raycaster', 'objects: .clickable');
                 nftEl.setAttribute('emitevents', 'true');
                 nftEl.setAttribute('cursor', 'fuse: false; rayOrigin: mouse;');
-                
+
                 // Si es un modelo 3D, crear la entidad del modelo
                 if (marker.type === "3d-model") {
                     const modelRoot = document.createElement('a-entity');
                     modelRoot.setAttribute('id', `model-root-${marker.id}`);
                     modelRoot.setAttribute('position', marker.content.position);
                     modelRoot.setAttribute('visible', false); // Inicialmente oculto
-                    
+
                     const model = document.createElement('a-entity');
                     model.setAttribute('id', `model-${marker.id}`);
                     model.setAttribute('gltf-model', marker.content.url);
                     model.setAttribute('scale', marker.content.scale);
                     model.setAttribute('rotation', marker.content.rotation);
-                    
+
                     // Añadir manejo de eventos para carga de modelos
-                    model.addEventListener('model-loaded', function() {
+                    model.addEventListener('model-loaded', function () {
                         console.log(`Modelo 3D cargado correctamente: ${marker.id}`);
                     });
-                    
-                    model.addEventListener('model-error', function(e) {
+
+                    model.addEventListener('model-error', function (e) {
                         console.error(`Error al cargar modelo 3D: ${marker.id}`);
                         showErrorMessage(`Error al cargar el modelo 3D. Inténtalo de nuevo.`);
                     });
-                    
+
                     modelRoot.appendChild(model);
                     nftEl.appendChild(modelRoot);
                 }
-                
+
                 // Mejorado el manejo de eventos de marcador
                 nftEl.addEventListener('markerFound', function () {
                     console.log(`🎯 Marcador ${marker.id} encontrado`);
-                    
+
                     // Activar contenido para este marcador
                     activateMarkerContent(marker);
                 });
-                
+
                 nftEl.addEventListener('markerLost', function () {
                     console.log(`❌ Marcador ${marker.id} perdido`);
-                    
+
                     // Cambiar el indicador a rojo
                     setIndicatorStatus(false);
-                    
+
                     // Para este caso, solo ocultamos el título ya que no queremos 
                     // interrumpir la interacción del usuario con videos/formularios
                     hideContentTitle();
                 });
-                
+
                 // Agregar marcador al contenedor
                 container.appendChild(nftEl);
             });
-            
+
             console.log(`${markers.length} marcadores NFT creados`);
         }
 
         // Manejo de conexión
-        window.addEventListener('offline', function() {
+        window.addEventListener('offline', function () {
             console.warn("Conexión perdida");
             showErrorMessage("Se ha perdido la conexión a Internet. Algunas funciones pueden no estar disponibles.");
-            
+
             // Ocultar título cuando se pierde la conexión
             hideContentTitle();
         });
 
-        window.addEventListener('online', function() {
+        window.addEventListener('online', function () {
             console.log("Conexión recuperada");
             const errorMessages = document.querySelectorAll('.error-message');
             errorMessages.forEach(el => {
@@ -811,20 +826,20 @@
         // Al cargar la página
         window.addEventListener('load', function () {
             console.log("Página cargada, verificando compatibilidad...");
-            
+
             // Inicializar el indicador en rojo (sin marcador)
             setIndicatorStatus(false);
-            
+
             // Verificar compatibilidad
             if (!checkARCompatibility()) {
                 return; // Detener inicialización si no es compatible
             }
-            
+
             console.log("Inicializando sistema AR");
-            
+
             // Crear marcadores NFT
             createNFTMarkers();
-            
+
             // Comprobar si es la primera visita
             const firstVisit = !localStorage.getItem('ar_book_visited');
             if (firstVisit) {
@@ -835,20 +850,20 @@
                 // Ocultar instrucciones
                 document.getElementById('instructions').style.display = 'none';
             }
-            
+
             // Ocultar el loader después de inicialización
             setTimeout(() => {
                 document.querySelector('.arjs-loader').style.display = 'none';
                 console.log("Sistema AR inicializado");
             }, 3000);
-            
+
             // Prevenir zoom en móviles
             document.addEventListener('touchmove', function (e) {
                 if (e.scale !== 1) { e.preventDefault(); }
             }, { passive: false });
-            
+
             // Manejar casos donde el navegador pierde foco
-            document.addEventListener('visibilitychange', function() {
+            document.addEventListener('visibilitychange', function () {
                 if (document.hidden) {
                     console.log("Aplicación en segundo plano");
                 } else {

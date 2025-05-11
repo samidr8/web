@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ángulos en AR</title>
+    <!-- Bibliotecas actualizadas -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+
+    <style>
+        .arjs-loader {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .arjs-loader div {
+            text-align: center;
+            font-size: 1.25em;
+            color: white;
+        }
+
+        #status-indicator {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: red;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            transition: background-color 0.3s ease;
+        }
+
+        .instructions {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .instructions-content {
+            background-color: rgba(50, 50, 50, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .instructions button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #angle-display {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Mensaje de error */
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(200, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            z-index: 10000;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        /* Evitar zoom en mobile */
+        body {
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+
+<body style="margin: 0; overflow: hidden;">
+    <!-- Loader -->
+    <div class="arjs-loader">
+        <div>Cargando sistema de ángulos AR, por favor espere...</div>
+    </div>
+
+    <!-- Instrucciones para el usuario -->
+    <div class="instructions" id="instructions">
+        <div class="instructions-content">
+            <h2>Medición de Ángulos con AR</h2>
+            <p>Coloque los tres marcadores formando un triángulo:</p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>Marcador A: Punto inicial</li>
+                <li>Marcador B: Vértice del ángulo</li>
+                <li>Marcador C: Punto final</li>
+            </ul>
+            <p>El sistema conectará los puntos y mostrará el ángulo formado.</p>
+            <button onclick="document.getElementById('instructions').style.display='none'">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Indicador de estado -->
+    <div id="status-indicator"></div>
+
+    <!-- Visualizador del ángulo -->
+    <div id="angle-display">Ángulo: --°</div>
+
+    <!-- Escena A-Frame -->
+    <a-scene vr-mode-ui="enabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;" embedded
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+
+        <!-- Definición de componentes personalizados -->
+        <script>
+            // Componente para dibujar una línea entre dos puntos - NOMBRE MODIFICADO para evitar conflicto
+            AFRAME.registerComponent('angle-line', {
+                schema: {
+                    start: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
+                    end: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
+                    color: { type: 'color', default: '#0080ff' },
+                    opacity: { type: 'number', default: 1 },
+                    visible: { type: 'boolean', default: true },
+                    lineWidth: { type: 'number', default: 3 } // Agregado control de grosor
+                },
+
+                init: function () {
+                    var data = this.data;
+                    // Crear material para la línea
+                    var material = new THREE.LineBasicMaterial({
+                        color: data.color,
+                        opacity: data.opacity,
+                        transparent: data.opacity < 1,
+                        visible: data.visible,
+                        linewidth: data.lineWidth // Nota: no funciona en WebGL, pero lo dejamos por si acaso
+                    });
+
+                    // Crear geometría
+                    var geometry = new THREE.BufferGeometry();
+                    this.line = new THREE.Line(geometry, material);
+                    this.el.setObject3D('angle-line', this.line);
+
+                    this.updateLine();
+                },
+
+                update: function () {
+                    this.updateLine();
+                },
+
+                updateLine: function () {
+                    var data = this.data;
+                    var start = new THREE.Vector3(data.start.x, data.start.y, data.start.z);
+                    var end = new THREE.Vector3(data.end.x, data.end.y, data.end.z);
+
+                    var positions = new Float32Array([
+                        start.x, start.y, start.z,
+                        end.x, end.y, end.z
+                    ]);
+
+                    this.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    this.line.geometry.attributes.position.needsUpdate = true;
+                    this.line.material.visible = data.visible;
+                }
+            });
+
+            // Componente para mostrar el valor del ángulo
+            AFRAME.registerComponent('angle-label', {
+                schema: {
+                    value: { type: 'number', default: 0 },
+                    position: { type: 'vec3', default: { x: 0, y: 0.1, z: 0 } },
+                    visible: { type: 'boolean', default: true }
+                },
+
+                init: function () {
+                    var el = document.createElement('a-text');
+                    el.setAttribute('value', this.data.value.toFixed(1) + '°');
+                    el.setAttribute('align', 'center');
+                    el.setAttribute('color', '#ffffff');
+                    el.setAttribute('scale', '0.5 0.5 0.5');
+                    el.setAttribute('position', this.data.position);
+                    el.setAttribute('billboard', '');
+                    el.setAttribute('visible', this.data.visible);
+                    this.textEntity = el;
+                    this.el.appendChild(el);
+
+                    // Crear un fondo para el texto
+                    var bgEl = document.createElement('a-plane');
+                    bgEl.setAttribute('color', '#0066cc');
+                    bgEl.setAttribute('opacity', '0.8');
+                    bgEl.setAttribute('width', '0.6');
+                    bgEl.setAttribute('height', '0.2');
+                    bgEl.setAttribute('position', this.data.position);
+                    bgEl.setAttribute('billboard', '');
+                    bgEl.setAttribute('visible', this.data.visible);
+                    this.bgEntity = bgEl;
+                    this.el.appendChild(bgEl);
+                },
+
+                update: function () {
+                    if (this.textEntity) {
+                        this.textEntity.setAttribute('value', this.data.value.toFixed(1) + '°');
+                        this.textEntity.setAttribute('position', this.data.position);
+                        this.textEntity.setAttribute('visible', this.data.visible);
+                    }
+                    if (this.bgEntity) {
+                        this.bgEntity.setAttribute('position', this.data.position);
+                        this.bgEntity.setAttribute('visible', this.data.visible);
+                    }
+                }
+            });
+        </script>
+
+        <!-- Contenedor para los marcadores NFT -->
+        <a-entity id="nft-markers-container"></a-entity>
+
+        <!-- Entidades para las líneas y el ángulo -->
+        <a-entity id="angle-system">
+            <!-- Cambiados los componentes de "line" a "angle-line" -->
+            <a-entity id="line-ab" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 5"></a-entity>
+            <a-entity id="line-bc" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 5"></a-entity>
+            <a-entity id="angle-marker" angle-label="value: 0; visible: false"></a-entity>
+        </a-entity>
+
+        <!-- Cámara -->
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        // Configuración de los marcadores
+        const markers = [
+            {
+                id: "markerA",
+                url: "https://samidr8.github.io/web/markers/dinosaurio", // Reemplazar con su URL de marcador
+                label: "A",
+                color: "#ff0000"
+            },
+            {
+                id: "markerB",
+                url: "https://samidr8.github.io/web/markers/zenon", // Reemplazar con su URL de marcador
+                label: "B",
+                color: "#00ff00"
+            },
+            {
+                id: "markerC",
+                url: "https://samidr8.github.io/web/markers/geogebra", // Reemplazar con su URL de marcador
+                label: "C",
+                color: "#0000ff"
+            }
+        ];
+
+        // Variables para seguimiento de marcadores
+        let markersDetected = {
+            markerA: { detected: false, position: null },
+            markerB: { detected: false, position: null },
+            markerC: { detected: false, position: null }
+        };
+
+        // Estado del sistema
+        let isSystemActive = false;
+
+        // Función para establecer el estado del indicador
+        function setIndicatorStatus(active) {
+            const indicator = document.getElementById('status-indicator');
+            if (indicator) {
+                indicator.style.backgroundColor = active ? '#4CAF50' : 'red';
+            }
+            console.log(active ? "Sistema activo" : "Sistema inactivo");
+        }
+
+        // Función para mostrar mensaje de error
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `<p>${message}</p>`;
+            document.body.appendChild(errorDiv);
+            document.querySelector('.arjs-loader').style.display = 'none';
+            
+            // Eliminar mensaje después de 5 segundos
+            setTimeout(() => {
+                if (errorDiv && errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Función para calcular el ángulo entre tres puntos
+        function calculateAngle(pointA, pointB, pointC) {
+            // Vectores desde B hacia A y desde B hacia C
+            const vectorBA = {
+                x: pointA.x - pointB.x,
+                y: pointA.y - pointB.y,
+                z: pointA.z - pointB.z
+            };
+            
+            const vectorBC = {
+                x: pointC.x - pointB.x,
+                y: pointC.y - pointB.y,
+                z: pointC.z - pointB.z
+            };
+            
+            // Calcular los productos para la fórmula del ángulo
+            const dotProduct = vectorBA.x * vectorBC.x + vectorBA.y * vectorBC.y + vectorBA.z * vectorBC.z;
+            const magnitudeBA = Math.sqrt(vectorBA.x * vectorBA.x + vectorBA.y * vectorBA.y + vectorBA.z * vectorBA.z);
+            const magnitudeBC = Math.sqrt(vectorBC.x * vectorBC.x + vectorBC.y * vectorBC.y + vectorBC.z * vectorBC.z);
+            
+            // Protección contra división por cero
+            if (magnitudeBA === 0 || magnitudeBC === 0) {
+                return 0;
+            }
+            
+            // Calcular el ángulo en radianes y convertir a grados
+            const cosAngle = dotProduct / (magnitudeBA * magnitudeBC);
+            const angleRad = Math.acos(Math.max(-1, Math.min(1, cosAngle))); // Asegurar que esté entre -1 y 1
+            const angleDeg = angleRad * (180 / Math.PI);
+            
+            return angleDeg;
+        }
+
+        // Función para actualizar las líneas y el ángulo
+        function updateAngleSystem() {
+            const pointA = markersDetected.markerA.position;
+            const pointB = markersDetected.markerB.position;
+            const pointC = markersDetected.markerC.position;
+            
+            const lineAB = document.getElementById('line-ab');
+            const lineBC = document.getElementById('line-bc');
+            const angleMarker = document.getElementById('angle-marker');
+            const angleDisplay = document.getElementById('angle-display');
+            
+            // Verificar si todos los marcadores están detectados
+            if (markersDetected.markerA.detected && markersDetected.markerB.detected && markersDetected.markerC.detected) {
+                // Actualizar líneas - cambiado "line" por "angle-line"
+                lineAB.setAttribute('angle-line', {
+                    start: { x: pointA.x, y: pointA.y, z: pointA.z },
+                    end: { x: pointB.x, y: pointB.y, z: pointB.z },
+                    visible: true
+                });
+                
+                lineBC.setAttribute('angle-line', {
+                    start: { x: pointB.x, y: pointB.y, z: pointB.z },
+                    end: { x: pointC.x, y: pointC.y, z: pointC.z },
+                    visible: true
+                });
+                
+                // Calcular ángulo
+                const angle = calculateAngle(pointA, pointB, pointC);
+                
+                // Actualizar etiqueta del ángulo
+                angleMarker.setAttribute('position', { x: pointB.x, y: pointB.y, z: pointB.z });
+                angleMarker.setAttribute('angle-label', {
+                    value: angle,
+                    position: { x: 0, y: 0.1, z: 0 },
+                    visible: true
+                });
+                
+                // Actualizar el display en pantalla
+                angleDisplay.textContent = `Ángulo: ${angle.toFixed(1)}°`;
+                angleDisplay.style.display = 'block';
+                
+                // Activar indicador
+                setIndicatorStatus(true);
+                isSystemActive = true;
+            } else {
+                // Ocultar líneas y ángulo si no todos los marcadores están detectados
+                lineAB.setAttribute('angle-line', { visible: false });
+                lineBC.setAttribute('angle-line', { visible: false });
+                angleMarker.setAttribute('angle-label', { visible: false });
+                
+                // Ocultar el display en pantalla
+                angleDisplay.style.display = 'none';
+                
+                // Desactivar indicador
+                setIndicatorStatus(false);
+                isSystemActive = false;
+            }
+        }
+
+        // Función para crear marcadores NFT dinámicamente
+        function createNFTMarkers() {
+            const container = document.getElementById('nft-markers-container');
+            
+            markers.forEach(marker => {
+                // Crear elemento a-nft para cada marcador
+                const nftEl = document.createElement('a-nft');
+                nftEl.setAttribute('id', `nft-${marker.id}`);
+                nftEl.setAttribute('type', 'nft');
+                nftEl.setAttribute('url', marker.url);
+                nftEl.setAttribute('smooth', 'true');
+                nftEl.setAttribute('smoothCount', '10');
+                nftEl.setAttribute('smoothTolerance', '0.01');
+                nftEl.setAttribute('smoothThreshold', '5');
+                nftEl.setAttribute('raycaster', 'objects: .clickable');
+                nftEl.setAttribute('emitevents', 'true');
+                nftEl.setAttribute('cursor', 'fuse: false; rayOrigin: mouse;');
+                
+                // Crear un punto visual para el marcador
+                const point = document.createElement('a-sphere');
+                point.setAttribute('id', `point-${marker.id}`);
+                point.setAttribute('radius', '0.05');
+                point.setAttribute('color', marker.color);
+                point.setAttribute('position', '0 0 0');
+                
+                // Crear una etiqueta para el marcador
+                const label = document.createElement('a-text');
+                label.setAttribute('value', marker.label);
+                label.setAttribute('align', 'center');
+                label.setAttribute('position', '0 0.1 0');
+                label.setAttribute('scale', '0.3 0.3 0.3');
+                label.setAttribute('color', '#ffffff');
+                label.setAttribute('billboard', '');
+                
+                // Agregar elementos al marcador
+                nftEl.appendChild(point);
+                nftEl.appendChild(label);
+                
+                // Manejar eventos de marcador
+                nftEl.addEventListener('markerFound', function() {
+                    console.log(`Marcador ${marker.id} encontrado`);
+                    
+                    // Actualizar estado del marcador
+                    markersDetected[marker.id].detected = true;
+                    
+                    // Obtener la matriz de transformación mundial
+                    const worldMatrix = point.object3D.matrixWorld;
+                    const position = new THREE.Vector3();
+                    position.setFromMatrixPosition(worldMatrix);
+                    
+                    // Guardar posición
+                    markersDetected[marker.id].position = {
+                        x: position.x,
+                        y: position.y,
+                        z: position.z
+                    };
+                    
+                    // Actualizar sistema de ángulo
+                    updateAngleSystem();
+                });
+                
+                nftEl.addEventListener('markerLost', function() {
+                    console.log(`Marcador ${marker.id} perdido`);
+                    
+                    // Actualizar estado del marcador
+                    markersDetected[marker.id].detected = false;
+                    
+                    // Actualizar sistema de ángulo
+                    updateAngleSystem();
+                });
+                
+                // Agregar marcador al contenedor
+                container.appendChild(nftEl);
+            });
+            
+            console.log(`${markers.length} marcadores NFT creados`);
+        }
+
+        // Configurar actualización continua del sistema de ángulo
+        function setupUpdateLoop() {
+            // Ejecutar cada 100ms para garantizar actualizaciones fluidas
+            setInterval(() => {
+                if (markersDetected.markerA.detected && markersDetected.markerB.detected && markersDetected.markerC.detected) {
+                    // Obtener posiciones actualizadas
+                    markers.forEach(marker => {
+                        const pointEl = document.getElementById(`point-${marker.id}`);
+                        if (pointEl) {
+                            const worldMatrix = pointEl.object3D.matrixWorld;
+                            const position = new THREE.Vector3();
+                            position.setFromMatrixPosition(worldMatrix);
+                            
+                            // Actualizar posición
+                            markersDetected[marker.id].position = {
+                                x: position.x,
+                                y: position.y,
+                                z: position.z
+                            };
+                        }
+                    });
+                    
+                    // Actualizar el sistema de ángulo
+                    updateAngleSystem();
+                }
+            }, 100);
+        }
+
+        // Al cargar la página
+        window.addEventListener('load', function() {
+            console.log("Página cargada, verificando compatibilidad...");
+            
+            // Inicializar el indicador en rojo (sin marcadores)
+            setIndicatorStatus(false);
+            
+            // Verificar compatibilidad con la cámara
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showErrorMessage("Tu navegador no soporta acceso a la cámara, necesario para AR.");
+                return;
+            }
+            
+            console.log("Inicializando sistema AR");
+            
+            // Crear marcadores NFT
+            createNFTMarkers();
+            
+            // Configurar bucle de actualización
+            setupUpdateLoop();
+            
+            // Comprobar si es la primera visita
+            const firstVisit = !localStorage.getItem('ar_angles_visited');
+            if (firstVisit) {
+                // Mostrar instrucciones solo la primera vez
+                document.getElementById('instructions').style.display = 'flex';
+                localStorage.setItem('ar_angles_visited', 'true');
+            } else {
+                // Ocultar instrucciones
+                document.getElementById('instructions').style.display = 'none';
+            }
+            
+            // Ocultar el loader después de inicialización
+            setTimeout(() => {
+                document.querySelector('.arjs-loader').style.display = 'none';
+                console.log("Sistema AR inicializado");
+            }, 3000);
+            
+            // Prevenir zoom en móviles
+            document.addEventListener('touchmove', function(e) {
+                if (e.scale !== 1) { e.preventDefault(); }
+            }, { passive: false });
+        });
+    </script>
+</body>
+
+</html>
