@@ -68,6 +68,7 @@ let currentMarkerId = null;
 let markerActive = false; // Variable para rastrear si hay un marcador activo
 let currentUrl = ''; // Variable para almacenar la URL actual
 let interactiveModels = {}; // Almacenar modelos interactivos detectados
+let activeMarkerInfo = null; // Nuevo: almacena información del marcador activo
 
 // Mostrar panel de información
 function showInfoPanel(title, content, imageUrl) {
@@ -114,23 +115,17 @@ function setIndicatorStatus(active) {
     console.log(active ? "Marcador detectado" : "Sin marcador");
 }
 
-// Función para manejar interacción con objetos 3D - Modificada para mejor detección
-function handleModelInteraction(event) {
-    if (!markerActive) return; // Solo procesar si hay un marcador activo
+// Función para manejar interacción con objetos 3D - Simplificada
+function handleModelInteraction(markerId) {
+    console.log(`Interacción con modelo: ${markerId}`);
     
-    event.stopPropagation();
-    
-    // Obtener el ID del modelo
-    const modelId = event.currentTarget.id;
-    console.log(`Modelo tocado: ${modelId}`);
-    
-    // Buscar información del modelo
-    const model = interactiveModels[modelId];
-    if (model) {
+    // Buscar el marcador
+    const marker = markers.find(m => m.id === markerId);
+    if (marker && marker.content.interactive) {
         showInfoPanel(
-            model.infoTitle,
-            model.infoContent,
-            model.infoImage
+            marker.content.infoTitle,
+            marker.content.infoContent,
+            marker.content.infoImage
         );
     }
 }
@@ -198,46 +193,39 @@ function closeFallbackScreen() {
     console.log('Pantalla de fallback cerrada');
 }
 
-// Función para crear un indicador visual de interactividad - Mejorada para evitar duplicados
-function createInteractiveIndicator(model) {
-    // Verificar si ya existe un indicador para este modelo
-    const existingIndicator = document.querySelector(`.interactive-indicator[data-for="${model.id}"]`);
-    if (existingIndicator) return existingIndicator;
+// Función para crear un indicador visual de interactividad
+function createInteractiveIndicator(markerId) {
+    // Crear el indicador solo si no existe ya
+    const existingIndicator = document.querySelector(`.interactive-indicator[data-for="${markerId}"]`);
+    if (existingIndicator) return;
     
     const indicator = document.createElement('div');
     indicator.className = 'interactive-indicator';
     indicator.innerHTML = 'i';
     indicator.title = 'Toca para más información';
-    indicator.setAttribute('data-for', model.id);
+    indicator.setAttribute('data-for', markerId);
     
-    // Posicionar el indicador cerca del modelo
-    const modelRect = model.getBoundingClientRect();
-    indicator.style.left = `${modelRect.right - 20}px`;
-    indicator.style.top = `${modelRect.top + 20}px`;
+    // Posicionamiento inicial
+    indicator.style.position = 'fixed';
+    indicator.style.top = '50%';
+    indicator.style.left = '50%';
+    indicator.style.transform = 'translate(-50%, -50%)';
+    indicator.style.display = 'flex';
     
     document.body.appendChild(indicator);
     
-    // Actualizar posición del indicador regularmente
-    const updateInterval = setInterval(() => {
-        if (!document.body.contains(model)) {
-            // Si el modelo ya no existe, eliminar el indicador y el intervalo
-            if (document.body.contains(indicator)) {
-                indicator.remove();
-            }
-            clearInterval(updateInterval);
-            return;
+    // Al hacer clic en el indicador, mostrar el panel de información
+    indicator.addEventListener('click', function() {
+        if (markerActive && activeMarkerInfo) {
+            showInfoPanel(
+                activeMarkerInfo.infoTitle,
+                activeMarkerInfo.infoContent,
+                activeMarkerInfo.infoImage
+            );
         }
-        
-        if (model.isConnected && window.getComputedStyle(model).display !== 'none' && markerActive) {
-            const updatedRect = model.getBoundingClientRect();
-            indicator.style.left = `${updatedRect.right - 20}px`;
-            indicator.style.top = `${updatedRect.top + 20}px`;
-            indicator.style.display = 'flex';
-        } else {
-            indicator.style.display = 'none';
-        }
-    }, 200);
+    });
     
+    console.log(`Indicador interactivo creado para: ${markerId}`);
     return indicator;
 }
 
@@ -469,6 +457,21 @@ function activateMarkerContent(marker) {
         showContentTitle(marker.content.title);
     }
 
+    // Si el modelo es interactivo, guardar información y crear indicador
+    if (marker.type === "3d-model" && marker.content.interactive) {
+        activeMarkerInfo = {
+            markerId: marker.id,
+            infoTitle: marker.content.infoTitle,
+            infoContent: marker.content.infoContent,
+            infoImage: marker.content.infoImage
+        };
+        
+        // Crear un indicador visual de interactividad
+        createInteractiveIndicator(marker.id);
+    } else {
+        activeMarkerInfo = null;
+    }
+
     // Activar el contenido apropiado según el tipo
     switch (marker.type) {
         case "3d-model":
@@ -498,6 +501,14 @@ function hideAllContent() {
     document.querySelectorAll('[id^="model-root-"]').forEach(model => {
         model.setAttribute('visible', false);
     });
+
+    // Eliminar indicadores interactivos
+    document.querySelectorAll('.interactive-indicator').forEach(indicator => {
+        indicator.remove();
+    });
+    
+    // Actualizar estado
+    activeMarkerInfo = null;
 
     // Cerrar contenido web
     const iframe = document.getElementById('web-content');
@@ -555,9 +566,6 @@ function createNFTMarkers() {
         nftEl.setAttribute('smoothCount', '10');
         nftEl.setAttribute('smoothTolerance', '0.01');
         nftEl.setAttribute('smoothThreshold', '5');
-        
-        // Ya no usamos el raycaster global
-        // nftEl.setAttribute('raycaster', 'objects: .clickable');
         nftEl.setAttribute('emitevents', 'true');
 
         // Si es un modelo 3D, crear la entidad del modelo
@@ -573,30 +581,9 @@ function createNFTMarkers() {
             model.setAttribute('scale', marker.content.scale);
             model.setAttribute('rotation', marker.content.rotation);
             
-            // Verificar si el modelo debe ser interactivo
-            if (marker.content.interactive) {
-                // Guardar la información del modelo para usar en interacción
-                interactiveModels[`model-${marker.id}`] = {
-                    infoTitle: marker.content.infoTitle || 'Información',
-                    infoContent: marker.content.infoContent || 'No hay información disponible',
-                    infoImage: marker.content.infoImage || ''
-                };
-                
-                // MODIFICADO: Usar un enfoque basado en eventos de toque directo
-                model.addEventListener('click', function(event) {
-                    if (markerActive) {
-                        event.stopPropagation();
-                        showInfoPanel(
-                            interactiveModels[`model-${marker.id}`].infoTitle,
-                            interactiveModels[`model-${marker.id}`].infoContent,
-                            interactiveModels[`model-${marker.id}`].infoImage
-                        );
-                    }
-                });
-                
-                console.log(`Modelo interactivo configurado: ${marker.id}`);
-            }
-
+            // Ya no agregamos comportamiento interactivo directo al modelo
+            // Lo haremos con el indicador visual que se crea en activateMarkerContent
+            
             // Añadir manejo de eventos para carga de modelos
             model.addEventListener('model-loaded', function () {
                 console.log(`Modelo 3D cargado correctamente: ${marker.id}`);
@@ -607,6 +594,7 @@ function createNFTMarkers() {
                 showErrorMessage(`Error al cargar el modelo 3D. Inténtalo de nuevo.`);
             });
 
+            // Añadir animación de rotación
             model.setAttribute('animation', {
                 property: 'rotation',
                 to: '0 360 0',
@@ -622,20 +610,24 @@ function createNFTMarkers() {
         // Mejorado el manejo de eventos de marcador
         nftEl.addEventListener('markerFound', function () {
             console.log(`🎯 Marcador ${marker.id} encontrado`);
-
             // Activar contenido para este marcador
             activateMarkerContent(marker);
         });
 
         nftEl.addEventListener('markerLost', function () {
             console.log(`❌ Marcador ${marker.id} perdido`);
-
             // Cambiar el indicador a rojo
             setIndicatorStatus(false);
-
             // Para este caso, solo ocultamos el título ya que no queremos 
             // interrumpir la interacción del usuario con videos/formularios
             hideContentTitle();
+            
+            // Eliminar indicadores interactivos
+            document.querySelectorAll('.interactive-indicator').forEach(indicator => {
+                indicator.remove();
+            });
+            
+            activeMarkerInfo = null;
         });
 
         // Agregar marcador al contenedor
@@ -645,44 +637,57 @@ function createNFTMarkers() {
     console.log(`${markers.length} marcadores NFT creados`);
 }
 
-// Implementación mejorada para detección de toques en modelos 3D
+// Añadir manejador de eventos para toques en la pantalla
 document.addEventListener('touchstart', function(e) {
-    if (!markerActive) return; // Solo procesar si hay un marcador activo
+    // Verificar si hay algún indicador interactivo tocado
+    let target = e.target;
+    if (target.classList.contains('interactive-indicator')) {
+        // Se tocó un indicador
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (markerActive && activeMarkerInfo) {
+            showInfoPanel(
+                activeMarkerInfo.infoTitle,
+                activeMarkerInfo.infoContent,
+                activeMarkerInfo.infoImage
+            );
+        }
+        return;
+    }
     
-    // Obtener todos los modelos 3D actuales que son interactivos
-    for (const modelId in interactiveModels) {
-        const modelElement = document.getElementById(modelId);
-        if (modelElement && modelElement.isConnected && window.getComputedStyle(modelElement).display !== 'none') {
-            // Verificar si el toque está sobre o cerca del modelo
-            const modelRect = modelElement.getBoundingClientRect();
-            const touch = e.touches[0];
+    // Si hay un marcador activo y es interactivo, pero no se tocó el indicador,
+    // y el usuario tocó en la parte central de la pantalla (donde suele estar el modelo)
+    if (markerActive && activeMarkerInfo) {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        const touch = e.touches[0];
+        
+        // Verificar si el toque está en el área central de la pantalla
+        const centerAreaWidth = screenWidth * 0.6;  // 60% del ancho
+        const centerAreaHeight = screenHeight * 0.6; // 60% del alto
+        const centerX = screenWidth / 2;
+        const centerY = screenHeight / 2;
+        
+        const leftBoundary = centerX - (centerAreaWidth / 2);
+        const rightBoundary = centerX + (centerAreaWidth / 2);
+        const topBoundary = centerY - (centerAreaHeight / 2);
+        const bottomBoundary = centerY + (centerAreaHeight / 2);
+        
+        if (touch.clientX >= leftBoundary && 
+            touch.clientX <= rightBoundary && 
+            touch.clientY >= topBoundary && 
+            touch.clientY <= bottomBoundary) {
             
-            // Expandir ligeramente el área de detección para mejor experiencia de usuario
-            const expandBy = 40; // píxeles
-            const expandedRect = {
-                left: modelRect.left - expandBy,
-                right: modelRect.right + expandBy,
-                top: modelRect.top - expandBy,
-                bottom: modelRect.bottom + expandBy
-            };
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Toque en área central de la pantalla con marcador activo");
             
-            if (touch.clientX >= expandedRect.left && 
-                touch.clientX <= expandedRect.right && 
-                touch.clientY >= expandedRect.top && 
-                touch.clientY <= expandedRect.bottom) {
-                
-                console.log(`Toque detectado sobre/cerca del modelo: ${modelId}`);
-                showInfoPanel(
-                    interactiveModels[modelId].infoTitle,
-                    interactiveModels[modelId].infoContent,
-                    interactiveModels[modelId].infoImage
-                );
-                
-                // Evitar propagación para no activar otros elementos
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-            }
+            showInfoPanel(
+                activeMarkerInfo.infoTitle,
+                activeMarkerInfo.infoContent,
+                activeMarkerInfo.infoImage
+            );
         }
     }
 });
@@ -691,8 +696,6 @@ document.addEventListener('touchstart', function(e) {
 window.addEventListener('offline', function () {
     console.warn("Conexión perdida");
     showErrorMessage("Se ha perdido la conexión a Internet. Algunas funciones pueden no estar disponibles.");
-
-    // Ocultar título cuando se pierde la conexión
     hideContentTitle();
 });
 
