@@ -172,6 +172,86 @@
             cursor: pointer;
         }
 
+        /* Estilos para el panel informativo (REUTILIZABLE) */
+        .info-panel {
+            background-color: #1c3b5e;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+            width: 300px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            display: none;
+            font-family: Arial, sans-serif;
+        }
+
+        .info-panel h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 8px;
+        }
+
+        .info-panel-content {
+            margin-bottom: 15px;
+        }
+
+        .info-panel-image {
+            float: left;
+            width: 80px;
+            height: 80px;
+            margin-right: 10px;
+            border-radius: 5px;
+            object-fit: cover;
+        }
+
+        .info-panel-close {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Indicador de objeto interactivo */
+        .interactive-indicator {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #0066cc;
+            font-weight: bold;
+            font-size: 16px;
+            z-index: 1002;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         /* Optimización para dispositivos móviles */
         @media (orientation: portrait) {
             .video-container {
@@ -182,6 +262,11 @@
             .fallback-container {
                 width: 95%;
                 height: 70%;
+            }
+
+            .info-panel {
+                width: 85%;
+                max-width: 320px;
             }
         }
 
@@ -276,6 +361,16 @@
     <!-- Título de contenido -->
     <div id="content-title"></div>
 
+    <!-- Panel de información interactivo (HTML) - NUEVO -->
+    <div id="info-panel" class="info-panel">
+        <button class="info-panel-close" onclick="closeInfoPanel()">✕</button>
+        <h3 id="info-panel-title">Título</h3>
+        <div id="info-panel-content" class="info-panel-content">
+            <img id="info-panel-image" class="info-panel-image" src="" alt="">
+            <p id="info-panel-text">Contenido</p>
+        </div>
+    </div>
+
     <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
     <iframe id="web-content" class="web-content" allowfullscreen
         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
@@ -299,123 +394,6 @@
     <a-scene vr-mode-ui="enabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;" embedded
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
-        <!-- AGREGAR COMPONENTE INTERACTIVO PARA LA TIERRA -->
-        <script>
-            // Componente para hacer objetos interactivos
-            AFRAME.registerComponent('interactive-object', {
-                schema: {
-                    infoTitle: { type: 'string', default: 'Información' },
-                    infoContent: { type: 'string', default: 'Haga clic para más información.' },
-                    infoImage: { type: 'string', default: '' }
-                },
-                
-                init: function() {
-                    var el = this.el;
-                    var data = this.data;
-                    
-                    // Crear panel de información
-                    this.infoPanel = document.createElement('a-entity');
-                    this.infoPanel.setAttribute('id', 'info-panel-' + el.id);
-                    this.infoPanel.setAttribute('position', '0 0.5 0');
-                    this.infoPanel.setAttribute('visible', false);
-                    
-                    // Crear fondo del panel
-                    var panelBg = document.createElement('a-plane');
-                    panelBg.setAttribute('color', '#1c3b5e');
-                    panelBg.setAttribute('width', 1.5);
-                    panelBg.setAttribute('height', 0.8);
-                    panelBg.setAttribute('opacity', 0.9);
-                    panelBg.setAttribute('position', '0 0 -0.01');
-                    panelBg.setAttribute('material', 'shader: flat');
-                    this.infoPanel.appendChild(panelBg);
-                    
-                    // Crear título
-                    var title = document.createElement('a-text');
-                    title.setAttribute('value', data.infoTitle);
-                    title.setAttribute('align', 'center');
-                    title.setAttribute('width', 1.2);
-                    title.setAttribute('color', 'white');
-                    title.setAttribute('position', '0 0.3 0');
-                    title.setAttribute('font', 'kelsonsans');
-                    this.infoPanel.appendChild(title);
-                    
-                    // Crear contenido
-                    var content = document.createElement('a-text');
-                    content.setAttribute('value', data.infoContent);
-                    content.setAttribute('align', 'center');
-                    content.setAttribute('width', 1.2);
-                    content.setAttribute('color', 'white');
-                    content.setAttribute('position', '0 0 0');
-                    content.setAttribute('font', 'kelsonsans');
-                    content.setAttribute('baseline', 'top');
-                    content.setAttribute('line-height', 50);
-                    content.setAttribute('wrap-count', 30);
-                    this.infoPanel.appendChild(content);
-                    
-                    // Crear botón de cierre
-                    var closeBtn = document.createElement('a-entity');
-                    closeBtn.setAttribute('geometry', 'primitive: circle; radius: 0.05');
-                    closeBtn.setAttribute('material', 'color: #f44336');
-                    closeBtn.setAttribute('position', '0.65 0.3 0.01');
-                    closeBtn.setAttribute('text', 'value: X; align: center; color: white; width: 0.5');
-                    closeBtn.classList.add('clickable');
-                    closeBtn.addEventListener('click', () => this.hideInfo());
-                    this.infoPanel.appendChild(closeBtn);
-                    
-                    // Añadir imagen si existe
-                    if (data.infoImage) {
-                        var img = document.createElement('a-image');
-                        img.setAttribute('src', data.infoImage);
-                        img.setAttribute('width', 0.3);
-                        img.setAttribute('height', 0.3);
-                        img.setAttribute('position', '-0.5 0 0.01');
-                        this.infoPanel.appendChild(img);
-                    }
-                    
-                    // Añadir el panel al modelo
-                    el.appendChild(this.infoPanel);
-                    
-                    // Hacer el objeto clickable
-                    el.classList.add('clickable');
-                    
-                    // Añadir event listeners
-                    el.addEventListener('click', this.toggleInfo.bind(this));
-                    el.addEventListener('touchstart', this.toggleInfo.bind(this));
-                    
-                    // Estado
-                    this.infoVisible = false;
-                },
-                
-                toggleInfo: function(evt) {
-                    // Prevenir que el evento se propague
-                    if (evt) {
-                        evt.stopPropagation();
-                        evt.preventDefault();
-                    }
-                    
-                    if (this.infoVisible) {
-                        this.hideInfo();
-                    } else {
-                        this.showInfo();
-                    }
-                },
-                
-                showInfo: function() {
-                    // Mostrar el panel de información
-                    this.infoPanel.setAttribute('visible', true);
-                    // Asegurarse de que mire a la cámara
-                    this.infoPanel.setAttribute('look-at', '[camera]');
-                    this.infoVisible = true;
-                },
-                
-                hideInfo: function() {
-                    // Ocultar el panel de información
-                    this.infoPanel.setAttribute('visible', false);
-                    this.infoVisible = false;
-                }
-            });
-        </script>
-
         <!-- Los marcadores NFT se agregarán dinámicamente aquí -->
         <a-entity id="nft-markers-container"></a-entity>
 
@@ -425,7 +403,7 @@
                     position="0 0 -1"
                     geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
                     material="color: white; shader: flat"
-                    raycaster="objects: .clickable">
+                    raycaster="objects: .clickable; far: 5000">
             </a-entity>
         </a-entity>
     </a-scene>
@@ -442,7 +420,12 @@
                     scale: "500 500 500",
                     position: "50 0 -150",
                     rotation: "0 0 0",
-                    title: "Modelo 3D de Volcán"
+                    title: "Modelo 3D de Volcán",
+                    // Se puede añadir interactividad a cualquier modelo
+                    interactive: true,
+                    infoTitle: "Volcán",
+                    infoContent: "• Los volcanes son aberturas en la corteza terrestre\n• Liberan magma, ceniza y gases del interior\n• Pueden formar montañas cónicas\n• Hay más de 1,500 volcanes activos en la Tierra",
+                    infoImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Erupcion_del_volcan_de_Pacaya.JPG/220px-Erupcion_del_volcan_de_Pacaya.JPG"
                 }
             },
             {
@@ -455,7 +438,7 @@
                     position: "150 0 -250",
                     rotation: "0 180 0",
                     title: "Modelo 3D de la Tierra",
-                    // NUEVO: Propiedades para interactividad
+                    // Propiedades para interactividad
                     interactive: true,
                     infoTitle: "La Tierra",
                     infoContent: "• Diámetro: 12,742 km\n• Distancia al Sol: 149.6 millones km\n• Edad: 4.54 mil millones de años\n• Período de rotación: 23.93 horas\n• Período orbital: 365.25 días",
@@ -497,6 +480,43 @@
         let currentMarkerId = null;
         let markerActive = false; // Variable para rastrear si hay un marcador activo
         let currentUrl = ''; // Variable para almacenar la URL actual
+        // Almacenar modelos interactivos detectados
+        let interactiveModels = {}; 
+
+        // NUEVA FUNCIÓN: Mostrar panel de información
+        function showInfoPanel(title, content, imageUrl) {
+            const panel = document.getElementById('info-panel');
+            const titleElement = document.getElementById('info-panel-title');
+            const textElement = document.getElementById('info-panel-text');
+            const imageElement = document.getElementById('info-panel-image');
+            
+            // Establecer contenido
+            titleElement.textContent = title || 'Información';
+            
+            // Procesar contenido con saltos de línea
+            const formattedContent = content ? content.replace(/\n/g, '<br>') : '';
+            textElement.innerHTML = formattedContent;
+            
+            // Configurar imagen
+            if (imageUrl && imageUrl.trim() !== '') {
+                imageElement.src = imageUrl;
+                imageElement.style.display = 'block';
+            } else {
+                imageElement.style.display = 'none';
+            }
+            
+            // Mostrar panel
+            panel.style.display = 'block';
+            
+            console.log(`Mostrando panel informativo para: ${title}`);
+        }
+        
+        // NUEVA FUNCIÓN: Cerrar panel de información
+        function closeInfoPanel() {
+            const panel = document.getElementById('info-panel');
+            panel.style.display = 'none';
+            console.log('Panel informativo cerrado');
+        }
 
         // Función para establecer el estado del indicador
         function setIndicatorStatus(active) {
@@ -508,6 +528,25 @@
             console.log(active ? "Marcador detectado" : "Sin marcador");
         }
 
+        // Función para manejar interacción con objetos 3D
+        function handleModelInteraction(event) {
+            event.stopPropagation();
+            
+            // Obtener el ID del modelo
+            const modelId = event.currentTarget.id;
+            console.log(`Modelo tocado: ${modelId}`);
+            
+            // Buscar información del modelo
+            const model = interactiveModels[modelId];
+            if (model) {
+                showInfoPanel(
+                    model.infoTitle,
+                    model.infoContent,
+                    model.infoImage
+                );
+            }
+        }
+        
         // Verificar compatibilidad con AR
         function checkARCompatibility() {
             // Verificar soporte para WebAR
@@ -569,6 +608,35 @@
             fallbackContainer.style.display = 'none';
             hideContentTitle();
             console.log('Pantalla de fallback cerrada');
+        }
+
+        // Función para crear un indicador visual de interactividad
+        function createInteractiveIndicator(model) {
+            const indicator = document.createElement('div');
+            indicator.className = 'interactive-indicator';
+            indicator.innerHTML = 'i';
+            indicator.title = 'Toca para más información';
+            
+            // Posicionar el indicador cerca del modelo
+            const modelRect = model.getBoundingClientRect();
+            indicator.style.left = `${modelRect.right - 20}px`;
+            indicator.style.top = `${modelRect.top + 20}px`;
+            
+            document.body.appendChild(indicator);
+            
+            // Actualizar posición del indicador regularmente
+            setInterval(() => {
+                if (model.isConnected && window.getComputedStyle(model).display !== 'none') {
+                    const updatedRect = model.getBoundingClientRect();
+                    indicator.style.left = `${updatedRect.right - 20}px`;
+                    indicator.style.top = `${updatedRect.top + 20}px`;
+                    indicator.style.display = 'flex';
+                } else {
+                    indicator.style.display = 'none';
+                }
+            }, 200);
+            
+            return indicator;
         }
 
         // Función mejorada para mostrar contenido web (iframe)
@@ -864,11 +932,14 @@
                 videoCloseButton.style.display = 'none';
             }
 
+            // Cerrar panel de información
+            closeInfoPanel();
+
             // Ocultar título
             hideContentTitle();
         }
 
-        // Función para crear marcadores NFT dinámicamente - MODIFICADA PARA SOPORTAR INTERACTIVIDAD
+        // Función MODIFICADA para crear marcadores NFT dinámicamente
         function createNFTMarkers() {
             const container = document.getElementById('nft-markers-container');
 
@@ -898,14 +969,24 @@
                     model.setAttribute('gltf-model', marker.content.url);
                     model.setAttribute('scale', marker.content.scale);
                     model.setAttribute('rotation', marker.content.rotation);
-
-                    // NUEVA FUNCIONALIDAD: Verificar si el modelo debe ser interactivo
+                    
+                    // NUEVA IMPLEMENTACIÓN: Verificar si el modelo debe ser interactivo
                     if (marker.content.interactive) {
-                        model.setAttribute('interactive-object', {
+                        // Guardar la información del modelo para usar en interacción
+                        interactiveModels[`model-${marker.id}`] = {
                             infoTitle: marker.content.infoTitle || 'Información',
                             infoContent: marker.content.infoContent || 'No hay información disponible',
                             infoImage: marker.content.infoImage || ''
-                        });
+                        };
+                        
+                        // Añadir la clase clickable directamente al modelo
+                        model.classList.add('clickable');
+                        
+                        // Agregar eventos de click/touch directamente al modelo
+                        model.addEventListener('click', handleModelInteraction);
+                        model.addEventListener('touchend', handleModelInteraction);
+                        
+                        console.log(`Modelo interactivo configurado: ${marker.id}`);
                     }
 
                     // Añadir manejo de eventos para carga de modelos
@@ -936,6 +1017,22 @@
 
                     // Activar contenido para este marcador
                     activateMarkerContent(marker);
+                    
+                    // Si es un modelo 3D interactivo, verificar que los eventos de interacción funcionen
+                    if (marker.type === "3d-model" && marker.content.interactive) {
+                        const model = document.querySelector(`#model-${marker.id}`);
+                        if (model) {
+                            // Asegurarse de que tiene la clase clickable
+                            model.classList.add('clickable');
+                            
+                            // Agregar eventos de click/touch si no los tiene
+                            if (!model._hasClickListener) {
+                                model.addEventListener('click', handleModelInteraction);
+                                model.addEventListener('touchend', handleModelInteraction);
+                                model._hasClickListener = true;
+                            }
+                        }
+                    }
                 });
 
                 nftEl.addEventListener('markerLost', function () {
@@ -974,6 +1071,35 @@
                 }
             });
         });
+        
+        // Añadir manejador de eventos global para toques en la pantalla
+        document.addEventListener('touchend', function(e) {
+            // Comprobar si hay modelos 3D visibles
+            const visibleModels = document.querySelectorAll('a-entity[gltf-model][visible="true"]');
+            visibleModels.forEach(model => {
+                if (model.classList.contains('clickable')) {
+                    // Obtener posición del toque
+                    const touch = e.changedTouches[0];
+                    const x = touch.clientX;
+                    const y = touch.clientY;
+                    
+                    // Verificar si el toque está sobre el modelo (aproximado)
+                    const rect = model.getBoundingClientRect();
+                    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                        // Simular click en el modelo
+                        console.log("Toque detectado sobre modelo interactivo");
+                        const modelId = model.id;
+                        if (interactiveModels[modelId]) {
+                            showInfoPanel(
+                                interactiveModels[modelId].infoTitle,
+                                interactiveModels[modelId].infoContent,
+                                interactiveModels[modelId].infoImage
+                            );
+                        }
+                    }
+                }
+            });
+        }, false);
 
         // Al cargar la página
         window.addEventListener('load', function () {
