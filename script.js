@@ -193,29 +193,35 @@ function closeFallbackScreen() {
     console.log('Pantalla de fallback cerrada');
 }
 
-// Función para crear un indicador visual de interactividad
+// Función para crear un indicador visual de interactividad (MEJORADA)
 function createInteractiveIndicator(markerId) {
-    // Crear el indicador solo si no existe ya
-    const existingIndicator = document.querySelector(`.interactive-indicator[data-for="${markerId}"]`);
-    if (existingIndicator) return;
+    // Eliminar indicadores previos
+    document.querySelectorAll('.interactive-indicator').forEach(el => el.remove());
     
+    // Crear nuevo indicador
     const indicator = document.createElement('div');
     indicator.className = 'interactive-indicator';
     indicator.innerHTML = 'i';
     indicator.title = 'Toca para más información';
     indicator.setAttribute('data-for', markerId);
     
-    // Posicionamiento inicial
+    // Posicionamiento centrado
     indicator.style.position = 'fixed';
     indicator.style.top = '50%';
     indicator.style.left = '50%';
-    indicator.style.transform = 'translate(-50%, -50%)';
-    indicator.style.display = 'flex';
+    indicator.style.transform = 'translate(-50%, -100px)'; // Desplazado hacia arriba para mejor visibilidad
+    indicator.style.zIndex = '5000'; // Asegurar que esté por encima de todo
+    indicator.style.width = '40px'; // Más grande para mejor usabilidad
+    indicator.style.height = '40px';
+    indicator.style.fontSize = '22px';
     
     document.body.appendChild(indicator);
     
     // Al hacer clic en el indicador, mostrar el panel de información
-    indicator.addEventListener('click', function() {
+    indicator.addEventListener('click', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
         if (markerActive && activeMarkerInfo) {
             showInfoPanel(
                 activeMarkerInfo.infoTitle,
@@ -581,9 +587,6 @@ function createNFTMarkers() {
             model.setAttribute('scale', marker.content.scale);
             model.setAttribute('rotation', marker.content.rotation);
             
-            // Ya no agregamos comportamiento interactivo directo al modelo
-            // Lo haremos con el indicador visual que se crea en activateMarkerContent
-            
             // Añadir manejo de eventos para carga de modelos
             model.addEventListener('model-loaded', function () {
                 console.log(`Modelo 3D cargado correctamente: ${marker.id}`);
@@ -637,8 +640,11 @@ function createNFTMarkers() {
     console.log(`${markers.length} marcadores NFT creados`);
 }
 
-// Añadir manejador de eventos para toques en la pantalla
+// Añadir manejador de eventos global para toques en la pantalla
 document.addEventListener('touchstart', function(e) {
+    // Si no hay marcador activo, no hacer nada
+    if (!markerActive) return;
+    
     // Verificar si hay algún indicador interactivo tocado
     let target = e.target;
     if (target.classList.contains('interactive-indicator')) {
@@ -646,7 +652,7 @@ document.addEventListener('touchstart', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
-        if (markerActive && activeMarkerInfo) {
+        if (activeMarkerInfo) {
             showInfoPanel(
                 activeMarkerInfo.infoTitle,
                 activeMarkerInfo.infoContent,
@@ -656,32 +662,80 @@ document.addEventListener('touchstart', function(e) {
         return;
     }
     
-    // Si hay un marcador activo y es interactivo, pero no se tocó el indicador,
-    // y el usuario tocó en la parte central de la pantalla (donde suele estar el modelo)
-    if (markerActive && activeMarkerInfo) {
+    // Si hay un marcador activo con información y se tocó en el área central
+    if (activeMarkerInfo) {
+        // Obtener dimensiones de la pantalla
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
         const touch = e.touches[0];
         
         // Verificar si el toque está en el área central de la pantalla
-        const centerAreaWidth = screenWidth * 0.6;  // 60% del ancho
-        const centerAreaHeight = screenHeight * 0.6; // 60% del alto
         const centerX = screenWidth / 2;
         const centerY = screenHeight / 2;
         
-        const leftBoundary = centerX - (centerAreaWidth / 2);
-        const rightBoundary = centerX + (centerAreaWidth / 2);
-        const topBoundary = centerY - (centerAreaHeight / 2);
-        const bottomBoundary = centerY + (centerAreaHeight / 2);
+        // Área central más grande para mejor detección
+        const touchDistance = Math.sqrt(
+            Math.pow(touch.clientX - centerX, 2) + 
+            Math.pow(touch.clientY - centerY, 2)
+        );
         
-        if (touch.clientX >= leftBoundary && 
-            touch.clientX <= rightBoundary && 
-            touch.clientY >= topBoundary && 
-            touch.clientY <= bottomBoundary) {
-            
+        // Si el toque está cerca del centro (área del modelo)
+        if (touchDistance < Math.min(screenWidth, screenHeight) * 0.25) { // 25% del tamaño más pequeño
+            console.log("Toque detectado sobre el modelo 3D");
             e.preventDefault();
             e.stopPropagation();
-            console.log("Toque en área central de la pantalla con marcador activo");
+            
+            showInfoPanel(
+                activeMarkerInfo.infoTitle,
+                activeMarkerInfo.infoContent,
+                activeMarkerInfo.infoImage
+            );
+        }
+    }
+});
+
+// Agregar también manejo de clic para navegadores de escritorio
+document.addEventListener('click', function(e) {
+    // Si no hay marcador activo, no hacer nada
+    if (!markerActive) return;
+    
+    // Verificar si hay algún indicador interactivo clicado
+    let target = e.target;
+    if (target.classList.contains('interactive-indicator')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (activeMarkerInfo) {
+            showInfoPanel(
+                activeMarkerInfo.infoTitle,
+                activeMarkerInfo.infoContent,
+                activeMarkerInfo.infoImage
+            );
+        }
+        return;
+    }
+    
+    // Si hay un marcador activo con información y se hizo clic en el área central
+    if (activeMarkerInfo) {
+        // Obtener dimensiones de la pantalla
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        
+        // Verificar si el clic está en el área central de la pantalla
+        const centerX = screenWidth / 2;
+        const centerY = screenHeight / 2;
+        
+        // Calcular distancia del clic al centro
+        const clickDistance = Math.sqrt(
+            Math.pow(e.clientX - centerX, 2) + 
+            Math.pow(e.clientY - centerY, 2)
+        );
+        
+        // Si el clic está cerca del centro (área del modelo)
+        if (clickDistance < Math.min(screenWidth, screenHeight) * 0.25) {
+            console.log("Clic detectado sobre el modelo 3D");
+            e.preventDefault();
+            e.stopPropagation();
             
             showInfoPanel(
                 activeMarkerInfo.infoTitle,
