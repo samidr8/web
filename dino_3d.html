@@ -317,13 +317,13 @@
             },
             {
                 id: "tierra-marker",
-                url: "https://samidr8.github.io/web/markers/tierra", 
+                url: "https://samidr8.github.io/web/markers/tierra",
                 type: "3d-model",
                 content: {
                     url: "https://samidr8.github.io/web/media/tierra.glb",
-                    scale: "400 400 400",
-                    position: "50 0 -150",
-                    rotation: "0 180 0", 
+                    scale: "800 800 800",
+                    position: "50 0 -250",
+                    rotation: "0 180 0",
                     title: "Modelo 3D de la Tierra"
                 }
             },
@@ -774,6 +774,14 @@
                         showErrorMessage(`Error al cargar el modelo 3D. Inténtalo de nuevo.`);
                     });
 
+                    model.setAttribute('animation', {
+                        property: 'rotation',
+                        to: '0 360 0',
+                        loop: true,
+                        dur: 10000, // 10 segundos para una rotación completa
+                        easing: 'linear'
+                    });
+                    
                     modelRoot.appendChild(model);
                     nftEl.appendChild(modelRoot);
                 }
