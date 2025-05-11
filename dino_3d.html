@@ -167,6 +167,11 @@
             background-color: #666;
         }
 
+        /* Estilo para elementos clickables */
+        .clickable {
+            cursor: pointer;
+        }
+
         /* Optimización para dispositivos móviles */
         @media (orientation: portrait) {
             .video-container {
@@ -260,6 +265,7 @@
             <p>Apunta la cámara a una IMAGEN del libro para ver contenido interactivo.</p>
             <p>Cada página activará diferentes tipos de contenido: modelos 3D, videos, formularios o aplicaciones
                 interactivas.</p>
+            <p><strong>Nuevo:</strong> Toca el modelo de la Tierra para ver más información sobre ella.</p>
             <button onclick="document.getElementById('instructions').style.display='none'">Entendido</button>
         </div>
     </div>
@@ -293,11 +299,135 @@
     <a-scene vr-mode-ui="enabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;" embedded
         arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
+        <!-- AGREGAR COMPONENTE INTERACTIVO PARA LA TIERRA -->
+        <script>
+            // Componente para hacer objetos interactivos
+            AFRAME.registerComponent('interactive-object', {
+                schema: {
+                    infoTitle: { type: 'string', default: 'Información' },
+                    infoContent: { type: 'string', default: 'Haga clic para más información.' },
+                    infoImage: { type: 'string', default: '' }
+                },
+                
+                init: function() {
+                    var el = this.el;
+                    var data = this.data;
+                    
+                    // Crear panel de información
+                    this.infoPanel = document.createElement('a-entity');
+                    this.infoPanel.setAttribute('id', 'info-panel-' + el.id);
+                    this.infoPanel.setAttribute('position', '0 0.5 0');
+                    this.infoPanel.setAttribute('visible', false);
+                    
+                    // Crear fondo del panel
+                    var panelBg = document.createElement('a-plane');
+                    panelBg.setAttribute('color', '#1c3b5e');
+                    panelBg.setAttribute('width', 1.5);
+                    panelBg.setAttribute('height', 0.8);
+                    panelBg.setAttribute('opacity', 0.9);
+                    panelBg.setAttribute('position', '0 0 -0.01');
+                    panelBg.setAttribute('material', 'shader: flat');
+                    this.infoPanel.appendChild(panelBg);
+                    
+                    // Crear título
+                    var title = document.createElement('a-text');
+                    title.setAttribute('value', data.infoTitle);
+                    title.setAttribute('align', 'center');
+                    title.setAttribute('width', 1.2);
+                    title.setAttribute('color', 'white');
+                    title.setAttribute('position', '0 0.3 0');
+                    title.setAttribute('font', 'kelsonsans');
+                    this.infoPanel.appendChild(title);
+                    
+                    // Crear contenido
+                    var content = document.createElement('a-text');
+                    content.setAttribute('value', data.infoContent);
+                    content.setAttribute('align', 'center');
+                    content.setAttribute('width', 1.2);
+                    content.setAttribute('color', 'white');
+                    content.setAttribute('position', '0 0 0');
+                    content.setAttribute('font', 'kelsonsans');
+                    content.setAttribute('baseline', 'top');
+                    content.setAttribute('line-height', 50);
+                    content.setAttribute('wrap-count', 30);
+                    this.infoPanel.appendChild(content);
+                    
+                    // Crear botón de cierre
+                    var closeBtn = document.createElement('a-entity');
+                    closeBtn.setAttribute('geometry', 'primitive: circle; radius: 0.05');
+                    closeBtn.setAttribute('material', 'color: #f44336');
+                    closeBtn.setAttribute('position', '0.65 0.3 0.01');
+                    closeBtn.setAttribute('text', 'value: X; align: center; color: white; width: 0.5');
+                    closeBtn.classList.add('clickable');
+                    closeBtn.addEventListener('click', () => this.hideInfo());
+                    this.infoPanel.appendChild(closeBtn);
+                    
+                    // Añadir imagen si existe
+                    if (data.infoImage) {
+                        var img = document.createElement('a-image');
+                        img.setAttribute('src', data.infoImage);
+                        img.setAttribute('width', 0.3);
+                        img.setAttribute('height', 0.3);
+                        img.setAttribute('position', '-0.5 0 0.01');
+                        this.infoPanel.appendChild(img);
+                    }
+                    
+                    // Añadir el panel al modelo
+                    el.appendChild(this.infoPanel);
+                    
+                    // Hacer el objeto clickable
+                    el.classList.add('clickable');
+                    
+                    // Añadir event listeners
+                    el.addEventListener('click', this.toggleInfo.bind(this));
+                    el.addEventListener('touchstart', this.toggleInfo.bind(this));
+                    
+                    // Estado
+                    this.infoVisible = false;
+                },
+                
+                toggleInfo: function(evt) {
+                    // Prevenir que el evento se propague
+                    if (evt) {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                    }
+                    
+                    if (this.infoVisible) {
+                        this.hideInfo();
+                    } else {
+                        this.showInfo();
+                    }
+                },
+                
+                showInfo: function() {
+                    // Mostrar el panel de información
+                    this.infoPanel.setAttribute('visible', true);
+                    // Asegurarse de que mire a la cámara
+                    this.infoPanel.setAttribute('look-at', '[camera]');
+                    this.infoVisible = true;
+                },
+                
+                hideInfo: function() {
+                    // Ocultar el panel de información
+                    this.infoPanel.setAttribute('visible', false);
+                    this.infoVisible = false;
+                }
+            });
+        </script>
+
         <!-- Los marcadores NFT se agregarán dinámicamente aquí -->
         <a-entity id="nft-markers-container"></a-entity>
 
-        <!-- Cámara -->
-        <a-entity camera></a-entity>
+        <!-- Cámara con cursor para interacción -->
+        <a-entity camera>
+            <a-entity cursor="fuse: false; rayOrigin: mouse;"
+                    position="0 0 -1"
+                    geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                    material="color: white; shader: flat"
+                    raycaster="objects: .clickable">
+            </a-entity>
+        </a-entity>
     </a-scene>
 
     <script>
@@ -324,7 +454,12 @@
                     scale: "1500 1500 1500",
                     position: "150 0 -250",
                     rotation: "0 180 0",
-                    title: "Modelo 3D de la Tierra"
+                    title: "Modelo 3D de la Tierra",
+                    // NUEVO: Propiedades para interactividad
+                    interactive: true,
+                    infoTitle: "La Tierra",
+                    infoContent: "• Diámetro: 12,742 km\n• Distancia al Sol: 149.6 millones km\n• Edad: 4.54 mil millones de años\n• Período de rotación: 23.93 horas\n• Período orbital: 365.25 días",
+                    infoImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/240px-The_Blue_Marble_%28remastered%29.jpg"
                 }
             },
             {
@@ -733,7 +868,7 @@
             hideContentTitle();
         }
 
-        // Función para crear marcadores NFT dinámicamente
+        // Función para crear marcadores NFT dinámicamente - MODIFICADA PARA SOPORTAR INTERACTIVIDAD
         function createNFTMarkers() {
             const container = document.getElementById('nft-markers-container');
 
@@ -763,6 +898,15 @@
                     model.setAttribute('gltf-model', marker.content.url);
                     model.setAttribute('scale', marker.content.scale);
                     model.setAttribute('rotation', marker.content.rotation);
+
+                    // NUEVA FUNCIONALIDAD: Verificar si el modelo debe ser interactivo
+                    if (marker.content.interactive) {
+                        model.setAttribute('interactive-object', {
+                            infoTitle: marker.content.infoTitle || 'Información',
+                            infoContent: marker.content.infoContent || 'No hay información disponible',
+                            infoImage: marker.content.infoImage || ''
+                        });
+                    }
 
                     // Añadir manejo de eventos para carga de modelos
                     model.addEventListener('model-loaded', function () {
