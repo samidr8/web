@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Museo AR sin marcadores</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <!-- Actualizar a la última versión de A-Frame y THREE.js -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://unpkg.com/aframe-gps-camera@1.8.2/dist/aframe-gps-camera.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@3.0.3/dist/aframe-event-set-component.min.js"></script>
+    
+    <script>
+      // Depuración para ver si la cámara GPS y otros componentes se cargan correctamente
+      window.onload = function() {
+        console.log("Página cargada completamente");
+        console.log("Componentes A-Frame registrados:", AFRAME.components);
+        console.log("¿Está gps-camera registrado?", !!AFRAME.components['gps-camera']);
+        console.log("¿Está gps-entity-place registrado?", !!AFRAME.components['gps-entity-place']);
+      };
+      
+      // Componente para paneles de información
+      AFRAME.registerComponent('info-panel', {
+        schema: {
+          title: {type: 'string', default: 'Obra sin título'},
+          artist: {type: 'string', default: 'Artista desconocido'},
+          year: {type: 'string', default: 'Año desconocido'},
+          description: {type: 'string', default: 'Sin descripción disponible'}
+        },
+        init: function() {
+          const el = this.el;
+          const data = this.data;
+          
+          // Crear panel que aparecerá al hacer clic
+          const panel = document.createElement('a-entity');
+          panel.setAttribute('visible', false);
+          panel.setAttribute('position', '0 -0.5 0.1');
+          panel.setAttribute('scale', '0.8 0.8 0.8');
+          
+          // Fondo del panel
+          const bg = document.createElement('a-plane');
+          bg.setAttribute('color', '#ffffff');
+          bg.setAttribute('opacity', '0.9');
+          bg.setAttribute('width', '2');
+          bg.setAttribute('height', '1.5');
+          panel.appendChild(bg);
+          
+          // Título
+          const title = document.createElement('a-text');
+          title.setAttribute('value', data.title);
+          title.setAttribute('align', 'center');
+          title.setAttribute('position', '0 0.6 0.01');
+          title.setAttribute('color', '#000000');
+          title.setAttribute('width', '4');
+          panel.appendChild(title);
+          
+          // Artista y año
+          const artist = document.createElement('a-text');
+          artist.setAttribute('value', `${data.artist}, ${data.year}`);
+          artist.setAttribute('align', 'center');
+          artist.setAttribute('position', '0 0.4 0.01');
+          artist.setAttribute('color', '#333333');
+          artist.setAttribute('width', '4');
+          panel.appendChild(artist);
+          
+          // Descripción
+          const desc = document.createElement('a-text');
+          desc.setAttribute('value', data.description);
+          desc.setAttribute('align', 'center');
+          desc.setAttribute('position', '0 0 0.01');
+          desc.setAttribute('color', '#333333');
+          desc.setAttribute('width', '3.5');
+          desc.setAttribute('wrap-count', '40');
+          panel.appendChild(desc);
+          
+          // Botón cerrar
+          const closeBtn = document.createElement('a-text');
+          closeBtn.setAttribute('value', 'X');
+          closeBtn.setAttribute('position', '0.9 0.6 0.01');
+          closeBtn.setAttribute('color', '#ff0000');
+          closeBtn.setAttribute('width', '2');
+          closeBtn.setAttribute('class', 'clickable');
+          closeBtn.addEventListener('click', function() {
+            panel.setAttribute('visible', false);
+          });
+          panel.appendChild(closeBtn);
+          
+          el.appendChild(panel);
+          
+          // Abrir panel al hacer clic en la obra
+          el.addEventListener('click', function() {
+            panel.setAttribute('visible', true);
+            console.log("Panel de información abierto para:", data.title);
+          });
+        }
+      });
+      
+      // Versión simplificada del componente de proximidad para depuración
+      AFRAME.registerComponent('proximity-trigger', {
+        schema: {
+          distance: {type: 'number', default: 10}, // distancia en metros
+        },
+        init: function() {
+          this.camera = document.querySelector('[gps-camera]');
+          this.active = false;
+          
+          // Log para depuración
+          console.log("Componente proximity-trigger inicializado");
+          console.log("Entidad:", this.el.id);
+          console.log("Distancia configurada:", this.data.distance);
+          
+          // Mantener visibles los elementos por ahora para depuración
+          this.el.setAttribute('visible', true);
+        },
+        tick: function() {
+          // Verificar si los componentes están disponibles
+          if (!this.camera || !this.camera.components['gps-camera'] || 
+              !this.el.components['gps-entity-place']) {
+            return;
+          }
+          
+          try {
+            // Obtener las coordenadas GPS
+            const cameraPos = this.camera.components['gps-camera'].getCurrentPosition();
+            const entityPos = this.el.components['gps-entity-place'].attrValue;
+            
+            if (!cameraPos || !entityPos) {
+              // Mantener visibles los elementos mientras no haya datos GPS
+              return;
+            }
+            
+            // Calcular distancia entre usuario y objeto
+            const distance = this.getDistance(
+              cameraPos.latitude, cameraPos.longitude,
+              entityPos.latitude, entityPos.longitude
+            );
+            
+            // Actualizar texto de distancia
+            const distanceText = this.el.querySelector('.distance-text');
+            if (distanceText) {
+              distanceText.setAttribute('value', `${distance.toFixed(0)}m`);
+            }
+            
+            // Lógica de proximidad
+            if (distance < this.data.distance && !this.active) {
+              this.active = true;
+              
+              // Si tiene audio y está habilitado, reproducirlo
+              if (window.audioEnabled) {
+                const audio = this.el.querySelector('audio');
+                if (audio) audio.play();
+              }
+              
+            } else if (distance >= this.data.distance && this.active) {
+              this.active = false;
+              
+              // Si tiene audio, detenerlo
+              const audio = this.el.querySelector('audio');
+              if (audio) audio.pause();
+            }
+          } catch (e) {
+            console.error("Error en proximity-trigger:", e);
+          }
+        },
+        getDistance: function(lat1, lon1, lat2, lon2) {
+          const R = 6371e3; // Radio de la tierra en metros
+          const φ1 = lat1 * Math.PI/180;
+          const φ2 = lat2 * Math.PI/180;
+          const Δφ = (lat2-lat1) * Math.PI/180;
+          const Δλ = (lon2-lon1) * Math.PI/180;
+          const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c; // en metros
+        }
+      });
+      
+      // Componente para animaciones
+      AFRAME.registerComponent('rotate-model', {
+        schema: {
+          speed: {type: 'number', default: 1}
+        },
+        init: function() {
+          console.log("Componente rotate-model inicializado en:", this.el.id);
+        },
+        tick: function(time, deltaTime) {
+          if (this.el.object3D) {
+            this.el.object3D.rotation.y += this.data.speed * (deltaTime/1000);
+          }
+        }
+      });
+      
+      // Función para manejar errores de carga de modelos
+      AFRAME.registerComponent('model-error', {
+        init: function() {
+          const el = this.el;
+          el.addEventListener('model-error', function(e) {
+            console.error('Error al cargar el modelo:', e.detail.src);
+            // Intentar con un modelo alternativo o mostrar un mensaje
+            el.setAttribute('gltf-model', '#backup-model');
+          });
+        }
+      });
+    </script>
+    
+    <style>
+      .a-enter-vr, .a-orientation-modal {
+        display: none;
+      }
+      
+      #ui-overlay {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 999;
+        background-color: rgba(0,0,0,0.5);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: Arial, sans-serif;
+      }
+      
+      #ui-overlay button {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        margin: 2px;
+        cursor: pointer;
+        border-radius: 3px;
+      }
+      
+      .distance-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0,0,0,0.5);
+        color: white;
+        padding: 5px;
+        border-radius: 3px;
+        font-family: Arial, sans-serif;
+      }
+      
+      /* Indicador de estado */
+      #status-message {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background-color: rgba(0,0,0,0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: Arial, sans-serif;
+        z-index: 1000;
+      }
+    </style>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
+    <!-- Indicador de estado para depuración -->
+    <div id="status-message">Inicializando museo AR...</div>
+    
+    <!-- Interfaz de usuario para filtrar obras -->
+    <div id="ui-overlay">
+      <h3>Museo AR</h3>
+      <button onclick="filterArt('all')">Todas las obras</button>
+      <button onclick="filterArt('paintings')">Pinturas</button>
+      <button onclick="filterArt('sculptures')">Esculturas</button>
+      <button onclick="toggleAudio()">Audio Guía</button>
+      <button onclick="testPosition()">Probar Posición</button>
+    </div>
+    
+    <a-scene 
+      vr-mode-ui="enabled: false"
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;"
+      renderer="logarithmicDepthBuffer: true;"
+    >
+      <!-- Precargar modelos y assets -->
+      <a-assets>
+        <!-- Modelos de respaldo en caso de error -->
+        <a-asset-item id="backup-model" src="media/chica.glb"></a-asset-item>
+        <!-- Precargar audio -->
+        <audio id="audio-guide" src="sound/canto.mp3" preload="auto"></audio>
+      </a-assets>
+      
+      <!-- Ajustes de iluminación -->
+      <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
+      <a-entity light="type: directional; color: #FFF; intensity: 0.8" position="-1 1 1"></a-entity>
+      
+      <!-- Cámara GPS con marcador de depuración -->
+      <a-camera 
+        gps-camera="minDistance: 0; maxDistance: 100" 
+        rotation-reader
+        arjs-look-controls="smoothingFactor: 0.1"
+      >
+        <a-cursor color="#FAFAFA" fuse="true" fuseTimeout="500" raycaster="objects: .clickable"></a-cursor>
+        <!-- Indicador en el centro para depuración -->
+        <a-entity position="0 0 -1" geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" material="color: red; shader: flat" scale="0.5 0.5 0.5"></a-entity>
+      </a-camera>
+
+      <!-- Modelo 3D del Museo -->
+      <a-box 
+        id="museum-building"
+        class="all clickable"
+        gps-entity-place="latitude: 40.6892; longitude: -74.0445"
+        color="#8ebf42" 
+        scale="3 3 3"
+        material="opacity: 0.8"
+        position="0 1.5 0"
+        model-error
+      >
+        <!-- Indicador de distancia -->
+        <a-text class="distance-text" value="0m" position="0 2 0" scale="3 3 3" align="center" color="#FFF"></a-text>
+      </a-box>
+
+      <!-- Cuadro 1: Mona Lisa con panel informativo -->
+      <a-entity
+        id="mona-lisa"
+        class="paintings all clickable"
+        gps-entity-place="latitude: 40.68922; longitude: -74.04448"
+        position="0 1.5 0"
+        proximity-trigger="distance: 15"
+        info-panel="
+          title: La Mona Lisa; 
+          artist: Leonardo da Vinci; 
+          year: 1503-1506; 
+          description: También conocida como La Gioconda, es una pintura al óleo sobre tabla de álamo de 77 × 53 cm, pintada entre 1503 y 1519, y actualmente se encuentra en el Museo del Louvre de París."
+      >
+        <a-plane
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg/800px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg"
+          width="2" height="3"
+          material="transparent: true"
+        ></a-plane>
+        
+        <!-- Audio para la obra -->
+        <audio id="mona-lisa-audio" preload="auto" loop>
+          <source src="sound/canto.mp3" type="audio/mpeg">
+        </audio>
+        
+        <!-- Efecto de luz focal -->
+        <a-entity light="type: spot; angle: 45; penumbra: 0.2; intensity: 0.8" position="0 0 3" rotation="0 0 0"></a-entity>
+        
+        <!-- Indicador de distancia -->
+        <a-text class="distance-text" value="0m" position="0 1.8 0" align="center" color="#FFF"></a-text>
+      </a-entity>
+
+      <!-- Cuadro 2: Starry Night -->
+      <a-entity
+        id="starry-night"
+        class="paintings all clickable"
+        gps-entity-place="latitude: 40.68924; longitude: -74.04452"
+        position="0 1.5 0"
+        proximity-trigger="distance: 15"
+        info-panel="
+          title: La noche estrellada; 
+          artist: Vincent van Gogh; 
+          year: 1889; 
+          description: Es una pintura al óleo sobre lienzo que representa la vista desde la ventana orientada al este de su habitación de asilo en Saint-Rémy-de-Provence, justo antes del amanecer, con la adición de un pueblo imaginario."
+      >
+        <a-plane
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"
+          width="2" height="1.5"
+          material="transparent: true"
+        ></a-plane>
+        
+        <!-- Audio para la obra -->
+        <audio id="starry-audio" preload="auto" loop>
+          <source src="sound/canto.mp3" type="audio/mpeg">
+        </audio>
+        
+        <!-- Efecto de luz focal -->
+        <a-entity light="type: spot; angle: 45; penumbra: 0.2; intensity: 0.8" position="0 0 3" rotation="0 0 0"></a-entity>
+        
+        <!-- Indicador de distancia -->
+        <a-text class="distance-text" value="0m" position="0 1.8 0" align="center" color="#FFF"></a-text>
+      </a-entity>
+
+      <!-- Escultura 3D simplificada para pruebas -->
+      <a-entity
+        id="sample-sculpture"
+        class="sculptures all clickable"
+        gps-entity-place="latitude: 40.68926; longitude: -74.04454"
+        position="0 1.5 0"
+        proximity-trigger="distance: 15"
+        info-panel="
+          title: Escultura de prueba; 
+          artist: Artista Digital; 
+          year: 2025; 
+          description: Una escultura básica para probar la funcionalidad AR."
+      >
+        <a-box 
+          color="#4CC3D9" 
+          width="1" 
+          height="1" 
+          depth="1" 
+          rotation="0 45 0"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"
+        ></a-box>
+        
+        <!-- Audio para la obra -->
+        <audio id="sculpture-audio" preload="auto" loop>
+          <source src="sound/canto.mp3" type="audio/mpeg">
+        </audio>
+        
+        <!-- Efecto de luz focal -->
+        <a-entity light="type: point; intensity: 0.7; distance: 5; decay: 2" position="0 1 0"></a-entity>
+        
+        <!-- Indicador de distancia -->
+        <a-text class="distance-text" value="0m" position="0 1.8 0" align="center" color="#FFF"></a-text>
+      </a-entity>
+    </a-scene>
+    
+    <script>
+      // Variables globales
+      window.audioEnabled = false;
+      let locationReady = false;
+      
+      // Actualizar mensaje de estado
+      function updateStatus(message) {
+        const statusDiv = document.getElementById('status-message');
+        statusDiv.textContent = message;
+      }
+      
+      // Evento cuando la escena esté lista
+      document.querySelector('a-scene').addEventListener('loaded', function () {
+        updateStatus('Escena AR cargada. Esperando permisos de ubicación...');
+        
+        // Comprobar si el navegador soporta geolocalización
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            
+            updateStatus(`Ubicación obtenida: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+            locationReady = true;
+            
+            // Actualizar posiciones GPS de los objetos para pruebas locales
+            // Esto colocará los objetos cerca de la posición actual del usuario
+            updateEntityPositions(latitude, longitude);
+          }, function(error) {
+            updateStatus('Error al obtener la ubicación: ' + error.message);
+            console.error('Error de geolocalización:', error);
+          }, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 27000
+          });
+        } else {
+          updateStatus('Este navegador no soporta geolocalización');
+        }
+      });
+      
+      // Función para actualizar posiciones de entidades para pruebas locales
+      function updateEntityPositions(baseLatitude, baseLongitude) {
+        // Distancias en grados para pruebas (aproximadamente 5-20 metros)
+        const offsets = [
+          {lat: 0, lng: 0},              // Museo
+          {lat: 0.00002, lng: 0.00002},  // Mona Lisa
+          {lat: 0.00004, lng: 0.00004},  // Starry Night
+          {lat: 0.00006, lng: 0.00006}   // Escultura
+        ];
+        
+        // Obtener todas las entidades con gps-entity-place
+        const entities = document.querySelectorAll('[gps-entity-place]');
+        
+        entities.forEach((entity, index) => {
+          if (index < offsets.length) {
+            const newLat = baseLatitude + offsets[index].lat;
+            const newLng = baseLongitude + offsets[index].lng;
+            
+            // Actualizar atributo
+            entity.setAttribute('gps-entity-place', {
+              latitude: newLat,
+              longitude: newLng
+            });
+            
+            console.log(`Entidad ${entity.id} posicionada en: ${newLat}, ${newLng}`);
+          }
+        });
+        
+        updateStatus('Objetos posicionados cerca de tu ubicación actual para pruebas');
+      }
+      
+      // Función para probar la posición actual
+      function testPosition() {
+        const camera = document.querySelector('[gps-camera]');
+        
+        if (camera && camera.components['gps-camera']) {
+          try {
+            const position = camera.components['gps-camera'].getCurrentPosition();
+            if (position) {
+              updateStatus(`Posición actual: ${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`);
+            } else {
+              updateStatus('Posición GPS no disponible todavía');
+            }
+          } catch (e) {
+            updateStatus('Error al obtener posición GPS: ' + e.message);
+          }
+        } else {
+          updateStatus('Componente gps-camera no inicializado');
+        }
+      }
+      
+      // Función para filtrar obras por categoría
+      function filterArt(category) {
+        updateStatus(`Filtrando por: ${category}`);
+        const allItems = document.querySelectorAll('.all');
+        
+        if (category === 'all') {
+          allItems.forEach(item => {
+            item.setAttribute('visible', true);
+          });
+        } else {
+          allItems.forEach(item => {
+            if (item.classList.contains(category)) {
+              item.setAttribute('visible', true);
+            } else {
+              item.setAttribute('visible', false);
+            }
+          });
+        }
+      }
+      
+      // Función para activar/desactivar la guía de audio
+      function toggleAudio() {
+        window.audioEnabled = !window.audioEnabled;
+        updateStatus(`Audio: ${window.audioEnabled ? 'Activado' : 'Desactivado'}`);
+        
+        const audioElements = document.querySelectorAll('audio');
+        
+        audioElements.forEach(audio => {
+          if (window.audioEnabled) {
+            // Solo reproduce si está cerca (la proximidad se encarga de esto)
+            const parent = audio.parentNode;
+            if (parent.components['proximity-trigger'] && 
+                parent.components['proximity-trigger'].active) {
+              audio.play();
+            }
+          } else {
+            audio.pause();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
