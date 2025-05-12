@@ -151,7 +151,7 @@
 
         <!-- Definición de componentes personalizados -->
         <script>
-            // Componente para dibujar una línea entre dos puntos - NOMBRE MODIFICADO para evitar conflicto
+            // Componente para dibujar una línea entre dos puntos
             AFRAME.registerComponent('angle-line', {
                 schema: {
                     start: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
@@ -159,10 +159,11 @@
                     color: { type: 'color', default: '#0080ff' },
                     opacity: { type: 'number', default: 1 },
                     visible: { type: 'boolean', default: true },
-                    lineWidth: { type: 'number', default: 3 } // Agregado control de grosor
+                    lineWidth: { type: 'number', default: 3 }
                 },
 
                 init: function () {
+                    console.log("Inicializando línea");
                     var data = this.data;
                     // Crear material para la línea
                     var material = new THREE.LineBasicMaterial({
@@ -170,7 +171,7 @@
                         opacity: data.opacity,
                         transparent: data.opacity < 1,
                         visible: data.visible,
-                        linewidth: data.lineWidth // Nota: no funciona en WebGL, pero lo dejamos por si acaso
+                        linewidth: data.lineWidth
                     });
 
                     // Crear geometría
@@ -182,6 +183,7 @@
                 },
 
                 update: function () {
+                    console.log("Actualizando línea");
                     this.updateLine();
                 },
 
@@ -189,6 +191,10 @@
                     var data = this.data;
                     var start = new THREE.Vector3(data.start.x, data.start.y, data.start.z);
                     var end = new THREE.Vector3(data.end.x, data.end.y, data.end.z);
+
+                    // Debug: mostrar puntos de inicio y fin
+                    console.log(`Dibujando línea desde (${start.x}, ${start.y}, ${start.z}) hasta (${end.x}, ${end.y}, ${end.z})`);
+                    console.log(`Línea visible: ${data.visible}`);
 
                     var positions = new Float32Array([
                         start.x, start.y, start.z,
@@ -198,6 +204,8 @@
                     this.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                     this.line.geometry.attributes.position.needsUpdate = true;
                     this.line.material.visible = data.visible;
+                    this.line.material.color.set(data.color);
+                    this.line.material.opacity = data.opacity;
                 }
             });
 
@@ -253,9 +261,9 @@
 
         <!-- Entidades para las líneas y el ángulo -->
         <a-entity id="angle-system">
-            <!-- Cambiados los componentes de "line" a "angle-line" -->
-            <a-entity id="line-ab" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 5"></a-entity>
-            <a-entity id="line-bc" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 5"></a-entity>
+            <!-- Líneas que conectan los marcadores -->
+            <a-entity id="line-ab" angle-line="start: 0 0 0; end: 0 0 0; color: #FF0000; visible: false; lineWidth: 10; opacity: 1"></a-entity>
+            <a-entity id="line-bc" angle-line="start: 0 0 0; end: 0 0 0; color: #0000FF; visible: false; lineWidth: 10; opacity: 1"></a-entity>
             <a-entity id="angle-marker" angle-label="value: 0; visible: false"></a-entity>
         </a-entity>
 
@@ -268,19 +276,19 @@
         const markers = [
             {
                 id: "markerA",
-                url: "https://samidr8.github.io/web/markers/ang1", // Reemplazar con su URL de marcador
+                url: "https://samidr8.github.io/web/markers/ang1",
                 label: "A",
                 color: "#ff0000"
             },
             {
                 id: "markerB",
-                url: "https://samidr8.github.io/web/markers/ang2", // Reemplazar con su URL de marcador
+                url: "https://samidr8.github.io/web/markers/ang2", 
                 label: "B",
                 color: "#00ff00"
             },
             {
                 id: "markerC",
-                url: "https://samidr8.github.io/web/markers/ang3", // Reemplazar con su URL de marcador
+                url: "https://samidr8.github.io/web/markers/ang3", 
                 label: "C",
                 color: "#0000ff"
             }
@@ -367,21 +375,34 @@
             
             // Verificar si todos los marcadores están detectados
             if (markersDetected.markerA.detected && markersDetected.markerB.detected && markersDetected.markerC.detected) {
-                // Actualizar líneas - cambiado "line" por "angle-line"
+                // Debug - mostrar posiciones
+                console.log("Posiciones actualizadas:");
+                console.log(`A: (${pointA.x}, ${pointA.y}, ${pointA.z})`);
+                console.log(`B: (${pointB.x}, ${pointB.y}, ${pointB.z})`);
+                console.log(`C: (${pointC.x}, ${pointC.y}, ${pointC.z})`);
+                
+                // Actualizar líneas
                 lineAB.setAttribute('angle-line', {
                     start: { x: pointA.x, y: pointA.y, z: pointA.z },
                     end: { x: pointB.x, y: pointB.y, z: pointB.z },
-                    visible: true
+                    visible: true,
+                    color: '#FF0000',
+                    opacity: 1,
+                    lineWidth: 10
                 });
                 
                 lineBC.setAttribute('angle-line', {
                     start: { x: pointB.x, y: pointB.y, z: pointB.z },
                     end: { x: pointC.x, y: pointC.y, z: pointC.z },
-                    visible: true
+                    visible: true,
+                    color: '#0000FF',
+                    opacity: 1,
+                    lineWidth: 10
                 });
                 
                 // Calcular ángulo
                 const angle = calculateAngle(pointA, pointB, pointC);
+                console.log(`Ángulo calculado: ${angle.toFixed(1)}°`);
                 
                 // Actualizar etiqueta del ángulo
                 angleMarker.setAttribute('position', { x: pointB.x, y: pointB.y, z: pointB.z });
@@ -400,12 +421,12 @@
                 isSystemActive = true;
             } else {
                 // Ocultar líneas y ángulo si no todos los marcadores están detectados
-                lineAB.setAttribute('angle-line', { visible: false });
-                lineBC.setAttribute('angle-line', { visible: false });
-                angleMarker.setAttribute('angle-label', { visible: false });
+                if (lineAB) lineAB.setAttribute('angle-line', { visible: false });
+                if (lineBC) lineBC.setAttribute('angle-line', { visible: false });
+                if (angleMarker) angleMarker.setAttribute('angle-label', { visible: false });
                 
                 // Ocultar el display en pantalla
-                angleDisplay.style.display = 'none';
+                if (angleDisplay) angleDisplay.style.display = 'none';
                 
                 // Desactivar indicador
                 setIndicatorStatus(false);
@@ -469,6 +490,8 @@
                         y: position.y,
                         z: position.z
                     };
+                    
+                    console.log(`Posición de ${marker.id}: (${position.x}, ${position.y}, ${position.z})`);
                     
                     // Actualizar sistema de ángulo
                     updateAngleSystem();
