@@ -4,12 +4,8 @@
     <title>Museo AR en Superficie</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- WebXR para AR sin marcadores -->
     <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/studio-backend/master/src/modules/marker/tools/gesture-detector.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/studio-backend/master/src/modules/marker/tools/gesture-handler.js"></script>
-    <!-- AR.js para detección de superficies -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <script>
@@ -105,75 +101,49 @@
         }
       });
       
-      // Componente para colocar el museo
-      AFRAME.registerComponent('place-museum', {
+      // Componente para gestionar la colocación del museo
+      AFRAME.registerComponent('museum-manager', {
         init: function() {
-          this.raycaster = new THREE.Raycaster();
-          this.mouse = new THREE.Vector2();
           this.isPlaced = false;
-          
-          this.el.sceneEl.addEventListener('click', this.onClick.bind(this));
+          this.museumContainer = document.getElementById('museum-container');
           
           updateStatus('Toca en cualquier superficie para colocar el museo');
+          
+          // Escuchar evento de clic en toda la escena
+          this.el.addEventListener('click', this.handleClick.bind(this));
+          console.log("Gestor del museo inicializado, esperando clic...");
         },
         
-        onClick: function(event) {
-          if (this.isPlaced) return;
-          
-          // Convertir coordenadas de pantalla a coordenadas normalizadas
-          const canvas = this.el.sceneEl.canvas;
-          const bounds = canvas.getBoundingClientRect();
-          const x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
-          const y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
-          
-          this.mouse.x = x;
-          this.mouse.y = y;
-          
-          // Actualizar raycaster
-          this.raycaster.setFromCamera(this.mouse, this.el.sceneEl.camera);
-          
-          // Buscar intersecciones con la superficie
-          const scene = this.el.sceneEl.object3D;
-          const intersects = this.raycaster.intersectObjects(scene.children, true);
-          
-          if (intersects.length > 0) {
-            // Encontramos una superficie
-            const intersection = intersects[0];
-            const position = intersection.point;
-            
-            // Crear el museo en esa posición
-            this.placeMuseum(position);
-            
-            this.isPlaced = true;
-            updateStatus('¡Museo colocado! Explora las obras de arte.');
+        handleClick: function(event) {
+          if (this.isPlaced) {
+            console.log("El museo ya está colocado");
+            return;
           }
-        },
-        
-        placeMuseum: function(position) {
-          // Obtener el contenedor del museo
-          const museumContainer = document.getElementById('museum-container');
           
-          // Posicionar el contenedor en la intersección
-          museumContainer.setAttribute('position', {
-            x: position.x,
-            y: position.y,
-            z: position.z
-          });
+          updateStatus('¡Click detectado! Intentando colocar museo...');
+          console.log("Click detectado, coordenadas:", event.detail.intersection);
           
-          // Hacer visible el museo
-          museumContainer.setAttribute('visible', true);
-        }
-      });
-      
-      // Función para manejar errores de carga de modelos
-      AFRAME.registerComponent('model-error', {
-        init: function() {
-          const el = this.el;
-          el.addEventListener('model-error', function(e) {
-            console.error('Error al cargar el modelo:', e.detail.src);
-            // Intentar con un modelo alternativo o mostrar un mensaje
-            el.setAttribute('gltf-model', '#backup-model');
-          });
+          // Comprobar si tenemos un punto de intersección válido
+          if (event.detail.intersection) {
+            const position = event.detail.intersection.point;
+            console.log("Punto de intersección:", position);
+            
+            // Mostrar y posicionar el museo
+            this.museumContainer.setAttribute('position', {
+              x: position.x,
+              y: position.y,
+              z: position.z
+            });
+            
+            this.museumContainer.setAttribute('visible', true);
+            this.isPlaced = true;
+            
+            updateStatus('¡Museo colocado! Explora las obras de arte.');
+            console.log("Museo colocado en:", position);
+          } else {
+            updateStatus('No se detectó superficie. Intenta tocar otra área.');
+            console.log("No se encontró punto de intersección");
+          }
         }
       });
     </script>
@@ -221,11 +191,26 @@
         font-family: Arial, sans-serif;
         z-index: 1000;
       }
+      
+      /* Indicador de depuración */
+      #debug-message {
+        position: fixed;
+        bottom: 70px;
+        left: 10px;
+        background-color: rgba(255,0,0,0.7);
+        color: white;
+        padding: 5px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 10px;
+        z-index: 1000;
+      }
     </style>
   </head>
   <body style="margin: 0; overflow: hidden;">
     <!-- Indicador de estado para depuración -->
     <div id="status-message">Inicializando museo AR...</div>
+    <div id="debug-message"></div>
     
     <!-- Interfaz de usuario para filtrar obras -->
     <div id="ui-overlay">
@@ -234,14 +219,15 @@
       <button onclick="filterArt('paintings')">Pinturas</button>
       <button onclick="filterArt('sculptures')">Esculturas</button>
       <button onclick="toggleAudio()">Audio Guía</button>
+      <button onclick="testClick()">Colocar Museo (Test)</button>
     </div>
     
     <a-scene 
       embedded
-      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-      renderer="logarithmicDepthBuffer: true; antialias: true"
+      museum-manager
+      arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono; trackingMethod: best;"
+      renderer="logarithmicDepthBuffer: true; antialias: true; alpha: true;"
       vr-mode-ui="enabled: false"
-      gesture-detector
     >
       <!-- Precargar modelos y assets -->
       <a-assets>
@@ -256,34 +242,32 @@
         <audio id="audio-guide" src="sound/canto.mp3" preload="auto"></audio>
       </a-assets>
       
-      <!-- Cámara con cursor para interactuar -->
-      <a-entity camera look-controls wasd-controls position="0 1.6 0">
-        <a-entity cursor="fuse: true; fuseTimeout: 500"
-                  position="0 0 -1"
-                  geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-                  material="color: white; shader: flat"
-                  raycaster="objects: .clickable">
-        </a-entity>
-      </a-entity>
-      
-      <!-- Plano para detectar la superficie -->
-      <a-plane
-        id="ground"
-        position="0 0 0"
-        rotation="-90 0 0"
-        width="100"
-        height="100"
-        color="#7BC8A4"
-        opacity="0.0"
+      <!-- Plano para detectar la superficie - Debe estar antes de la cámara en la jerarquía -->
+      <a-entity 
+        id="ground" 
+        geometry="primitive: plane; width: 100; height: 100" 
+        rotation="-90 0 0" 
+        position="0 0 0" 
+        material="opacity: 0.0" 
         class="clickable"
-      ></a-plane>
+      ></a-entity>
+      
+      <!-- Cámara con cursor para interactuar -->
+      <a-entity camera look-controls position="0 1.6 0">
+        <a-entity 
+          cursor="rayOrigin: mouse; fuse: false;" 
+          raycaster="objects: .clickable; far: 100"
+          position="0 0 -1"
+          geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+          material="color: white; shader: flat"
+        ></a-entity>
+      </a-entity>
       
       <!-- Contenedor del museo (inicialmente invisible) -->
       <a-entity 
         id="museum-container" 
         position="0 0 0" 
         visible="false"
-        place-museum
       >
         <!-- Modelo 3D del Museo -->
         <a-entity
@@ -292,7 +276,6 @@
           position="0 0 0"
           scale="0.5 0.5 0.5"
           rotation="0 0 0"
-          model-error
         >
           <!-- Edificio del museo como una caja simple para pruebas -->
           <a-box
@@ -399,10 +382,43 @@
         statusDiv.textContent = message;
       }
       
+      // Actualizar mensaje de depuración
+      function logDebug(message) {
+        const debugDiv = document.getElementById('debug-message');
+        debugDiv.textContent = message;
+        console.log(message);
+      }
+      
       // Evento cuando la escena esté lista
       document.querySelector('a-scene').addEventListener('loaded', function () {
-        updateStatus('Escena AR cargada. Toca en una superficie para colocar el museo.');
+        updateStatus('Escena AR cargada. Toca en cualquier superficie para colocar el museo.');
+        console.log("Escena A-Frame cargada completamente");
+        
+        // Registrar evento de clic adicional para depuración
+        document.addEventListener('click', function(e) {
+          logDebug(`Click en (${e.clientX}, ${e.clientY})`);
+        });
       });
+      
+      // Función de prueba para colocar el museo manualmente
+      function testClick() {
+        // Crear un evento de clic sintético con una posición predeterminada
+        const museumManager = document.querySelector('[museum-manager]').components['museum-manager'];
+        const museumContainer = document.getElementById('museum-container');
+        
+        if (museumManager && !museumManager.isPlaced) {
+          logDebug("Colocando museo manualmente");
+          
+          // Posición fija frente a la cámara
+          museumContainer.setAttribute('position', '0 0 -3');
+          museumContainer.setAttribute('visible', true);
+          museumManager.isPlaced = true;
+          
+          updateStatus('¡Museo colocado manualmente! Explora las obras de arte.');
+        } else {
+          logDebug("Museo ya colocado o gestor no disponible");
+        }
+      }
       
       // Función para filtrar obras por categoría
       function filterArt(category) {
