@@ -151,84 +151,109 @@
 
         <!-- Definición de componentes personalizados -->
         <script>
-            // Componente para dibujar una línea entre dos puntos
+            // COMPONENTE LÍNEA SIMPLIFICADO USANDO PRIMITIVAS DE AFRAME
             AFRAME.registerComponent('angle-line', {
                 schema: {
                     start: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
                     end: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
-                    color: { type: 'color', default: '#0080ff' },
+                    color: { type: 'color', default: '#00AAFF' },
                     opacity: { type: 'number', default: 1 },
                     visible: { type: 'boolean', default: true },
-                    lineWidth: { type: 'number', default: 8 }
+                    lineWidth: { type: 'number', default: 0.02 } // Usamos esto como radio del cilindro
                 },
 
                 init: function () {
-                    console.log("Inicializando componente angle-line");
-                    this.createLine();
-                },
-
-                update: function (oldData) {
-                    console.log("Actualizando componente angle-line");
-                    const data = this.data;
+                    console.log("Inicializando nuevo componente angle-line");
                     
-                    // Si hay cambios significativos, recrear la línea
-                    if (!this.line || 
-                        oldData.color !== data.color || 
-                        oldData.opacity !== data.opacity || 
-                        oldData.lineWidth !== data.lineWidth) {
-                        this.createLine();
-                    } else {
-                        this.updateLine();
-                    }
-                },
-                
-                createLine: function() {
-                    var data = this.data;
-                    
-                    // Si ya existe una línea, eliminarla
-                    if (this.line) {
-                        this.el.removeObject3D('angle-line');
-                    }
-                    
-                    // Crear material para la línea
-                    var material = new THREE.LineBasicMaterial({
-                        color: data.color,
-                        opacity: data.opacity,
-                        transparent: data.opacity < 1,
-                        visible: data.visible,
-                        linewidth: data.lineWidth
+                    // Crear un cilindro para representar la línea
+                    this.cylinder = document.createElement('a-cylinder');
+                    this.cylinder.setAttribute('radius', this.data.lineWidth);
+                    this.cylinder.setAttribute('material', {
+                        color: this.data.color,
+                        opacity: this.data.opacity,
+                        transparent: this.data.opacity < 1
                     });
-
-                    // Crear geometría
-                    var geometry = new THREE.BufferGeometry();
-                    this.line = new THREE.Line(geometry, material);
-                    this.el.setObject3D('angle-line', this.line);
-
+                    this.cylinder.setAttribute('visible', this.data.visible);
+                    
+                    // Añadir el cilindro al elemento
+                    this.el.appendChild(this.cylinder);
+                    
+                    // Actualizar la posición y orientación del cilindro
                     this.updateLine();
                 },
 
-                updateLine: function () {
-                    var data = this.data;
-                    var start = new THREE.Vector3(data.start.x, data.start.y, data.start.z);
-                    var end = new THREE.Vector3(data.end.x, data.end.y, data.end.z);
-
-                    var positions = new Float32Array([
-                        start.x, start.y, start.z,
-                        end.x, end.y, end.z
-                    ]);
-
-                    if (this.line && this.line.geometry) {
-                        this.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                        this.line.geometry.attributes.position.needsUpdate = true;
-                        this.line.material.visible = data.visible;
-                        console.log(`Línea actualizada: desde (${start.x}, ${start.y}, ${start.z}) hasta (${end.x}, ${end.y}, ${end.z}), visible: ${data.visible}`);
+                update: function () {
+                    console.log("Actualizando componente angle-line");
+                    
+                    // Actualizar las propiedades del cilindro
+                    if (this.cylinder) {
+                        this.cylinder.setAttribute('radius', this.data.lineWidth);
+                        this.cylinder.setAttribute('material', {
+                            color: this.data.color,
+                            opacity: this.data.opacity,
+                            transparent: this.data.opacity < 1
+                        });
+                        this.cylinder.setAttribute('visible', this.data.visible);
+                        
+                        // Actualizar la posición y orientación
+                        this.updateLine();
                     }
+                },
+
+                updateLine: function () {
+                    const data = this.data;
+                    const start = new THREE.Vector3(data.start.x, data.start.y, data.start.z);
+                    const end = new THREE.Vector3(data.end.x, data.end.y, data.end.z);
+                    
+                    // Verificar que las posiciones son válidas y diferentes
+                    if (isNaN(start.x) || isNaN(start.y) || isNaN(start.z) ||
+                        isNaN(end.x) || isNaN(end.y) || isNaN(end.z)) {
+                        console.warn("Posiciones de línea inválidas:", start, end);
+                        return;
+                    }
+                    
+                    // Calcular el punto medio para la posición del cilindro
+                    const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+                    
+                    // Calcular la distancia entre los puntos
+                    const distance = start.distanceTo(end);
+                    
+                    // Evitar líneas de longitud cero
+                    if (distance < 0.001) {
+                        console.warn("Línea demasiado corta:", distance);
+                        return;
+                    }
+                    
+                    // Calcular la orientación del cilindro
+                    // Primero calculamos la dirección desde inicio a fin
+                    const direction = new THREE.Vector3().subVectors(end, start).normalize();
+                    
+                    // El cilindro en A-Frame está alineado con el eje Y, así que necesitamos
+                    // la rotación del eje Y al vector dirección
+                    const upVector = new THREE.Vector3(0, 1, 0);
+                    const quaternion = new THREE.Quaternion();
+                    quaternion.setFromUnitVectors(upVector, direction);
+                    
+                    // Convertir el cuaternión a euler para obtener rotación
+                    const euler = new THREE.Euler().setFromQuaternion(quaternion);
+                    const rotation = {
+                        x: THREE.MathUtils.radToDeg(euler.x),
+                        y: THREE.MathUtils.radToDeg(euler.y),
+                        z: THREE.MathUtils.radToDeg(euler.z)
+                    };
+                    
+                    // Aplicar las transformaciones al cilindro
+                    this.cylinder.setAttribute('position', midpoint);
+                    this.cylinder.setAttribute('rotation', rotation);
+                    this.cylinder.setAttribute('height', distance);
+                    
+                    console.log(`Línea actualizada: desde (${start.x.toFixed(2)}, ${start.y.toFixed(2)}, ${start.z.toFixed(2)}) hasta (${end.x.toFixed(2)}, ${end.y.toFixed(2)}, ${end.z.toFixed(2)}), longitud: ${distance.toFixed(2)}, visible: ${data.visible}`);
                 },
                 
                 remove: function () {
-                    // Eliminar la línea cuando se elimina el componente
-                    if (this.line) {
-                        this.el.removeObject3D('angle-line');
+                    // Eliminar el cilindro cuando se elimine el componente
+                    if (this.cylinder && this.cylinder.parentNode) {
+                        this.cylinder.parentNode.removeChild(this.cylinder);
                     }
                 }
             });
@@ -287,9 +312,9 @@
 
         <!-- Entidades para las líneas y el ángulo -->
         <a-entity id="angle-system">
-            <!-- Usando entidades simples para las líneas para mayor control -->
-            <a-entity id="line-ab" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 8"></a-entity>
-            <a-entity id="line-bc" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 8"></a-entity>
+            <!-- Usando entidades simples para las líneas -->
+            <a-entity id="line-ab" angle-line="start: 0 0 0; end: 0 0 0; color: #00AAFF; visible: false; lineWidth: 0.02"></a-entity>
+            <a-entity id="line-bc" angle-line="start: 0 0 0; end: 0 0 0; color: #00AAFF; visible: false; lineWidth: 0.02"></a-entity>
             <a-entity id="angle-marker" angle-label="value: 0; visible: false"></a-entity>
         </a-entity>
 
@@ -402,65 +427,35 @@
             // Verificar si todos los marcadores están detectados
             if (markersDetected.markerA.detected && markersDetected.markerB.detected && markersDetected.markerC.detected) {
                 console.log("Todos los marcadores detectados, actualizando líneas y ángulo");
-                console.log(`Punto A: (${pointA.x}, ${pointA.y}, ${pointA.z})`);
-                console.log(`Punto B: (${pointB.x}, ${pointB.y}, ${pointB.z})`);
-                console.log(`Punto C: (${pointC.x}, ${pointC.y}, ${pointC.z})`);
+                console.log(`Punto A: (${pointA.x.toFixed(2)}, ${pointA.y.toFixed(2)}, ${pointA.z.toFixed(2)})`);
+                console.log(`Punto B: (${pointB.x.toFixed(2)}, ${pointB.y.toFixed(2)}, ${pointB.z.toFixed(2)})`);
+                console.log(`Punto C: (${pointC.x.toFixed(2)}, ${pointC.y.toFixed(2)}, ${pointC.z.toFixed(2)})`);
                 
-                // Crear directamente el nuevo objeto THREE.Line para mayor control
-                try {
-                    // Línea AB
-                    if (lineAB) {
-                        const lineObject = lineAB.getObject3D('angle-line');
-                        if (lineObject) {
-                            const positions = new Float32Array([
-                                pointA.x, pointA.y, pointA.z,
-                                pointB.x, pointB.y, pointB.z
-                            ]);
-                            
-                            lineObject.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                            lineObject.geometry.attributes.position.needsUpdate = true;
-                            lineObject.material.visible = true;
-                            console.log("Línea AB actualizada directamente");
-                        } else {
-                            // Si no existe el objeto 3D, usar setAttribute como respaldo
-                            lineAB.setAttribute('angle-line', {
-                                start: { x: pointA.x, y: pointA.y, z: pointA.z },
-                                end: { x: pointB.x, y: pointB.y, z: pointB.z },
-                                color: '#0080ff',
-                                lineWidth: 5,
-                                visible: true
-                            });
-                            console.log("Línea AB actualizada mediante setAttribute");
-                        }
-                    }
-                    
-                    // Línea BC
-                    if (lineBC) {
-                        const lineObject = lineBC.getObject3D('angle-line');
-                        if (lineObject) {
-                            const positions = new Float32Array([
-                                pointB.x, pointB.y, pointB.z,
-                                pointC.x, pointC.y, pointC.z
-                            ]);
-                            
-                            lineObject.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                            lineObject.geometry.attributes.position.needsUpdate = true;
-                            lineObject.material.visible = true;
-                            console.log("Línea BC actualizada directamente");
-                        } else {
-                            // Si no existe el objeto 3D, usar setAttribute como respaldo
-                            lineBC.setAttribute('angle-line', {
-                                start: { x: pointB.x, y: pointB.y, z: pointB.z },
-                                end: { x: pointC.x, y: pointC.y, z: pointC.z },
-                                color: '#0080ff',
-                                lineWidth: 5,
-                                visible: true
-                            });
-                            console.log("Línea BC actualizada mediante setAttribute");
-                        }
-                    }
-                } catch (error) {
-                    console.error("Error al actualizar las líneas:", error);
+                // Verificar que no hay valores NaN o undefined
+                if (isNaN(pointA.x) || isNaN(pointA.y) || isNaN(pointA.z) ||
+                    isNaN(pointB.x) || isNaN(pointB.y) || isNaN(pointB.z) ||
+                    isNaN(pointC.x) || isNaN(pointC.y) || isNaN(pointC.z)) {
+                    console.warn("Valores NaN detectados en posiciones, omitiendo actualización");
+                    return;
+                }
+                
+                // Actualizar líneas
+                if (lineAB) {
+                    lineAB.setAttribute('angle-line', {
+                        start: { x: pointA.x, y: pointA.y, z: pointA.z },
+                        end: { x: pointB.x, y: pointB.y, z: pointB.z },
+                        visible: true
+                    });
+                    console.log("Línea AB actualizada");
+                }
+                
+                if (lineBC) {
+                    lineBC.setAttribute('angle-line', {
+                        start: { x: pointB.x, y: pointB.y, z: pointB.z },
+                        end: { x: pointC.x, y: pointC.y, z: pointC.z },
+                        visible: true
+                    });
+                    console.log("Línea BC actualizada");
                 }
                 
                 // Calcular ángulo
@@ -468,12 +463,14 @@
                 console.log(`Ángulo calculado: ${angle.toFixed(1)}°`);
                 
                 // Actualizar etiqueta del ángulo
-                angleMarker.setAttribute('position', { x: pointB.x, y: pointB.y, z: pointB.z });
-                angleMarker.setAttribute('angle-label', {
-                    value: angle,
-                    position: { x: 0, y: 0.1, z: 0 },
-                    visible: true
-                });
+                if (angleMarker) {
+                    angleMarker.setAttribute('position', { x: pointB.x, y: pointB.y, z: pointB.z });
+                    angleMarker.setAttribute('angle-label', {
+                        value: angle,
+                        position: { x: 0, y: 0.1, z: 0 },
+                        visible: true
+                    });
+                }
                 
                 // Actualizar el display en pantalla
                 if (angleDisplay) {
@@ -487,27 +484,21 @@
             } else {
                 // Ocultar líneas y ángulo si no todos los marcadores están detectados
                 if (lineAB) {
-                    const lineObject = lineAB.getObject3D('angle-line');
-                    if (lineObject) {
-                        lineObject.material.visible = false;
-                    } else {
-                        lineAB.setAttribute('angle-line', { visible: false });
-                    }
+                    lineAB.setAttribute('angle-line', { visible: false });
                 }
                 
                 if (lineBC) {
-                    const lineObject = lineBC.getObject3D('angle-line');
-                    if (lineObject) {
-                        lineObject.material.visible = false;
-                    } else {
-                        lineBC.setAttribute('angle-line', { visible: false });
-                    }
+                    lineBC.setAttribute('angle-line', { visible: false });
                 }
                 
-                if (angleMarker) angleMarker.setAttribute('angle-label', { visible: false });
+                if (angleMarker) {
+                    angleMarker.setAttribute('angle-label', { visible: false });
+                }
                 
                 // Ocultar el display en pantalla
-                if (angleDisplay) angleDisplay.style.display = 'none';
+                if (angleDisplay) {
+                    angleDisplay.style.display = 'none';
+                }
                 
                 // Desactivar indicador
                 setIndicatorStatus(false);
@@ -707,39 +698,58 @@
             
             // Asegurar la correcta inicialización de las líneas
             setTimeout(() => {
+                console.log("Forzando reinicialización de componentes de línea");
+                
                 // Forzar una recreación de los componentes de línea
                 const lineAB = document.getElementById('line-ab');
                 const lineBC = document.getElementById('line-bc');
                 
                 if (lineAB) {
-                    // Reinicializar el componente
-                    const currentData = lineAB.getAttribute('angle-line');
-                    lineAB.removeAttribute('angle-line');
-                    setTimeout(() => {
-                        lineAB.setAttribute('angle-line', {
-                            ...currentData,
-                            color: '#00AAFF',
-                            lineWidth: 8
-                        });
-                        console.log("Componente line-ab reinicializado");
-                    }, 100);
+                    // Eliminar y volver a crear el componente (solución más drástica pero efectiva)
+                    const parent = lineAB.parentNode;
+                    const newLineAB = document.createElement('a-entity');
+                    newLineAB.id = 'line-ab';
+                    newLineAB.setAttribute('angle-line', {
+                        start: { x: 0, y: 0, z: 0 },
+                        end: { x: 0, y: 0, z: 0 },
+                        color: '#00AAFF',
+                        visible: false,
+                        lineWidth: 0.02
+                    });
+                    
+                    // Reemplazar el elemento antiguo
+                    if (parent) {
+                        parent.removeChild(lineAB);
+                        parent.appendChild(newLineAB);
+                        console.log("Componente line-ab recreado completamente");
+                    }
                 }
                 
                 if (lineBC) {
-                    // Reinicializar el componente
-                    const currentData = lineBC.getAttribute('angle-line');
-                    lineBC.removeAttribute('angle-line');
-                    setTimeout(() => {
-                        lineBC.setAttribute('angle-line', {
-                            ...currentData,
-                            color: '#00AAFF',
-                            lineWidth: 8
-                        });
-                        console.log("Componente line-bc reinicializado");
-                    }, 100);
+                    // Eliminar y volver a crear el componente (solución más drástica pero efectiva)
+                    const parent = lineBC.parentNode;
+                    const newLineBC = document.createElement('a-entity');
+                    newLineBC.id = 'line-bc';
+                    newLineBC.setAttribute('angle-line', {
+                        start: { x: 0, y: 0, z: 0 },
+                        end: { x: 0, y: 0, z: 0 },
+                        color: '#00AAFF',
+                        visible: false,
+                        lineWidth: 0.02
+                    });
+                    
+                    // Reemplazar el elemento antiguo
+                    if (parent) {
+                        parent.removeChild(lineBC);
+                        parent.appendChild(newLineBC);
+                        console.log("Componente line-bc recreado completamente");
+                    }
                 }
                 
-                console.log("Sistema de líneas reinicializado");
+                console.log("Componentes de línea recreados, forzando actualización del sistema");
+                setTimeout(() => {
+                    updateAngleSystem();
+                }, 500);
             }, 5000);
         });
     </script>
