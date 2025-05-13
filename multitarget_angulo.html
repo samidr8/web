@@ -159,12 +159,37 @@
                     color: { type: 'color', default: '#0080ff' },
                     opacity: { type: 'number', default: 1 },
                     visible: { type: 'boolean', default: true },
-                    lineWidth: { type: 'number', default: 3 }
+                    lineWidth: { type: 'number', default: 8 }
                 },
 
                 init: function () {
-                    console.log("Inicializando línea");
+                    console.log("Inicializando componente angle-line");
+                    this.createLine();
+                },
+
+                update: function (oldData) {
+                    console.log("Actualizando componente angle-line");
+                    const data = this.data;
+                    
+                    // Si hay cambios significativos, recrear la línea
+                    if (!this.line || 
+                        oldData.color !== data.color || 
+                        oldData.opacity !== data.opacity || 
+                        oldData.lineWidth !== data.lineWidth) {
+                        this.createLine();
+                    } else {
+                        this.updateLine();
+                    }
+                },
+                
+                createLine: function() {
                     var data = this.data;
+                    
+                    // Si ya existe una línea, eliminarla
+                    if (this.line) {
+                        this.el.removeObject3D('angle-line');
+                    }
+                    
                     // Crear material para la línea
                     var material = new THREE.LineBasicMaterial({
                         color: data.color,
@@ -182,30 +207,29 @@
                     this.updateLine();
                 },
 
-                update: function () {
-                    console.log("Actualizando línea");
-                    this.updateLine();
-                },
-
                 updateLine: function () {
                     var data = this.data;
                     var start = new THREE.Vector3(data.start.x, data.start.y, data.start.z);
                     var end = new THREE.Vector3(data.end.x, data.end.y, data.end.z);
-
-                    // Debug: mostrar puntos de inicio y fin
-                    console.log(`Dibujando línea desde (${start.x}, ${start.y}, ${start.z}) hasta (${end.x}, ${end.y}, ${end.z})`);
-                    console.log(`Línea visible: ${data.visible}`);
 
                     var positions = new Float32Array([
                         start.x, start.y, start.z,
                         end.x, end.y, end.z
                     ]);
 
-                    this.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                    this.line.geometry.attributes.position.needsUpdate = true;
-                    this.line.material.visible = data.visible;
-                    this.line.material.color.set(data.color);
-                    this.line.material.opacity = data.opacity;
+                    if (this.line && this.line.geometry) {
+                        this.line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                        this.line.geometry.attributes.position.needsUpdate = true;
+                        this.line.material.visible = data.visible;
+                        console.log(`Línea actualizada: desde (${start.x}, ${start.y}, ${start.z}) hasta (${end.x}, ${end.y}, ${end.z}), visible: ${data.visible}`);
+                    }
+                },
+                
+                remove: function () {
+                    // Eliminar la línea cuando se elimina el componente
+                    if (this.line) {
+                        this.el.removeObject3D('angle-line');
+                    }
                 }
             });
 
@@ -218,6 +242,7 @@
                 },
 
                 init: function () {
+                    console.log("Inicializando componente angle-label");
                     var el = document.createElement('a-text');
                     el.setAttribute('value', this.data.value.toFixed(1) + '°');
                     el.setAttribute('align', 'center');
@@ -252,6 +277,7 @@
                         this.bgEntity.setAttribute('position', this.data.position);
                         this.bgEntity.setAttribute('visible', this.data.visible);
                     }
+                    console.log(`Etiqueta de ángulo actualizada: ${this.data.value.toFixed(1)}°, visible: ${this.data.visible}`);
                 }
             });
         </script>
@@ -261,9 +287,9 @@
 
         <!-- Entidades para las líneas y el ángulo -->
         <a-entity id="angle-system">
-            <!-- Líneas que conectan los marcadores -->
-            <a-entity id="line-ab" angle-line="start: 0 0 0; end: 0 0 0; color: #FF0000; visible: false; lineWidth: 10; opacity: 1"></a-entity>
-            <a-entity id="line-bc" angle-line="start: 0 0 0; end: 0 0 0; color: #0000FF; visible: false; lineWidth: 10; opacity: 1"></a-entity>
+            <!-- Usando entidades simples para las líneas para mayor control -->
+            <a-entity id="line-ab" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 8"></a-entity>
+            <a-entity id="line-bc" angle-line="start: 0 0 0; end: 0 0 0; color: #0080ff; visible: false; lineWidth: 8"></a-entity>
             <a-entity id="angle-marker" angle-label="value: 0; visible: false"></a-entity>
         </a-entity>
 
@@ -276,19 +302,19 @@
         const markers = [
             {
                 id: "markerA",
-                url: "https://samidr8.github.io/web/markers/ang1",
+                url: "https://samidr8.github.io/web/markers/ang1", // Reemplazar con su URL de marcador
                 label: "A",
                 color: "#ff0000"
             },
             {
                 id: "markerB",
-                url: "https://samidr8.github.io/web/markers/ang2", 
+                url: "https://samidr8.github.io/web/markers/ang2", // Reemplazar con su URL de marcador
                 label: "B",
                 color: "#00ff00"
             },
             {
                 id: "markerC",
-                url: "https://samidr8.github.io/web/markers/ang3", 
+                url: "https://samidr8.github.io/web/markers/ang3", // Reemplazar con su URL de marcador
                 label: "C",
                 color: "#0000ff"
             }
@@ -375,30 +401,67 @@
             
             // Verificar si todos los marcadores están detectados
             if (markersDetected.markerA.detected && markersDetected.markerB.detected && markersDetected.markerC.detected) {
-                // Debug - mostrar posiciones
-                console.log("Posiciones actualizadas:");
-                console.log(`A: (${pointA.x}, ${pointA.y}, ${pointA.z})`);
-                console.log(`B: (${pointB.x}, ${pointB.y}, ${pointB.z})`);
-                console.log(`C: (${pointC.x}, ${pointC.y}, ${pointC.z})`);
+                console.log("Todos los marcadores detectados, actualizando líneas y ángulo");
+                console.log(`Punto A: (${pointA.x}, ${pointA.y}, ${pointA.z})`);
+                console.log(`Punto B: (${pointB.x}, ${pointB.y}, ${pointB.z})`);
+                console.log(`Punto C: (${pointC.x}, ${pointC.y}, ${pointC.z})`);
                 
-                // Actualizar líneas
-                lineAB.setAttribute('angle-line', {
-                    start: { x: pointA.x, y: pointA.y, z: pointA.z },
-                    end: { x: pointB.x, y: pointB.y, z: pointB.z },
-                    visible: true,
-                    color: '#FF0000',
-                    opacity: 1,
-                    lineWidth: 10
-                });
-                
-                lineBC.setAttribute('angle-line', {
-                    start: { x: pointB.x, y: pointB.y, z: pointB.z },
-                    end: { x: pointC.x, y: pointC.y, z: pointC.z },
-                    visible: true,
-                    color: '#0000FF',
-                    opacity: 1,
-                    lineWidth: 10
-                });
+                // Crear directamente el nuevo objeto THREE.Line para mayor control
+                try {
+                    // Línea AB
+                    if (lineAB) {
+                        const lineObject = lineAB.getObject3D('angle-line');
+                        if (lineObject) {
+                            const positions = new Float32Array([
+                                pointA.x, pointA.y, pointA.z,
+                                pointB.x, pointB.y, pointB.z
+                            ]);
+                            
+                            lineObject.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                            lineObject.geometry.attributes.position.needsUpdate = true;
+                            lineObject.material.visible = true;
+                            console.log("Línea AB actualizada directamente");
+                        } else {
+                            // Si no existe el objeto 3D, usar setAttribute como respaldo
+                            lineAB.setAttribute('angle-line', {
+                                start: { x: pointA.x, y: pointA.y, z: pointA.z },
+                                end: { x: pointB.x, y: pointB.y, z: pointB.z },
+                                color: '#0080ff',
+                                lineWidth: 5,
+                                visible: true
+                            });
+                            console.log("Línea AB actualizada mediante setAttribute");
+                        }
+                    }
+                    
+                    // Línea BC
+                    if (lineBC) {
+                        const lineObject = lineBC.getObject3D('angle-line');
+                        if (lineObject) {
+                            const positions = new Float32Array([
+                                pointB.x, pointB.y, pointB.z,
+                                pointC.x, pointC.y, pointC.z
+                            ]);
+                            
+                            lineObject.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                            lineObject.geometry.attributes.position.needsUpdate = true;
+                            lineObject.material.visible = true;
+                            console.log("Línea BC actualizada directamente");
+                        } else {
+                            // Si no existe el objeto 3D, usar setAttribute como respaldo
+                            lineBC.setAttribute('angle-line', {
+                                start: { x: pointB.x, y: pointB.y, z: pointB.z },
+                                end: { x: pointC.x, y: pointC.y, z: pointC.z },
+                                color: '#0080ff',
+                                lineWidth: 5,
+                                visible: true
+                            });
+                            console.log("Línea BC actualizada mediante setAttribute");
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error al actualizar las líneas:", error);
+                }
                 
                 // Calcular ángulo
                 const angle = calculateAngle(pointA, pointB, pointC);
@@ -413,16 +476,34 @@
                 });
                 
                 // Actualizar el display en pantalla
-                angleDisplay.textContent = `Ángulo: ${angle.toFixed(1)}°`;
-                angleDisplay.style.display = 'block';
+                if (angleDisplay) {
+                    angleDisplay.textContent = `Ángulo: ${angle.toFixed(1)}°`;
+                    angleDisplay.style.display = 'block';
+                }
                 
                 // Activar indicador
                 setIndicatorStatus(true);
                 isSystemActive = true;
             } else {
                 // Ocultar líneas y ángulo si no todos los marcadores están detectados
-                if (lineAB) lineAB.setAttribute('angle-line', { visible: false });
-                if (lineBC) lineBC.setAttribute('angle-line', { visible: false });
+                if (lineAB) {
+                    const lineObject = lineAB.getObject3D('angle-line');
+                    if (lineObject) {
+                        lineObject.material.visible = false;
+                    } else {
+                        lineAB.setAttribute('angle-line', { visible: false });
+                    }
+                }
+                
+                if (lineBC) {
+                    const lineObject = lineBC.getObject3D('angle-line');
+                    if (lineObject) {
+                        lineObject.material.visible = false;
+                    } else {
+                        lineBC.setAttribute('angle-line', { visible: false });
+                    }
+                }
+                
                 if (angleMarker) angleMarker.setAttribute('angle-label', { visible: false });
                 
                 // Ocultar el display en pantalla
@@ -514,33 +595,67 @@
             console.log(`${markers.length} marcadores NFT creados`);
         }
 
-        // Configurar actualización continua del sistema de ángulo
-        function setupUpdateLoop() {
-            // Ejecutar cada 100ms para garantizar actualizaciones fluidas
-            setInterval(() => {
-                if (markersDetected.markerA.detected && markersDetected.markerB.detected && markersDetected.markerC.detected) {
-                    // Obtener posiciones actualizadas
-                    markers.forEach(marker => {
-                        const pointEl = document.getElementById(`point-${marker.id}`);
-                        if (pointEl) {
-                            const worldMatrix = pointEl.object3D.matrixWorld;
-                            const position = new THREE.Vector3();
-                            position.setFromMatrixPosition(worldMatrix);
-                            
-                            // Actualizar posición
-                            markersDetected[marker.id].position = {
-                                x: position.x,
-                                y: position.y,
-                                z: position.z
-                            };
-                        }
-                    });
+            // Configurar actualización continua del sistema de ángulo
+            function setupUpdateLoop() {
+                console.log("Configurando bucle de actualización para el sistema de ángulo");
+                
+                // Ejecutar cada 100ms para garantizar actualizaciones fluidas
+                const updateInterval = setInterval(() => {
+                    // Verificar si hay al menos un marcador detectado para optimizar
+                    const anyMarkerDetected = 
+                        markersDetected.markerA.detected || 
+                        markersDetected.markerB.detected || 
+                        markersDetected.markerC.detected;
                     
-                    // Actualizar el sistema de ángulo
-                    updateAngleSystem();
-                }
-            }, 100);
-        }
+                    if (anyMarkerDetected) {
+                        // Actualizar posiciones de los marcadores detectados
+                        markers.forEach(marker => {
+                            if (markersDetected[marker.id].detected) {
+                                try {
+                                    const pointEl = document.getElementById(`point-${marker.id}`);
+                                    if (pointEl && pointEl.object3D) {
+                                        const worldMatrix = pointEl.object3D.matrixWorld;
+                                        const position = new THREE.Vector3();
+                                        position.setFromMatrixPosition(worldMatrix);
+                                        
+                                        // Actualizar posición solo si hay cambios significativos
+                                        const currentPos = markersDetected[marker.id].position;
+                                        const hasChanged = !currentPos ||
+                                            Math.abs(position.x - currentPos.x) > 0.001 ||
+                                            Math.abs(position.y - currentPos.y) > 0.001 ||
+                                            Math.abs(position.z - currentPos.z) > 0.001;
+                                        
+                                        if (hasChanged) {
+                                            // Actualizar posición
+                                            markersDetected[marker.id].position = {
+                                                x: position.x,
+                                                y: position.y,
+                                                z: position.z
+                                            };
+                                            // Indica que ha habido un cambio
+                                            return true;
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error(`Error al actualizar posición de ${marker.id}:`, error);
+                                }
+                            }
+                            // Indica que no ha habido cambios
+                            return false;
+                        });
+                        
+                        // Siempre actualizar el sistema cuando todos los marcadores están detectados
+                        if (markersDetected.markerA.detected && 
+                            markersDetected.markerB.detected && 
+                            markersDetected.markerC.detected) {
+                            updateAngleSystem();
+                        }
+                    }
+                }, 100);
+                
+                // Devolver el intervalo para poder detenerlo si es necesario
+                return updateInterval;
+            }
 
         // Al cargar la página
         window.addEventListener('load', function() {
@@ -561,7 +676,7 @@
             createNFTMarkers();
             
             // Configurar bucle de actualización
-            setupUpdateLoop();
+            const updateLoop = setupUpdateLoop();
             
             // Comprobar si es la primera visita
             const firstVisit = !localStorage.getItem('ar_angles_visited');
@@ -576,14 +691,56 @@
             
             // Ocultar el loader después de inicialización
             setTimeout(() => {
-                document.querySelector('.arjs-loader').style.display = 'none';
-                console.log("Sistema AR inicializado");
+                const loader = document.querySelector('.arjs-loader');
+                if (loader) {
+                    loader.style.display = 'none';
+                    console.log("Sistema AR inicializado");
+                } else {
+                    console.warn("Elemento loader no encontrado");
+                }
             }, 3000);
             
             // Prevenir zoom en móviles
             document.addEventListener('touchmove', function(e) {
                 if (e.scale !== 1) { e.preventDefault(); }
             }, { passive: false });
+            
+            // Asegurar la correcta inicialización de las líneas
+            setTimeout(() => {
+                // Forzar una recreación de los componentes de línea
+                const lineAB = document.getElementById('line-ab');
+                const lineBC = document.getElementById('line-bc');
+                
+                if (lineAB) {
+                    // Reinicializar el componente
+                    const currentData = lineAB.getAttribute('angle-line');
+                    lineAB.removeAttribute('angle-line');
+                    setTimeout(() => {
+                        lineAB.setAttribute('angle-line', {
+                            ...currentData,
+                            color: '#00AAFF',
+                            lineWidth: 8
+                        });
+                        console.log("Componente line-ab reinicializado");
+                    }, 100);
+                }
+                
+                if (lineBC) {
+                    // Reinicializar el componente
+                    const currentData = lineBC.getAttribute('angle-line');
+                    lineBC.removeAttribute('angle-line');
+                    setTimeout(() => {
+                        lineBC.setAttribute('angle-line', {
+                            ...currentData,
+                            color: '#00AAFF',
+                            lineWidth: 8
+                        });
+                        console.log("Componente line-bc reinicializado");
+                    }, 100);
+                }
+                
+                console.log("Sistema de líneas reinicializado");
+            }, 5000);
         });
     </script>
 </body>
