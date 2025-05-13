@@ -1,25 +1,25 @@
 // Configuración de marcadores y sus contenidos
 const markers = [
     {
-        id: "suma-y-resta-enteros-marker",
+        id: "video-marker",
         url: "https://samidr8.github.io/web/markers/ang1",
-        type: "3d-model",
+        type: "video",
         content: {
             url: "https://www.youtube.com/watch?v=dayfz0ff1Mc",
             title: "Video de YouTube",
         }
     },
     {
-        id: "applet-marker",
+        id: "geogebra-marker",
         url: "https://samidr8.github.io/web/markers/ang2",
-        type: "video",
+        type: "iframe",
         content: {
             url: "https://www.geogebra.org/material/iframe/id/qzjfkvpm/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/true/rc/false/ld/false/sdz/false/ctl/false",
             title: "Applet GeoGebra"
         }
     },
     {
-        id: "quiz-marker",
+        id: "formulario-marker",
         url: "https://samidr8.github.io/web/markers/ang3",
         type: "iframe",
         content: {
