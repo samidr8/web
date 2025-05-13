@@ -2,7 +2,7 @@
 const markers = [
     {
         id: "video-marker",
-        url: "https://samidr8.github.io/web/markers/ang3",
+        url: "https://samidr8.github.io/web/markers/ang2",
         type: "video",
         content: {
             url: "https://www.youtube.com/watch?v=dayfz0ff1Mc",
@@ -11,7 +11,7 @@ const markers = [
     },
     {
         id: "geogebra-marker",
-        url: "https://samidr8.github.io/web/markers/ang1",
+        url: "https://samidr8.github.io/web/markers/ang3",
         type: "iframe",
         content: {
             url: "https://www.geogebra.org/material/iframe/id/qzjfkvpm/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/true/rc/false/ld/false/sdz/false/ctl/false",
@@ -20,7 +20,7 @@ const markers = [
     },
     {
         id: "formulario-marker",
-        url: "https://samidr8.github.io/web/markers/ang2",
+        url: "https://samidr8.github.io/web/markers/ang1",
         type: "iframe",
         content: {
             url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos",
