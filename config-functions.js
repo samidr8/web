@@ -59,14 +59,11 @@ function createConfigPanel() {
                 <button id="check-sensors-btn" class="config-button">Escanear</button>
             </div>
             <div id="sensors-result" class="sensors-result">
-                <p id="accelerometer-status">Acelerómetro: Comprobando...</p>
+                <p id="arcore-status">ARCore: Comprobando...</p>
                 <p id="gyroscope-status">Giroscopio: Comprobando...</p>
+                <p id="accelerometer-status">Acelerómetro: Comprobando...</p>
                 <p id="magnetometer-status">Magnetómetro: Comprobando...</p>
                 <p id="proximity-status">Sensor de proximidad: Comprobando...</p>
-                <p id="light-status">Luz ambiental: Comprobando...</p>
-                <p id="gpu-status">GPU: Comprobando...</p>
-                <p id="memory-status">Memoria: Comprobando...</p>
-                <p id="arcore-status">ARCore: Comprobando...</p>
             </div>
         </div>
     `;
@@ -100,18 +97,22 @@ async function toggleFlashlight() {
     const toggle = document.getElementById('flashlight-toggle');
     
     try {
+        // Obtener acceso a la cámara si no lo tenemos ya
         if (!window.stream) {
             window.stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment' } 
             });
         }
         
+        // Obtener todas las pistas de video
         const track = window.stream.getVideoTracks()[0];
         
         if (track) {
+            // Verificar si la linterna es compatible
             const capabilities = track.getCapabilities();
             
             if (capabilities.torch) {
+                // Activar/desactivar la linterna
                 flashlightActive = !flashlightActive;
                 await track.applyConstraints({
                     advanced: [{ torch: flashlightActive }]
@@ -134,195 +135,18 @@ async function toggleFlashlight() {
     }
 }
 
-// Función auxiliar para mostrar mensajes de error
-function showErrorMessage(message) {
-    const errorElement = document.createElement('div');
-    errorElement.className = 'error-message';
-    errorElement.textContent = message;
-    document.body.appendChild(errorElement);
+// Comprobar sensores del dispositivo
+function checkDeviceSensors() {
+    console.log('Comprobando sensores del dispositivo...');
     
-    setTimeout(() => {
-        errorElement.remove();
-    }, 3000);
-}
+    // Reiniciar estados
+    document.getElementById('arcore-status').textContent = 'ARCore: Comprobando...';
+    document.getElementById('gyroscope-status').textContent = 'Giroscopio: Comprobando...';
+    document.getElementById('accelerometer-status').textContent = 'Acelerómetro: Comprobando...';
+    document.getElementById('magnetometer-status').textContent = 'Magnetómetro: Comprobando...';
+    document.getElementById('proximity-status').textContent = 'Sensor de proximidad: Comprobando...';
 
-// ==================== DETECCIÓN DE SENSORES ====================
-
-async function checkAccelerometer() {
-    try {
-        if ('Accelerometer' in window) {
-            const accelerometer = new Accelerometer({ frequency: 60 });
-            accelerometer.addEventListener('reading', () => {
-                document.getElementById('accelerometer-status').textContent = 
-                    `Acelerómetro: ✓ Disponible (x: ${accelerometer.x?.toFixed(2) || 'N/A'}, y: ${accelerometer.y?.toFixed(2) || 'N/A'}, z: ${accelerometer.z?.toFixed(2) || 'N/A'})`;
-                accelerometer.stop();
-            });
-            accelerometer.start();
-        } else if ('DeviceMotionEvent' in window) {
-            const handleMotion = (event) => {
-                if (event.accelerationIncludingGravity) {
-                    const { x, y, z } = event.accelerationIncludingGravity;
-                    document.getElementById('accelerometer-status').textContent = 
-                        `Acelerómetro: ✓ Disponible (x: ${x?.toFixed(2) || 'N/A'}, y: ${y?.toFixed(2) || 'N/A'}, z: ${z?.toFixed(2) || 'N/A'})`;
-                    window.removeEventListener('devicemotion', handleMotion);
-                }
-            };
-            window.addEventListener('devicemotion', handleMotion);
-
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                await DeviceMotionEvent.requestPermission();
-            }
-        } else {
-            document.getElementById('accelerometer-status').textContent = 'Acelerómetro: ✗ No disponible';
-        }
-    } catch (error) {
-        document.getElementById('accelerometer-status').textContent = 'Acelerómetro: ✗ Error (' + error.message + ')';
-    }
-}
-
-async function checkGyroscope() {
-    try {
-        if ('Gyroscope' in window) {
-            const gyroscope = new Gyroscope({ frequency: 60 });
-            gyroscope.addEventListener('reading', () => {
-                document.getElementById('gyroscope-status').textContent = 
-                    `Giroscopio: ✓ Disponible (x: ${gyroscope.x?.toFixed(2) || 'N/A'}, y: ${gyroscope.y?.toFixed(2) || 'N/A'}, z: ${gyroscope.z?.toFixed(2) || 'N/A'})`;
-                gyroscope.stop();
-            });
-            gyroscope.start();
-        } else if ('DeviceMotionEvent' in window) {
-            const handleMotion = (event) => {
-                if (event.rotationRate) {
-                    const { alpha, beta, gamma } = event.rotationRate;
-                    document.getElementById('gyroscope-status').textContent = 
-                        `Giroscopio: ✓ Disponible (α: ${alpha?.toFixed(2) || 'N/A'}, β: ${beta?.toFixed(2) || 'N/A'}, γ: ${gamma?.toFixed(2) || 'N/A'})`;
-                    window.removeEventListener('devicemotion', handleMotion);
-                }
-            };
-            window.addEventListener('devicemotion', handleMotion);
-
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                await DeviceMotionEvent.requestPermission();
-            }
-        } else {
-            document.getElementById('gyroscope-status').textContent = 'Giroscopio: ✗ No disponible';
-        }
-    } catch (error) {
-        document.getElementById('gyroscope-status').textContent = 'Giroscopio: ✗ Error (' + error.message + ')';
-    }
-}
-
-async function checkMagnetometer() {
-    try {
-        if ('Magnetometer' in window) {
-            const magnetometer = new Magnetometer({ frequency: 60 });
-            magnetometer.addEventListener('reading', () => {
-                document.getElementById('magnetometer-status').textContent = 
-                    `Magnetómetro: ✓ Disponible (x: ${magnetometer.x?.toFixed(2) || 'N/A'}, y: ${magnetometer.y?.toFixed(2) || 'N/A'}, z: ${magnetometer.z?.toFixed(2) || 'N/A'})`;
-                magnetometer.stop();
-            });
-            magnetometer.start();
-        } else if ('DeviceOrientationEvent' in window) {
-            const handleOrientation = (event) => {
-                const heading = event.webkitCompassHeading || event.alpha;
-                document.getElementById('magnetometer-status').textContent = 
-                    `Magnetómetro: ✓ Disponible (heading: ${heading?.toFixed(2) || 'N/A'}°)`;
-                window.removeEventListener('deviceorientation', handleOrientation);
-            };
-            window.addEventListener('deviceorientation', handleOrientation);
-
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                await DeviceOrientationEvent.requestPermission();
-            }
-        } else {
-            document.getElementById('magnetometer-status').textContent = 'Magnetómetro: ✗ No disponible';
-        }
-    } catch (error) {
-        document.getElementById('magnetometer-status').textContent = 'Magnetómetro: ✗ Error (' + error.message + ')';
-    }
-}
-
-function checkProximitySensor() {
-    try {
-        if ('ProximitySensor' in window) {
-            const proximitySensor = new ProximitySensor();
-            proximitySensor.addEventListener('reading', () => {
-                document.getElementById('proximity-status').textContent = 
-                    `Proximidad: ✓ Disponible (${proximitySensor.near ? 'Cerca' : 'Lejos'})`;
-                proximitySensor.stop();
-            });
-            proximitySensor.start();
-        } else if ('ondeviceproximity' in window) {
-            window.addEventListener('deviceproximity', (event) => {
-                document.getElementById('proximity-status').textContent = 
-                    `Proximidad: ✓ Disponible (${event.near ? 'Cerca' : 'Lejos'})`;
-            });
-        } else {
-            document.getElementById('proximity-status').textContent = 'Proximidad: ✗ No disponible';
-        }
-    } catch (error) {
-        document.getElementById('proximity-status').textContent = 'Proximidad: ✗ Error (' + error.message + ')';
-    }
-}
-
-function checkAmbientLight() {
-    try {
-        if ('AmbientLightSensor' in window) {
-            const lightSensor = new AmbientLightSensor();
-            lightSensor.addEventListener('reading', () => {
-                document.getElementById('light-status').textContent = 
-                    `Luz ambiental: ✓ Disponible (${lightSensor.illuminance} lux)`;
-                lightSensor.stop();
-            });
-            lightSensor.start();
-        } else {
-            document.getElementById('light-status').textContent = 'Luz ambiental: ✗ No disponible';
-        }
-    } catch (error) {
-        document.getElementById('light-status').textContent = 'Luz ambiental: ✗ Error (' + error.message + ')';
-    }
-}
-
-function checkGPU() {
-    try {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (gl) {
-            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-            const gpu = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'No detectada';
-            document.getElementById('gpu-status').textContent = `GPU: ${gpu}`;
-        } else {
-            document.getElementById('gpu-status').textContent = 'WebGL: ✗ No disponible';
-        }
-    } catch (error) {
-        document.getElementById('gpu-status').textContent = 'GPU: ✗ Error (' + error.message + ')';
-    }
-}
-
-function checkDeviceMemory() {
-    if ('deviceMemory' in navigator) {
-        document.getElementById('memory-status').textContent = `Memoria: ${navigator.deviceMemory} GB`;
-    } else {
-        document.getElementById('memory-status').textContent = 'Memoria: ✗ No disponible';
-    }
-}
-
-// Función principal para verificar todos los sensores
-async function checkDeviceSensors() {
-    console.log('Comprobando sensores y hardware...');
-    
-    // Sensores
-    await checkAccelerometer();
-    await checkGyroscope();
-    await checkMagnetometer();
-    checkProximitySensor();
-    checkAmbientLight();
-    
-    // Hardware
-    checkGPU();
-    checkDeviceMemory();
-    
-    // ARCore/WebXR
+    // Comprobar ARCore (indirectamente a través de la disponibilidad de WebXR)
     if ('xr' in navigator) {
         navigator.xr.isSessionSupported('immersive-ar')
             .then(supported => {
@@ -335,9 +159,129 @@ async function checkDeviceSensors() {
     } else {
         document.getElementById('arcore-status').textContent = 'ARCore: ✗ No disponible';
     }
+
+    // Comprobar giroscopio
+    try {
+        if ('Gyroscope' in window || ('DeviceMotionEvent' in window && window.DeviceMotionEvent.requestPermission)) {
+            let gyroTest = false;
+            
+            // Función para manejar el evento de movimiento
+            const handleMotion = (event) => {
+                if (event.rotationRate && 
+                    (event.rotationRate.alpha !== null || 
+                     event.rotationRate.beta !== null || 
+                     event.rotationRate.gamma !== null)) {
+                    gyroTest = true;
+                }
+                
+                // Actualizar estado después de un breve período
+                setTimeout(() => {
+                    document.getElementById('gyroscope-status').textContent = 
+                        `Giroscopio: ${gyroTest ? '✓ Disponible' : '✗ No disponible'}`;
+                    window.removeEventListener('devicemotion', handleMotion);
+                }, 500);
+            };
+            
+            // Agregar listener para evento de movimiento
+            window.addEventListener('devicemotion', handleMotion);
+            
+            // Solicitar permiso en iOS 13+
+            if (DeviceMotionEvent.requestPermission && typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .catch(error => {
+                        document.getElementById('gyroscope-status').textContent = 
+                            'Giroscopio: ✗ Permiso denegado';
+                    });
+            }
+        } else {
+            document.getElementById('gyroscope-status').textContent = 'Giroscopio: ✗ No disponible';
+        }
+    } catch (e) {
+        document.getElementById('gyroscope-status').textContent = 'Giroscopio: ✗ Error al detectar';
+    }
+
+    // Comprobar acelerómetro (similar al giroscopio)
+    try {
+        if ('Accelerometer' in window || 'DeviceMotionEvent' in window) {
+            let accelTest = false;
+            
+            // Función para manejar el evento de movimiento
+            const handleMotion = (event) => {
+                if (event.accelerationIncludingGravity &&
+                    (event.accelerationIncludingGravity.x !== null ||
+                     event.accelerationIncludingGravity.y !== null ||
+                     event.accelerationIncludingGravity.z !== null)) {
+                    accelTest = true;
+                }
+                
+                // Actualizar estado después de un breve período
+                setTimeout(() => {
+                    document.getElementById('accelerometer-status').textContent = 
+                        `Acelerómetro: ${accelTest ? '✓ Disponible' : '✗ No disponible'}`;
+                    window.removeEventListener('devicemotion', handleMotion);
+                }, 500);
+            };
+            
+            // Agregar listener para evento de movimiento
+            window.addEventListener('devicemotion', handleMotion);
+        } else {
+            document.getElementById('accelerometer-status').textContent = 'Acelerómetro: ✗ No disponible';
+        }
+    } catch (e) {
+        document.getElementById('accelerometer-status').textContent = 'Acelerómetro: ✗ Error al detectar';
+    }
+
+    // Comprobar magnetómetro (brújula)
+    try {
+        if ('DeviceOrientationEvent' in window) {
+            let magTest = false;
+            
+            // Función para manejar el evento de orientación
+            const handleOrientation = (event) => {
+                if (event.absolute === true || typeof event.webkitCompassHeading !== 'undefined') {
+                    magTest = true;
+                }
+                
+                // Actualizar estado después de un breve período
+                setTimeout(() => {
+                    document.getElementById('magnetometer-status').textContent = 
+                        `Magnetómetro: ${magTest ? '✓ Disponible' : '✗ No disponible'}`;
+                    window.removeEventListener('deviceorientation', handleOrientation);
+                }, 500);
+            };
+            
+            // Agregar listener para evento de orientación
+            window.addEventListener('deviceorientation', handleOrientation);
+            
+            // Solicitar permiso en iOS 13+
+            if (DeviceOrientationEvent.requestPermission && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .catch(error => {
+                        document.getElementById('magnetometer-status').textContent = 
+                            'Magnetómetro: ✗ Permiso denegado';
+                    });
+            }
+        } else {
+            document.getElementById('magnetometer-status').textContent = 'Magnetómetro: ✗ No disponible';
+        }
+    } catch (e) {
+        document.getElementById('magnetometer-status').textContent = 'Magnetómetro: ✗ Error al detectar';
+    }
+
+    // Comprobar sensor de proximidad (menos común en navegadores)
+    try {
+        if ('ProximitySensor' in window || 'ondeviceproximity' in window) {
+            document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✓ Disponible';
+        } else {
+            document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✗ No disponible';
+        }
+    } catch (e) {
+        document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✗ Error al detectar';
+    }
 }
 
 // Evento para inicializar cuando la página esté cargada
 window.addEventListener('load', function() {
+    // Esperar a que el sistema AR esté inicializado
     setTimeout(initConfigPanel, 3000);
 });
