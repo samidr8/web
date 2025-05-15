@@ -201,7 +201,8 @@
 .info-panel-close {
     position: absolute;
     top: 5px;
-    right: 5px;
+    left: 50%;
+    transform: translateX(-50%);
     background-color: #f44336;
     color: white;
     border: none;
