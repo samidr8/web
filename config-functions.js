@@ -1,9 +1,13 @@
 // Funciones para el panel de configuración
 let flashlightActive = false;
+let browserInfo = {};
 
 // Inicializar panel de configuración
 function initConfigPanel() {
     console.log("Inicializando panel de configuración...");
+
+    // Detectar información del navegador
+    detectBrowserInfo();
 
     // Crear el icono de configuración
     createConfigIcon();
@@ -13,6 +17,72 @@ function initConfigPanel() {
 
     // Comprobar compatibilidad inicial de sensores
     checkDeviceSensors();
+}
+
+// Función para detectar el navegador y sistema operativo
+function detectBrowserInfo() {
+    const userAgent = navigator.userAgent;
+    
+    // Detectar sistema operativo
+    let os = "Desconocido";
+    if (/iPhone|iPad|iPod/.test(userAgent)) {
+        os = "iOS";
+    } else if (/Android/.test(userAgent)) {
+        os = "Android";
+    } else if (/Windows/.test(userAgent)) {
+        os = "Windows";
+    } else if (/Mac/.test(userAgent)) {
+        os = "macOS";
+    } else if (/Linux/.test(userAgent)) {
+        os = "Linux";
+    }
+    
+    // Detectar navegador
+    let browser = "Desconocido";
+    let version = "";
+    
+    if (/CriOS/.test(userAgent)) {
+        browser = "Chrome";
+        version = userAgent.match(/CriOS\/(\d+)/)[1];
+    } else if (/FxiOS/.test(userAgent)) {
+        browser = "Firefox";
+        version = userAgent.match(/FxiOS\/(\d+)/)[1];
+    } else if (/EdgiOS/.test(userAgent)) {
+        browser = "Edge";
+        version = userAgent.match(/EdgiOS\/(\d+)/)[1];
+    } else if (/OPiOS/.test(userAgent)) {
+        browser = "Opera";
+        version = userAgent.match(/OPiOS\/(\d+)/)[1];
+    } else if (/Safari/.test(userAgent) && /Apple/.test(userAgent) && !/Chrome/.test(userAgent)) {
+        browser = "Safari";
+        version = userAgent.match(/Version\/(\d+)/)?.[1] || "";
+    } else if (/Chrome/.test(userAgent)) {
+        browser = "Chrome";
+        version = userAgent.match(/Chrome\/(\d+)/)[1];
+    } else if (/Firefox/.test(userAgent)) {
+        browser = "Firefox";
+        version = userAgent.match(/Firefox\/(\d+)/)[1];
+    } else if (/Edge/.test(userAgent)) {
+        browser = "Edge";
+        version = userAgent.match(/Edge\/(\d+)/)?.[1] || userAgent.match(/Edg\/(\d+)/)?.[1] || "";
+    } else if (/Opera|OPR/.test(userAgent)) {
+        browser = "Opera";
+        version = userAgent.match(/OPR\/(\d+)/)?.[1] || userAgent.match(/Opera\/(\d+)/)?.[1] || "";
+    }
+    
+    // Guardar información
+    browserInfo = {
+        os: os,
+        browser: browser,
+        version: version,
+        userAgent: userAgent,
+        isIOS: os === "iOS",
+        isAndroid: os === "Android",
+        isMobile: /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+    };
+    
+    console.log("Información del navegador:", browserInfo);
+    return browserInfo;
 }
 
 // Crear icono de configuración
@@ -58,6 +128,12 @@ function createConfigPanel() {
                 <label>Sensores del dispositivo</label>
                 <button id="check-sensors-btn" class="config-button">Escanear</button>
             </div>
+            <div id="browser-info" class="sensors-result">
+                <p><strong>Información del dispositivo</strong></p>
+                <p id="device-os">Sistema: ${browserInfo.os || "Desconocido"}</p>
+                <p id="device-browser">Navegador: ${browserInfo.browser || "Desconocido"} ${browserInfo.version || ""}</p>
+                <p id="device-type">Tipo: ${browserInfo.isMobile ? "Móvil" : "Escritorio"}</p>
+            </div>
             <div id="sensors-result" class="sensors-result">
                 <p id="arcore-status">ARCore: Comprobando...</p>
                 <p id="gyroscope-status">Giroscopio: Comprobando...</p>
@@ -92,41 +168,80 @@ function toggleConfigPanel() {
     console.log(`Panel de configuración ${isVisible ? 'ocultado' : 'mostrado'}`);
 }
 
-// Activar/Desactivar linterna
+// Función para mostrar mensaje de error
+function showErrorMessage(message) {
+    // Verificar si la función ya existe en el contexto global
+    if (typeof window.showErrorMessage === 'function') {
+        window.showErrorMessage(message);
+        return;
+    }
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `<p>${message}</p>`;
+    document.body.appendChild(errorDiv);
+
+    // Eliminar mensaje después de 5 segundos
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 5000);
+}
+
+// Activar/Desactivar linterna con mejor compatibilidad con iOS
 async function toggleFlashlight() {
     const toggle = document.getElementById('flashlight-toggle');
     
     try {
-        // Obtener acceso a la cámara si no lo tenemos ya
-        if (!window.stream) {
-            window.stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment' } 
-            });
-        }
-        
-        // Obtener todas las pistas de video
-        const track = window.stream.getVideoTracks()[0];
-        
-        if (track) {
-            // Verificar si la linterna es compatible
-            const capabilities = track.getCapabilities();
-            
-            if (capabilities.torch) {
-                // Activar/desactivar la linterna
-                flashlightActive = !flashlightActive;
-                await track.applyConstraints({
-                    advanced: [{ torch: flashlightActive }]
-                });
-                
-                toggle.checked = flashlightActive;
-                console.log(`Linterna ${flashlightActive ? 'activada' : 'desactivada'}`);
+        // Verificar si estamos en iOS para manejo especial
+        if (browserInfo.isIOS) {
+            // En iOS, necesitamos enfoques especiales ya que la API torch es limitada
+            if (browserInfo.browser === "Safari" && parseInt(browserInfo.version) >= 15) {
+                // Safari 15+ en iOS tiene soporte limitado para torch
+                await handleIOSTorch();
             } else {
-                showErrorMessage('Tu dispositivo no soporta el control de la linterna');
+                // Otros navegadores iOS no soportan torch directamente
+                showErrorMessage('La linterna solo funciona en Safari en iOS 15+. Por favor, cambia de navegador.');
                 toggle.checked = false;
+                return;
             }
         } else {
-            showErrorMessage('No se pudo acceder a la cámara');
-            toggle.checked = false;
+            // Obtener acceso a la cámara si no lo tenemos ya
+            if (!window.stream) {
+                window.stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        // En algunos dispositivos, necesitamos especificar que queremos torch
+                        advanced: [{ torch: true }]
+                    } 
+                });
+            }
+            
+            // Obtener todas las pistas de video
+            const track = window.stream.getVideoTracks()[0];
+            
+            if (track) {
+                // Verificar si la linterna es compatible
+                const capabilities = track.getCapabilities();
+                
+                if (capabilities.torch) {
+                    // Activar/desactivar la linterna
+                    flashlightActive = !flashlightActive;
+                    await track.applyConstraints({
+                        advanced: [{ torch: flashlightActive }]
+                    });
+                    
+                    toggle.checked = flashlightActive;
+                    console.log(`Linterna ${flashlightActive ? 'activada' : 'desactivada'}`);
+                } else {
+                    showErrorMessage('Tu dispositivo no soporta el control de la linterna');
+                    toggle.checked = false;
+                }
+            } else {
+                showErrorMessage('No se pudo acceder a la cámara');
+                toggle.checked = false;
+            }
         }
     } catch (error) {
         console.error('Error al controlar la linterna:', error);
@@ -135,9 +250,66 @@ async function toggleFlashlight() {
     }
 }
 
-// Comprobar sensores del dispositivo
+// Manejo específico para iOS Safari
+async function handleIOSTorch() {
+    try {
+        // En iOS Safari 15+, usamos una estrategia diferente
+        if (!window.stream) {
+            // Solicitar acceso a la cámara con configuración específica para iOS
+            window.stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    // Algunas veces, iOS necesita estas configuraciones específicas
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            });
+        }
+        
+        const track = window.stream.getVideoTracks()[0];
+        
+        if (track) {
+            // Verificar soporte
+            const capabilities = track.getCapabilities();
+            const settings = track.getSettings();
+            
+            // En iOS Safari, la propiedad torch puede estar disponible en settings
+            if (capabilities && capabilities.torch) {
+                flashlightActive = !flashlightActive;
+                
+                // Intentar aplicar la configuración
+                await track.applyConstraints({
+                    advanced: [{ torch: flashlightActive }]
+                });
+                
+                document.getElementById('flashlight-toggle').checked = flashlightActive;
+                console.log(`Linterna en iOS ${flashlightActive ? 'activada' : 'desactivada'}`);
+            } else {
+                showErrorMessage('Tu dispositivo iOS no soporta el control de la linterna desde el navegador');
+                document.getElementById('flashlight-toggle').checked = false;
+            }
+        } else {
+            showErrorMessage('No se pudo acceder a la cámara en tu dispositivo iOS');
+            document.getElementById('flashlight-toggle').checked = false;
+        }
+    } catch (error) {
+        console.error('Error iOS al controlar la linterna:', error);
+        showErrorMessage('Error al controlar la linterna en iOS. Verifica los permisos de cámara.');
+        document.getElementById('flashlight-toggle').checked = false;
+    }
+}
+
+// Comprobar sensores del dispositivo con mejor compatibilidad iOS
 function checkDeviceSensors() {
     console.log('Comprobando sensores del dispositivo...');
+    
+    // Actualizar información del navegador primero
+    detectBrowserInfo();
+    
+    // Actualizar la información del navegador en el panel
+    document.getElementById('device-os').textContent = `Sistema: ${browserInfo.os}`;
+    document.getElementById('device-browser').textContent = `Navegador: ${browserInfo.browser} ${browserInfo.version}`;
+    document.getElementById('device-type').textContent = `Tipo: ${browserInfo.isMobile ? "Móvil" : "Escritorio"}`;
     
     // Reiniciar estados
     document.getElementById('arcore-status').textContent = 'ARCore: Comprobando...';
@@ -146,135 +318,260 @@ function checkDeviceSensors() {
     document.getElementById('magnetometer-status').textContent = 'Magnetómetro: Comprobando...';
     document.getElementById('proximity-status').textContent = 'Sensor de proximidad: Comprobando...';
 
-    // Comprobar ARCore (indirectamente a través de la disponibilidad de WebXR)
+    // Comprobar ARCore/ARKit (WebXR)
+    checkARCapability();
+
+    // Comprobar giroscopio con mejor compatibilidad iOS
+    checkGyroscope();
+
+    // Comprobar acelerómetro con mejor compatibilidad iOS
+    checkAccelerometer();
+
+    // Comprobar magnetómetro con mejor compatibilidad iOS
+    checkMagnetometer();
+
+    // Comprobar sensor de proximidad
+    checkProximitySensor();
+}
+
+// Verificar soporte AR (ARCore/ARKit)
+function checkARCapability() {
     if ('xr' in navigator) {
         navigator.xr.isSessionSupported('immersive-ar')
             .then(supported => {
-                document.getElementById('arcore-status').textContent = 
-                    `ARCore: ${supported ? '✓ Disponible' : '✗ No disponible'}`;
+                const arStatus = document.getElementById('arcore-status');
+                if (supported) {
+                    arStatus.textContent = browserInfo.isIOS ? 
+                        'ARKit: ✓ Disponible' : 
+                        'ARCore: ✓ Disponible';
+                } else {
+                    arStatus.textContent = browserInfo.isIOS ? 
+                        'ARKit: ✗ No disponible' : 
+                        'ARCore: ✗ No disponible';
+                }
             })
             .catch(err => {
-                document.getElementById('arcore-status').textContent = 'ARCore: ✗ No disponible';
+                const arStatus = document.getElementById('arcore-status');
+                arStatus.textContent = browserInfo.isIOS ? 
+                    'ARKit: ✗ No disponible' : 
+                    'ARCore: ✗ No disponible';
+                console.error('Error al comprobar AR:', err);
             });
     } else {
-        document.getElementById('arcore-status').textContent = 'ARCore: ✗ No disponible';
+        const arStatus = document.getElementById('arcore-status');
+        arStatus.textContent = browserInfo.isIOS ? 
+            'ARKit: ✗ No disponible' : 
+            'ARCore: ✗ No disponible';
     }
+}
 
-    // Comprobar giroscopio
+// Comprobar giroscopio con mejor manejo para iOS
+function checkGyroscope() {
     try {
-        if ('Gyroscope' in window || ('DeviceMotionEvent' in window && window.DeviceMotionEvent.requestPermission)) {
-            let gyroTest = false;
-            
-            // Función para manejar el evento de movimiento
-            const handleMotion = (event) => {
-                if (event.rotationRate && 
-                    (event.rotationRate.alpha !== null || 
-                     event.rotationRate.beta !== null || 
-                     event.rotationRate.gamma !== null)) {
-                    gyroTest = true;
-                }
+        const gyroStatus = document.getElementById('gyroscope-status');
+        
+        // Verificar soporte usando Sensor API (más moderno)
+        if ('Gyroscope' in window) {
+            gyroStatus.textContent = 'Giroscopio: ✓ Disponible (Sensor API)';
+            return;
+        }
+        
+        // Verificar si DeviceMotionEvent está disponible
+        if ('DeviceMotionEvent' in window) {
+            // En iOS 13+ necesitamos solicitar permiso explícitamente
+            if (browserInfo.isIOS && 
+                DeviceMotionEvent.requestPermission && 
+                typeof DeviceMotionEvent.requestPermission === 'function') {
                 
-                // Actualizar estado después de un breve período
-                setTimeout(() => {
-                    document.getElementById('gyroscope-status').textContent = 
-                        `Giroscopio: ${gyroTest ? '✓ Disponible' : '✗ No disponible'}`;
-                    window.removeEventListener('devicemotion', handleMotion);
-                }, 500);
-            };
-            
-            // Agregar listener para evento de movimiento
-            window.addEventListener('devicemotion', handleMotion);
-            
-            // Solicitar permiso en iOS 13+
-            if (DeviceMotionEvent.requestPermission && typeof DeviceMotionEvent.requestPermission === 'function') {
                 DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            // Ahora podemos verificar el giroscopio
+                            detectGyroscopeWithMotion();
+                        } else {
+                            gyroStatus.textContent = 'Giroscopio: ✗ Permiso denegado';
+                        }
+                    })
                     .catch(error => {
-                        document.getElementById('gyroscope-status').textContent = 
-                            'Giroscopio: ✗ Permiso denegado';
+                        console.error('Error al solicitar permiso para giroscopio:', error);
+                        gyroStatus.textContent = 'Giroscopio: ✗ Error al solicitar permiso';
                     });
+            } else {
+                // En no-iOS o iOS antiguo, verificar directamente
+                detectGyroscopeWithMotion();
             }
         } else {
-            document.getElementById('gyroscope-status').textContent = 'Giroscopio: ✗ No disponible';
+            gyroStatus.textContent = 'Giroscopio: ✗ No disponible';
         }
     } catch (e) {
+        console.error('Error al detectar giroscopio:', e);
         document.getElementById('gyroscope-status').textContent = 'Giroscopio: ✗ Error al detectar';
     }
+}
 
-    // Comprobar acelerómetro (similar al giroscopio)
-    try {
-        if ('Accelerometer' in window || 'DeviceMotionEvent' in window) {
-            let accelTest = false;
-            
-            // Función para manejar el evento de movimiento
-            const handleMotion = (event) => {
-                if (event.accelerationIncludingGravity &&
-                    (event.accelerationIncludingGravity.x !== null ||
-                     event.accelerationIncludingGravity.y !== null ||
-                     event.accelerationIncludingGravity.z !== null)) {
-                    accelTest = true;
-                }
-                
-                // Actualizar estado después de un breve período
-                setTimeout(() => {
-                    document.getElementById('accelerometer-status').textContent = 
-                        `Acelerómetro: ${accelTest ? '✓ Disponible' : '✗ No disponible'}`;
-                    window.removeEventListener('devicemotion', handleMotion);
-                }, 500);
-            };
-            
-            // Agregar listener para evento de movimiento
-            window.addEventListener('devicemotion', handleMotion);
-        } else {
-            document.getElementById('accelerometer-status').textContent = 'Acelerómetro: ✗ No disponible';
+// Función auxiliar para detectar giroscopio con DeviceMotion
+function detectGyroscopeWithMotion() {
+    let gyroTest = false;
+    let testTimeout;
+    
+    const handleMotion = (event) => {
+        if (event.rotationRate && 
+            (event.rotationRate.alpha !== null || 
+             event.rotationRate.beta !== null || 
+             event.rotationRate.gamma !== null)) {
+            gyroTest = true;
         }
-    } catch (e) {
-        document.getElementById('accelerometer-status').textContent = 'Acelerómetro: ✗ Error al detectar';
-    }
+    };
+    
+    // Agregar listener para evento de movimiento
+    window.addEventListener('devicemotion', handleMotion);
+    
+    // Verificar después de un breve período
+    testTimeout = setTimeout(() => {
+        document.getElementById('gyroscope-status').textContent = 
+            `Giroscopio: ${gyroTest ? '✓ Disponible' : '✗ No disponible'}`;
+        window.removeEventListener('devicemotion', handleMotion);
+    }, 500);
+}
 
-    // Comprobar magnetómetro (brújula)
+// Comprobar acelerómetro con mejor manejo para iOS
+function checkAccelerometer() {
     try {
-        if ('DeviceOrientationEvent' in window) {
-            let magTest = false;
-            
-            // Función para manejar el evento de orientación
-            const handleOrientation = (event) => {
-                if (event.absolute === true || typeof event.webkitCompassHeading !== 'undefined') {
-                    magTest = true;
-                }
+        const accelStatus = document.getElementById('accelerometer-status');
+        
+        // Verificar soporte usando Sensor API (más moderno)
+        if ('Accelerometer' in window) {
+            accelStatus.textContent = 'Acelerómetro: ✓ Disponible (Sensor API)';
+            return;
+        }
+        
+        // Verificar si DeviceMotionEvent está disponible
+        if ('DeviceMotionEvent' in window) {
+            // En iOS 13+ necesitamos solicitar permiso explícitamente
+            if (browserInfo.isIOS && 
+                DeviceMotionEvent.requestPermission && 
+                typeof DeviceMotionEvent.requestPermission === 'function') {
                 
-                // Actualizar estado después de un breve período
-                setTimeout(() => {
-                    document.getElementById('magnetometer-status').textContent = 
-                        `Magnetómetro: ${magTest ? '✓ Disponible' : '✗ No disponible'}`;
-                    window.removeEventListener('deviceorientation', handleOrientation);
-                }, 500);
-            };
-            
-            // Agregar listener para evento de orientación
-            window.addEventListener('deviceorientation', handleOrientation);
-            
-            // Solicitar permiso en iOS 13+
-            if (DeviceOrientationEvent.requestPermission && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .catch(error => {
-                        document.getElementById('magnetometer-status').textContent = 
-                            'Magnetómetro: ✗ Permiso denegado';
-                    });
+                // Reutilizamos el permiso ya solicitado en la función del giroscopio
+                detectAccelerometerWithMotion();
+            } else {
+                // En no-iOS o iOS antiguo, verificar directamente
+                detectAccelerometerWithMotion();
             }
         } else {
-            document.getElementById('magnetometer-status').textContent = 'Magnetómetro: ✗ No disponible';
+            accelStatus.textContent = 'Acelerómetro: ✗ No disponible';
         }
     } catch (e) {
+        console.error('Error al detectar acelerómetro:', e);
+        document.getElementById('accelerometer-status').textContent = 'Acelerómetro: ✗ Error al detectar';
+    }
+}
+
+// Función auxiliar para detectar acelerómetro con DeviceMotion
+function detectAccelerometerWithMotion() {
+    let accelTest = false;
+    
+    const handleMotion = (event) => {
+        if (event.accelerationIncludingGravity &&
+            (event.accelerationIncludingGravity.x !== null ||
+             event.accelerationIncludingGravity.y !== null ||
+             event.accelerationIncludingGravity.z !== null)) {
+            accelTest = true;
+        }
+    };
+    
+    // Agregar listener para evento de movimiento
+    window.addEventListener('devicemotion', handleMotion);
+    
+    // Verificar después de un breve período
+    setTimeout(() => {
+        document.getElementById('accelerometer-status').textContent = 
+            `Acelerómetro: ${accelTest ? '✓ Disponible' : '✗ No disponible'}`;
+        window.removeEventListener('devicemotion', handleMotion);
+    }, 500);
+}
+
+// Comprobar magnetómetro con mejor manejo para iOS
+function checkMagnetometer() {
+    try {
+        const magStatus = document.getElementById('magnetometer-status');
+        
+        // Verificar si DeviceOrientationEvent está disponible
+        if ('DeviceOrientationEvent' in window) {
+            // En iOS 13+ necesitamos solicitar permiso explícitamente
+            if (browserInfo.isIOS && 
+                DeviceOrientationEvent.requestPermission && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            // Ahora podemos verificar el magnetómetro
+                            detectMagnetometerWithOrientation();
+                        } else {
+                            magStatus.textContent = 'Magnetómetro: ✗ Permiso denegado';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al solicitar permiso para magnetómetro:', error);
+                        magStatus.textContent = 'Magnetómetro: ✗ Error al solicitar permiso';
+                    });
+            } else {
+                // En no-iOS o iOS antiguo, verificar directamente
+                detectMagnetometerWithOrientation();
+            }
+        } else {
+            magStatus.textContent = 'Magnetómetro: ✗ No disponible';
+        }
+    } catch (e) {
+        console.error('Error al detectar magnetómetro:', e);
         document.getElementById('magnetometer-status').textContent = 'Magnetómetro: ✗ Error al detectar';
     }
+}
 
-    // Comprobar sensor de proximidad (menos común en navegadores)
-    try {
-        if ('ProximitySensor' in window || 'ondeviceproximity' in window) {
-            document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✓ Disponible';
-        } else {
-            document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✗ No disponible';
+// Función auxiliar para detectar magnetómetro con DeviceOrientation
+function detectMagnetometerWithOrientation() {
+    let magTest = false;
+    
+    const handleOrientation = (event) => {
+        if (event.absolute === true || typeof event.webkitCompassHeading !== 'undefined') {
+            magTest = true;
         }
+    };
+    
+    // Agregar listener para evento de orientación
+    window.addEventListener('deviceorientation', handleOrientation);
+    
+    // Verificar después de un breve período
+    setTimeout(() => {
+        document.getElementById('magnetometer-status').textContent = 
+            `Magnetómetro: ${magTest ? '✓ Disponible' : '✗ No disponible'}`;
+        window.removeEventListener('deviceorientation', handleOrientation);
+    }, 500);
+}
+
+// Comprobar sensor de proximidad (menos común en navegadores)
+function checkProximitySensor() {
+    try {
+        // Verificar disponibilidad de ProximitySensor
+        if ('ProximitySensor' in window) {
+            document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✓ Disponible';
+            return;
+        }
+        
+        // Verificar disponibilidad de DeviceProximityEvent
+        if ('DeviceProximityEvent' in window || 'ondeviceproximity' in window) {
+            document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✓ Disponible';
+            return;
+        }
+        
+        // En iOS, podemos verificar si tiene FaceID como indicador indirecto
+        if (browserInfo.isIOS && (/iPhone X/.test(navigator.userAgent) || parseInt(browserInfo.version) >= 11)) {
+            document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✓ Probablemente disponible (FaceID)';
+            return;
+        }
+        
+        document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✗ No disponible';
     } catch (e) {
         document.getElementById('proximity-status').textContent = 'Sensor de proximidad: ✗ Error al detectar';
     }
@@ -285,3 +582,10 @@ window.addEventListener('load', function() {
     // Esperar a que el sistema AR esté inicializado
     setTimeout(initConfigPanel, 3000);
 });
+
+// Exportar funciones útiles para otros módulos
+window.configUtils = {
+    getBrowserInfo: () => browserInfo,
+    checkDeviceSensors: checkDeviceSensors,
+    toggleFlashlight: toggleFlashlight
+};
