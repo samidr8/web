@@ -191,50 +191,99 @@ function showErrorMessage(message) {
     }, 5000);
 }
 
-// Activar/Desactivar linterna con mejor compatibilidad con iOS y Firefox
+// Verificar compatibilidad con linterna antes de intentar activarla
+async function checkFlashlightSupport() {
+    try {
+        // Primero verificamos si el navegador soporta getUserMedia
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            return { supported: false, message: 'Tu navegador no soporta el acceso a la cámara.' };
+        }
+
+        // Obtenemos los dispositivos de medios disponibles
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        if (videoDevices.length === 0) {
+            return { supported: false, message: 'No se encontraron cámaras disponibles.' };
+        }
+
+        // Intentamos obtener acceso a la cámara para verificar capacidades
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                advanced: [{ torch: true }]
+            } 
+        });
+
+        const track = stream.getVideoTracks()[0];
+        
+        if (!track) {
+            stream.getTracks().forEach(t => t.stop());
+            return { supported: false, message: 'No se pudo acceder a la cámara.' };
+        }
+
+        const capabilities = track.getCapabilities();
+        const supported = !!capabilities.torch;
+        
+        // Detener la transmisión inmediatamente después de verificar
+        stream.getTracks().forEach(t => t.stop());
+        
+        return { 
+            supported,
+            message: supported ? '' : 'Tu cámara no soporta el control de linterna.'
+        };
+    } catch (error) {
+        console.error('Error al verificar soporte de linterna:', error);
+        return { 
+            supported: false, 
+            message: 'Error al verificar compatibilidad con linterna. Asegúrate de haber concedido permisos de cámara.'
+        };
+    }
+}
+
+// Activar/Desactivar linterna con mejor manejo de errores
 async function toggleFlashlight() {
     const toggle = document.getElementById('flashlight-toggle');
+    const originalState = toggle.checked;
     
     try {
+        // Verificar soporte antes de intentar activar
+        const supportCheck = await checkFlashlightSupport();
+        
+        if (!supportCheck.supported) {
+            showErrorMessage(supportCheck.message || 'La linterna no está disponible en este dispositivo.');
+            toggle.checked = false;
+            return;
+        }
+
         // Verificar si estamos en iOS para manejo especial
         if (browserInfo.isIOS) {
-            // En iOS, necesitamos enfoques especiales ya que la API torch es limitada
-            if (browserInfo.browser === "Safari" && parseInt(browserInfo.version) >= 15) {
-                // Safari 15+ en iOS tiene soporte limitado para torch
-                await handleIOSTorch();
-            } else {
-                // Otros navegadores iOS no soportan torch directamente
-                showErrorMessage('La linterna solo funciona en Safari en iOS 15+. Por favor, cambia de navegador.');
-                toggle.checked = false;
-                return;
-            }
+            await handleIOSTorch();
+            return;
         } 
         // Manejo especial para Firefox
         else if (browserInfo.browser === "Firefox") {
             await handleFirefoxFlashlight(toggle);
+            return;
         } 
-        // Otros navegadores
+        // Manejo estándar para otros navegadores
         else {
             // Obtener acceso a la cámara si no lo tenemos ya
             if (!window.stream) {
                 window.stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
-                        // En algunos dispositivos, necesitamos especificar que queremos torch
                         advanced: [{ torch: true }]
                     } 
                 });
             }
             
-            // Obtener todas las pistas de video
             const track = window.stream.getVideoTracks()[0];
             
             if (track) {
-                // Verificar si la linterna es compatible
                 const capabilities = track.getCapabilities();
                 
                 if (capabilities.torch) {
-                    // Activar/desactivar la linterna
                     flashlightActive = !flashlightActive;
                     await track.applyConstraints({
                         advanced: [{ torch: flashlightActive }]
@@ -243,25 +292,36 @@ async function toggleFlashlight() {
                     toggle.checked = flashlightActive;
                     console.log(`Linterna ${flashlightActive ? 'activada' : 'desactivada'}`);
                 } else {
-                    showErrorMessage('Tu dispositivo no soporta el control de la linterna');
+                    showErrorMessage('La linterna no está disponible en este dispositivo.');
                     toggle.checked = false;
                 }
             } else {
-                showErrorMessage('No se pudo acceder a la cámara');
+                showErrorMessage('No se pudo acceder a la cámara.');
                 toggle.checked = false;
             }
         }
     } catch (error) {
         console.error('Error al controlar la linterna:', error);
-        showErrorMessage('Error al controlar la linterna. Asegúrate de haber concedido permisos de cámara.');
-        toggle.checked = false;
+        toggle.checked = originalState; // Revertir al estado original
+        
+        // Mensajes de error más específicos
+        if (error.name === 'NotAllowedError') {
+            showErrorMessage('Permiso denegado para acceder a la cámara.');
+        } else if (error.name === 'NotFoundError') {
+            showErrorMessage('No se encontró una cámara trasera con linterna.');
+        } else if (error.name === 'NotSupportedError') {
+            showErrorMessage('La linterna no es compatible con este dispositivo.');
+        } else {
+            showErrorMessage('Error al controlar la linterna. Intenta nuevamente.');
+        }
     }
 }
 
 // Manejo específico para Firefox
 async function handleFirefoxFlashlight(toggle) {
+    const originalState = toggle.checked;
+    
     try {
-        // Firefox tiene un enfoque diferente para la linterna
         if (!window.stream) {
             window.stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -274,10 +334,10 @@ async function handleFirefoxFlashlight(toggle) {
         const track = window.stream.getVideoTracks()[0];
         
         if (track) {
-            // En Firefox, intentamos usar applyConstraints directamente
             flashlightActive = !flashlightActive;
             
             try {
+                // Intento principal con torch
                 await track.applyConstraints({
                     advanced: [{ torch: flashlightActive }]
                 });
@@ -285,38 +345,38 @@ async function handleFirefoxFlashlight(toggle) {
                 toggle.checked = flashlightActive;
                 console.log(`Linterna en Firefox ${flashlightActive ? 'activada' : 'desactivada'}`);
             } catch (e) {
-                // Si falla, intentamos con el enfoque alternativo
+                // Si falla, intentamos con fillLightMode como alternativa
                 try {
                     await track.applyConstraints({
                         advanced: [{ fillLightMode: flashlightActive ? 'flash' : 'off' }]
                     });
                     toggle.checked = flashlightActive;
                 } catch (e2) {
-                    showErrorMessage('Firefox no pudo controlar la linterna en este dispositivo');
-                    toggle.checked = false;
+                    showErrorMessage('Firefox no pudo controlar la linterna en este dispositivo.');
+                    toggle.checked = originalState;
                 }
             }
         } else {
-            showErrorMessage('No se pudo acceder a la cámara en Firefox');
-            toggle.checked = false;
+            showErrorMessage('No se pudo acceder a la cámara en Firefox.');
+            toggle.checked = originalState;
         }
     } catch (error) {
         console.error('Error en Firefox al controlar la linterna:', error);
+        toggle.checked = originalState;
         showErrorMessage('Error al controlar la linterna en Firefox. Verifica los permisos de cámara.');
-        toggle.checked = false;
     }
 }
 
 // Manejo específico para iOS Safari
 async function handleIOSTorch() {
+    const toggle = document.getElementById('flashlight-toggle');
+    const originalState = toggle.checked;
+    
     try {
-        // En iOS Safari 15+, usamos una estrategia diferente
         if (!window.stream) {
-            // Solicitar acceso a la cámara con configuración específica para iOS
             window.stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: 'environment',
-                    // Algunas veces, iOS necesita estas configuraciones específicas
                     width: { ideal: 1920 },
                     height: { ideal: 1080 }
                 }
@@ -326,33 +386,29 @@ async function handleIOSTorch() {
         const track = window.stream.getVideoTracks()[0];
         
         if (track) {
-            // Verificar soporte
             const capabilities = track.getCapabilities();
-            const settings = track.getSettings();
             
-            // En iOS Safari, la propiedad torch puede estar disponible en settings
             if (capabilities && capabilities.torch) {
                 flashlightActive = !flashlightActive;
                 
-                // Intentar aplicar la configuración
                 await track.applyConstraints({
                     advanced: [{ torch: flashlightActive }]
                 });
                 
-                document.getElementById('flashlight-toggle').checked = flashlightActive;
+                toggle.checked = flashlightActive;
                 console.log(`Linterna en iOS ${flashlightActive ? 'activada' : 'desactivada'}`);
             } else {
-                showErrorMessage('Tu dispositivo iOS no soporta el control de la linterna desde el navegador');
-                document.getElementById('flashlight-toggle').checked = false;
+                showErrorMessage('Tu dispositivo iOS no soporta el control de la linterna desde el navegador.');
+                toggle.checked = originalState;
             }
         } else {
-            showErrorMessage('No se pudo acceder a la cámara en tu dispositivo iOS');
-            document.getElementById('flashlight-toggle').checked = false;
+            showErrorMessage('No se pudo acceder a la cámara en tu dispositivo iOS.');
+            toggle.checked = originalState;
         }
     } catch (error) {
         console.error('Error iOS al controlar la linterna:', error);
+        toggle.checked = originalState;
         showErrorMessage('Error al controlar la linterna en iOS. Verifica los permisos de cámara.');
-        document.getElementById('flashlight-toggle').checked = false;
     }
 }
 
