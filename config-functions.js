@@ -1,4 +1,104 @@
-// Funciones para el panel de configuración
+
+// Manejo específico para Firefox
+async function handleFirefoxTorch() {
+    const toggle = document.getElementById('flashlight-toggle');
+    
+    try {
+        // Si ya existe un stream, cerrarlo para evitar conflictos
+        if (window.stream) {
+            window.stream.getTracks().forEach(track => track.stop());
+            window.stream = null;
+        }
+        
+        // Firefox requiere configuraciones específicas para la cámara
+        const constraints = {
+            video: {
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                // Especificar torch directamente en las constraints principales
+                advanced: [
+                    { torch: true }
+                ]
+            }
+        };
+        
+        // Solicitar acceso a la cámara con configuraciones específicas
+        window.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        // Obtener pista de video
+        const track = window.stream.getVideoTracks()[0];
+        
+        if (track) {
+            // Intentar diferentes métodos para activar la linterna en Firefox
+            try {
+                // Método 1: Verificar capacidades
+                const capabilities = track.getCapabilities();
+                
+                if (capabilities && capabilities.torch) {
+                    // Activar/desactivar la linterna
+                    flashlightActive = !flashlightActive;
+                    
+                    // En Firefox, a veces funciona mejor sin el 'advanced'
+                    const constraints = {
+                        torch: flashlightActive
+                    };
+                    
+                    await track.applyConstraints(constraints);
+                    
+                    // También intentar con advanced por si acaso
+                    try {
+                        await track.applyConstraints({
+                            advanced: [{ torch: flashlightActive }]
+                        });
+                    } catch (e) {
+                        console.log("Error en segundo método, pero continuamos:", e);
+                    }
+                    
+                    toggle.checked = flashlightActive;
+                    console.log(`Linterna en Firefox ${flashlightActive ? 'activada' : 'desactivada'}`);
+                } else {
+                    // Método 2: Intentar configuración alternativa si no se detecta torch
+                    flashlightActive = !flashlightActive;
+                    
+                    try {
+                        // Intentar con ImageCapture API (disponible en algunos Firefox)
+                        const imageCapture = new ImageCapture(track);
+                        const photoCapabilities = await imageCapture.getPhotoCapabilities();
+                        
+                        if (photoCapabilities && photoCapabilities.fillLightMode && 
+                            photoCapabilities.fillLightMode.includes('flash')) {
+                            
+                            // Configurar el modo de flash
+                            const photoSettings = {
+                                fillLightMode: flashlightActive ? 'flash' : 'off'
+                            };
+                            
+                            await imageCapture.setOptions({ photoSettings });
+                            toggle.checked = flashlightActive;
+                            console.log(`Linterna en Firefox (método alternativo) ${flashlightActive ? 'activada' : 'desactivada'}`);
+                        } else {
+                            throw new Error("No se encontró soporte para flash");
+                        }
+                    } catch (e) {
+                        console.error("Error en método alternativo de linterna:", e);
+                        throw new Error("Tu dispositivo Firefox no soporta el control de la linterna");
+                    }
+                }
+            } catch (e) {
+                showErrorMessage('Firefox en tu dispositivo no soporta el control de la linterna');
+                toggle.checked = false;
+            }
+        } else {
+            showErrorMessage('No se pudo acceder a la cámara en Firefox');
+            toggle.checked = false;
+        }
+    } catch (error) {
+        console.error('Error Firefox al controlar la linterna:', error);
+        showErrorMessage('Error al controlar la linterna en Firefox. Verifica los permisos de cámara.');
+        toggle.checked = false;
+    }
+}// Funciones para el panel de configuración
 let flashlightActive = false;
 let browserInfo = {};
 
@@ -37,37 +137,80 @@ function detectBrowserInfo() {
         os = "Linux";
     }
     
-    // Detectar navegador
+    // Detectar navegador - Método más confiable
     let browser = "Desconocido";
     let version = "";
     
-    if (/CriOS/.test(userAgent)) {
-        browser = "Chrome";
-        version = userAgent.match(/CriOS\/(\d+)/)[1];
-    } else if (/FxiOS/.test(userAgent)) {
-        browser = "Firefox";
-        version = userAgent.match(/FxiOS\/(\d+)/)[1];
-    } else if (/EdgiOS/.test(userAgent)) {
-        browser = "Edge";
-        version = userAgent.match(/EdgiOS\/(\d+)/)[1];
-    } else if (/OPiOS/.test(userAgent)) {
-        browser = "Opera";
-        version = userAgent.match(/OPiOS\/(\d+)/)[1];
-    } else if (/Safari/.test(userAgent) && /Apple/.test(userAgent) && !/Chrome/.test(userAgent)) {
-        browser = "Safari";
-        version = userAgent.match(/Version\/(\d+)/)?.[1] || "";
-    } else if (/Chrome/.test(userAgent)) {
-        browser = "Chrome";
-        version = userAgent.match(/Chrome\/(\d+)/)[1];
-    } else if (/Firefox/.test(userAgent)) {
-        browser = "Firefox";
-        version = userAgent.match(/Firefox\/(\d+)/)[1];
-    } else if (/Edge/.test(userAgent)) {
-        browser = "Edge";
-        version = userAgent.match(/Edge\/(\d+)/)?.[1] || userAgent.match(/Edg\/(\d+)/)?.[1] || "";
-    } else if (/Opera|OPR/.test(userAgent)) {
-        browser = "Opera";
-        version = userAgent.match(/OPR\/(\d+)/)?.[1] || userAgent.match(/Opera\/(\d+)/)?.[1] || "";
+    // Usar detect-browser cuando esté disponible
+    if (typeof window.detectBrowser === 'function') {
+        const result = window.detectBrowser();
+        if (result && result.name) {
+            browser = result.name.charAt(0).toUpperCase() + result.name.slice(1); // Capitalizar
+            version = result.version;
+        }
+    } else {
+        // Método de respaldo usando el User-Agent
+        // Primero detectar navegadores móviles iOS que tienen nombres específicos
+        if (/CriOS/.test(userAgent)) {
+            browser = "Chrome iOS";
+            version = userAgent.match(/CriOS\/(\d+)/)?.[1] || "";
+        } else if (/FxiOS/.test(userAgent)) {
+            browser = "Firefox iOS";
+            version = userAgent.match(/FxiOS\/(\d+)/)?.[1] || "";
+        } else if (/EdgiOS/.test(userAgent)) {
+            browser = "Edge iOS";
+            version = userAgent.match(/EdgiOS\/(\d+)/)?.[1] || "";
+        } else if (/OPiOS/.test(userAgent)) {
+            browser = "Opera iOS";
+            version = userAgent.match(/OPiOS\/(\d+)/)?.[1] || "";
+        } 
+        // Firefox debe verificarse antes de Chrome ya que incluye "Chrome" en su UA
+        else if (/Firefox/i.test(userAgent)) {
+            browser = "Firefox";
+            version = userAgent.match(/Firefox\/(\d+)/)?.[1] || "";
+        }
+        // Edge debe verificarse antes de Chrome ya que incluye "Chrome" en su UA
+        else if (/Edg\/|Edge\//.test(userAgent)) {
+            browser = "Edge";
+            version = userAgent.match(/Edge\/(\d+)/)?.[1] || userAgent.match(/Edg\/(\d+)/)?.[1] || "";
+        } 
+        // Opera debe verificarse antes de Chrome ya que incluye "Chrome" en su UA
+        else if (/OPR\/|Opera\//.test(userAgent)) {
+            browser = "Opera";
+            version = userAgent.match(/OPR\/(\d+)/)?.[1] || userAgent.match(/Opera\/(\d+)/)?.[1] || "";
+        } 
+        // Chrome debe verificarse antes de Safari para los navegadores basados en Chrome
+        else if (/Chrome/.test(userAgent)) {
+            browser = "Chrome";
+            version = userAgent.match(/Chrome\/(\d+)/)?.[1] || "";
+        } 
+        // Safari (solo para macOS e iOS)
+        else if (/Safari/.test(userAgent) && (os === "macOS" || os === "iOS")) {
+            browser = "Safari";
+            version = userAgent.match(/Version\/(\d+)/)?.[1] || "";
+        } 
+        // Samsung Internet
+        else if (/SamsungBrowser/.test(userAgent)) {
+            browser = "Samsung Internet";
+            version = userAgent.match(/SamsungBrowser\/(\d+)/)?.[1] || "";
+        }
+    }
+    
+    // Métodos alternativos para la detección
+    if (browser === "Desconocido") {
+        // Tratar de usar características específicas del navegador
+        if (window.chrome) {
+            browser = "Chrome o compatible";
+        } else if (typeof InstallTrigger !== 'undefined') {
+            browser = "Firefox o compatible";
+        } else if (/*@cc_on!@*/false || !!document.documentMode) {
+            browser = "Internet Explorer";
+            version = document.documentMode || "";
+        } else if (window.StyleMedia) {
+            browser = "Edge";
+        } else if (window.safari) {
+            browser = "Safari";
+        }
     }
     
     // Guardar información
@@ -78,6 +221,7 @@ function detectBrowserInfo() {
         userAgent: userAgent,
         isIOS: os === "iOS",
         isAndroid: os === "Android",
+        isFirefox: browser.includes("Firefox"),
         isMobile: /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
     };
     
@@ -189,7 +333,7 @@ function showErrorMessage(message) {
     }, 5000);
 }
 
-// Activar/Desactivar linterna con mejor compatibilidad con iOS
+// Activar/Desactivar linterna con mejor compatibilidad con iOS y Firefox
 async function toggleFlashlight() {
     const toggle = document.getElementById('flashlight-toggle');
     
@@ -206,16 +350,29 @@ async function toggleFlashlight() {
                 toggle.checked = false;
                 return;
             }
-        } else {
-            // Obtener acceso a la cámara si no lo tenemos ya
+        } 
+        // Manejo especial para Firefox
+        else if (browserInfo.isFirefox) {
+            await handleFirefoxTorch();
+        } 
+        else {
+            // Otros navegadores estándar
             if (!window.stream) {
-                window.stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment',
-                        // En algunos dispositivos, necesitamos especificar que queremos torch
-                        advanced: [{ torch: true }]
-                    } 
-                });
+                try {
+                    // Primer intento con configuración de torch
+                    window.stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'environment',
+                            advanced: [{ torch: true }]
+                        } 
+                    });
+                } catch (err) {
+                    console.log("Error en primer intento de acceso a cámara:", err);
+                    // Segundo intento con configuración básica
+                    window.stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } 
+                    });
+                }
             }
             
             // Obtener todas las pistas de video
@@ -225,7 +382,7 @@ async function toggleFlashlight() {
                 // Verificar si la linterna es compatible
                 const capabilities = track.getCapabilities();
                 
-                if (capabilities.torch) {
+                if (capabilities && capabilities.torch) {
                     // Activar/desactivar la linterna
                     flashlightActive = !flashlightActive;
                     await track.applyConstraints({
