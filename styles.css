@@ -33,7 +33,7 @@
     transition: background-color 0.3s ease;
 }
 
-/* Contenedor padre: visible por defecto para que el iframe cargue */
+/* Reemplazar las reglas existentes de .web-content-container */
 .web-content-container {
     position: fixed;
     top: 50%;
@@ -42,20 +42,15 @@
     width: 80%;
     height: 80%;
     z-index: 1000;
-    /* Removemos display: none inicial */
-    opacity: 0; /* Oculto visualmente pero el iframe carga */
-    pointer-events: none; /* Desactiva interacciones */
-    transition: opacity 0.3s ease; /* Para animación al mostrar */
+    display: none; /* Cambiado de opacity: 0 */
+    background: transparent; /* Fondo transparente */
 }
 
-/* Clase para mostrar el contenedor (usada por JavaScript) */
 .web-content-container.active {
-    opacity: 1;
-    pointer-events: auto;
-    display: block; /* Asegura que esté activo */
+    display: block; /* Mostrar normalmente */
 }
 
-/* Iframe: siempre visible internamente */
+/* Mantener el iframe siempre visible */
 .web-content {
     width: 100%;
     height: 100%;
@@ -63,13 +58,15 @@
     border-radius: 10px;
     background-color: white;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    display: block; /* Asegura que se renderice */
+    display: block;
+    position: relative; /* Añadido */
 }
 
+/* Botón de cerrar posicionado dentro del iframe */
 .close-button {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 15px;
     background-color: red;
     color: white;
     border: 3px solid white;
@@ -78,19 +75,17 @@
     height: 40px;
     font-size: 20px;
     cursor: pointer;
-    z-index: 1001; /* Asegura que esté sobre el iframe */
+    z-index: 1001;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     font-weight: bold;
     display: flex;
     justify-content: center;
     align-items: center;
-    opacity: 0; /* Inicialmente oculto */
-    pointer-events: none;    
+    display: none; /* Oculto inicialmente */
 }
 
 .web-content-container.active .close-button {
-    opacity: 1;
-    pointer-events: auto;
+    display: flex; /* Mostrar cuando el contenedor está activo */
 }
 
 /* Contenedor de video */
