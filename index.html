@@ -47,12 +47,12 @@
         </div>
     </div>
 
-    <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
-<div class="web-content-container">
-    <iframe id="web-content" class="web-content" allowfullscreen
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
-    <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
-</div>
+    <!-- Contenedor para iframe y su botón de cerrar -->
+    <div id="web-content-container" class="web-content-container">
+        <iframe id="web-content" class="web-content" allowfullscreen
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+        <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
+    </div>
 
     <!-- Pantalla de fallback para cuando iframe falla -->
     <div id="fallback-container" class="fallback-container">

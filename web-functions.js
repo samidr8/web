@@ -1,5 +1,6 @@
 // Función mejorada para mostrar contenido web (iframe)
 function showWebContent(url, fallbackEnabled = false) {
+    const webContentContainer = document.getElementById('web-content-container');
     const iframe = document.getElementById('web-content');
     const closeButton = document.getElementById('close-button');
 
@@ -65,10 +66,7 @@ function showWebContent(url, fallbackEnabled = false) {
     // Intentar cargar el iframe
     try {
         iframe.src = transformedUrl;
-        iframe.style.display = 'block';
-        
-        // Mostrar y posicionar el botón de cerrar dentro de la ventana web
-        closeButton.style.display = 'flex';
+        webContentContainer.style.display = 'block'; // Mostrar el contenedor completo
         
         // Comprobar errores de carga después de un tiempo
         setTimeout(function () {
@@ -79,8 +77,7 @@ function showWebContent(url, fallbackEnabled = false) {
                     // Si hay problemas, mostrar fallback
                     if (fallbackEnabled) {
                         showFallbackScreen(transformedUrl);
-                        iframe.style.display = 'none';
-                        closeButton.style.display = 'none';
+                        webContentContainer.style.display = 'none';
                     }
                 }
             } catch (e) {
@@ -88,8 +85,7 @@ function showWebContent(url, fallbackEnabled = false) {
                 console.error('Error de acceso al iframe: probablemente X-Frame-Options bloqueó carga');
                 if (fallbackEnabled) {
                     showFallbackScreen(transformedUrl);
-                    iframe.style.display = 'none';
-                    closeButton.style.display = 'none';
+                    webContentContainer.style.display = 'none';
                 }
             }
         }, 1500);
@@ -108,13 +104,12 @@ function showWebContent(url, fallbackEnabled = false) {
 
 // Función para cerrar contenido web
 function closeWebContent() {
+    const webContentContainer = document.getElementById('web-content-container');
     const iframe = document.getElementById('web-content');
-    const closeButton = document.getElementById('close-button');
     const fallbackContainer = document.getElementById('fallback-container');
 
     iframe.src = '';
-    iframe.style.display = 'none';
-    closeButton.style.display = 'none';
+    webContentContainer.style.display = 'none';
     fallbackContainer.style.display = 'none';
 
     // Ocultar título al cerrar contenido

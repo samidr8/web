@@ -35,27 +35,36 @@
     transition: background-color 0.3s ease;
 }
 
-/* Iframe para contenido web (formularios, GeoGebra, etc.) */
-.web-content {
+/* Contenedor para el iframe y el botón de cerrar */
+.web-content-container {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 80%;
     height: 80%;
-    background-color: white;
     z-index: 1000;
+    display: none; /* Se mostrará vía JavaScript cuando sea necesario */
+}
+
+/* Iframe para contenido web (formularios, GeoGebra, etc.) */
+.web-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
     border: none;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    display: none;
 }
 
-/* Posición del botón de cerrar - modificado para estar dentro del contenedor */
+/* Posición del botón de cerrar - ahora dentro del contenedor web-content-container */
 .close-button {
     position: absolute;
     top: 10px;
-    right: 10px; /* Ahora a la derecha en lugar del centro */
+    right: 10px;
     background-color: red;
     color: white;
     border: 3px solid white;
@@ -64,10 +73,10 @@
     height: 40px;
     font-size: 20px;
     cursor: pointer;
-    display: none;
     z-index: 1002; /* Incrementado para estar encima del iframe */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     font-weight: bold;
+    display: flex;
     justify-content: center;
     align-items: center;
 }
@@ -250,10 +259,13 @@
         width: 90%;
     }
 
-    .web-content,
-    .fallback-container {
+    .web-content-container {
         width: 95%;
         height: 70%;
+    }
+
+    .fallback-container {
+        width: 95%;
     }
 
     .info-panel {
