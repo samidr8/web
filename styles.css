@@ -33,7 +33,7 @@
     transition: background-color 0.3s ease;
 }
 
-/* Contenedor padre del iframe y el botón */
+/* Contenedor padre: visible por defecto para que el iframe cargue */
 .web-content-container {
     position: fixed;
     top: 50%;
@@ -42,10 +42,20 @@
     width: 80%;
     height: 80%;
     z-index: 1000;
-    display: none; /* Oculto por defecto */
+    /* Removemos display: none inicial */
+    opacity: 0; /* Oculto visualmente pero el iframe carga */
+    pointer-events: none; /* Desactiva interacciones */
+    transition: opacity 0.3s ease; /* Para animación al mostrar */
 }
 
-/* Iframe para contenido web (formularios, GeoGebra, etc.) */
+/* Clase para mostrar el contenedor (usada por JavaScript) */
+.web-content-container.active {
+    opacity: 1;
+    pointer-events: auto;
+    display: block; /* Asegura que esté activo */
+}
+
+/* Iframe: siempre visible internamente */
 .web-content {
     width: 100%;
     height: 100%;
@@ -53,6 +63,7 @@
     border-radius: 10px;
     background-color: white;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    display: block; /* Asegura que se renderice */
 }
 
 .close-button {
@@ -73,6 +84,13 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    opacity: 0; /* Inicialmente oculto */
+    pointer-events: none;    
+}
+
+.web-content-container.active .close-button {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* Contenedor de video */

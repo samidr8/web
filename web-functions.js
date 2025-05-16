@@ -1,5 +1,6 @@
 // Función mejorada para mostrar contenido web (iframe)
 function showWebContent(url, fallbackEnabled = false) {
+    const webContentContainer = document.querySelector('.web-content-container');
     const iframe = document.getElementById('web-content');
     const closeButton = document.getElementById('close-button');
 
@@ -65,7 +66,7 @@ function showWebContent(url, fallbackEnabled = false) {
     // Intentar cargar el iframe
     try {
         iframe.src = transformedUrl;
-        iframe.style.display = 'block';
+        webContentContainer.classList.add('active'); // Mostrar contenedor
         closeButton.style.display = 'flex';
 
         // Comprobar errores de carga después de un tiempo
@@ -77,7 +78,7 @@ function showWebContent(url, fallbackEnabled = false) {
                     // Si hay problemas, mostrar fallback
                     if (fallbackEnabled) {
                         showFallbackScreen(transformedUrl);
-                        iframe.style.display = 'none';
+                        webContentContainer.classList.remove('active');
                         closeButton.style.display = 'none';
                     }
                 }
@@ -86,7 +87,7 @@ function showWebContent(url, fallbackEnabled = false) {
                 console.error('Error de acceso al iframe: probablemente X-Frame-Options bloqueó carga');
                 if (fallbackEnabled) {
                     showFallbackScreen(transformedUrl);
-                    iframe.style.display = 'none';
+                    webContentContainer.classList.remove('active');
                     closeButton.style.display = 'none';
                 }
             }
@@ -106,12 +107,13 @@ function showWebContent(url, fallbackEnabled = false) {
 
 // Función para cerrar contenido web
 function closeWebContent() {
+    const webContentContainer = document.querySelector('.web-content-container');
     const iframe = document.getElementById('web-content');
     const closeButton = document.getElementById('close-button');
     const fallbackContainer = document.getElementById('fallback-container');
 
     iframe.src = '';
-    iframe.style.display = 'none';
+    webContentContainer.classList.remove('active');
     closeButton.style.display = 'none';
     fallbackContainer.style.display = 'none';
 
@@ -145,4 +147,33 @@ function closeFallbackScreen() {
     fallbackContainer.style.display = 'none';
     hideContentTitle();
     console.log('Pantalla de fallback cerrada');
+}
+
+// Función para mostrar mensajes de error
+function showErrorMessage(message) {
+    const errorElement = document.createElement('div');
+    errorElement.className = 'error-message';
+    errorElement.textContent = message;
+    document.body.appendChild(errorElement);
+    
+    setTimeout(() => {
+        errorElement.remove();
+    }, 5000);
+}
+
+// Función para ocultar el título del contenido
+function hideContentTitle() {
+    const titleElement = document.getElementById('content-title');
+    if (titleElement) {
+        titleElement.style.display = 'none';
+    }
+}
+
+// Función para mostrar el título del contenido
+function showContentTitle(title) {
+    const titleElement = document.getElementById('content-title');
+    if (titleElement) {
+        titleElement.textContent = title;
+        titleElement.style.display = 'block';
+    }
 }
