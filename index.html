@@ -1,88 +1,453 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Libro Interactivo AR</title>
-    <!-- Bibliotecas actualizadas -->
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="config-styles.css">
-</head>
-
-<body style="margin: 0; overflow: hidden;">
-    <!-- Loader -->
-    <div class="arjs-loader">
-        <div>Cargando, por favor espere...</div>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AR Educativa con MindAR</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      .hidden {
+        display: none;
+      }
+      .info-panel {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: white;
+        border-radius: 5px;
+        font-family: Arial, sans-serif;
+        z-index: 100;
+        max-width: 70%;
+      }
+      .button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 10px;
+        background-color: rgba(70, 130, 180, 0.8);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        z-index: 100;
+      }
+    </style>
+    
+    <!-- Definimos los componentes personalizados antes de cargar la escena -->
+    <script>
+      // Componentes personalizados para A-Frame
+      AFRAME.registerComponent('play-on-click', {
+        init: function () {
+          this.onClick = this.onClick.bind(this);
+          this.el.addEventListener('click', this.onClick);
+          this.videoEl = null;
+          
+          // Espera a que el video esté listo
+          this.el.addEventListener('materialtextureloaded', () => {
+            try {
+              if (this.el.components.material && 
+                  this.el.components.material.material && 
+                  this.el.components.material.material.map && 
+                  this.el.components.material.material.map.image) {
+                this.videoEl = this.el.components.material.material.map.image;
+                console.log("Video cargado correctamente");
+              }
+            } catch (error) {
+              console.warn("Error al acceder al video:", error);
+            }
+          });
+        },
+        onClick: function () {
+          try {
+            // Intenta obtener el video si aún no existe
+            if (!this.videoEl) {
+              const videoId = this.el.getAttribute('src').replace('#', '');
+              this.videoEl = document.getElementById(videoId);
+              
+              if (!this.videoEl && this.el.components.material && 
+                  this.el.components.material.material && 
+                  this.el.components.material.material.map && 
+                  this.el.components.material.material.map.image) {
+                this.videoEl = this.el.components.material.material.map.image;
+              }
+            }
+            
+            if (!this.videoEl) {
+              console.warn('No se pudo encontrar el video');
+              return;
+            }
+            
+            if (this.videoEl.paused) {
+              this.videoEl.play().catch(e => console.warn('Error al reproducir video:', e));
+              console.log("Reproduciendo video");
+            } else {
+              this.videoEl.pause();
+              console.log("Pausando video");
+            }
+          } catch (error) {
+            console.warn("Error al controlar el video:", error);
+          }
+        },
+        remove: function () {
+          this.el.removeEventListener('click', this.onClick);
+        }
+      });
+      
+      AFRAME.registerComponent('open-url', {
+        schema: {
+          url: {type: 'string'}
+        },
+        init: function () {
+          this.el.addEventListener('click', () => {
+            const infoPanel = document.getElementById('info-panel');
+            infoPanel.textContent = 'Abriendo enlace externo...';
+            
+            setTimeout(() => {
+              window.open(this.data.url, '_blank');
+              infoPanel.textContent = 'Enlace abierto en nueva pestaña';
+              
+              setTimeout(() => {
+                infoPanel.textContent = 'Apunte la cámara a una de las tarjetas para ver el contenido AR';
+              }, 3000);
+            }, 500);
+          });
+        }
+      });
+      
+      AFRAME.registerComponent('rotate-model', {
+        schema: {
+          target: {type: 'selector'},
+          direction: {type: 'string', default: 'right'}
+        },
+        init: function () {
+          this.el.addEventListener('click', () => {
+            if (!this.data.target) {
+              console.warn('No se especificó una tarjeta para rotar');
+              return;
+            }
+            
+            const currentRotation = this.data.target.getAttribute('rotation') || {x: 0, y: 0, z: 0};
+            const newY = (parseFloat(currentRotation.y) || 0) + (this.data.direction === 'right' ? 30 : -30);
+            
+            this.data.target.setAttribute('rotation', {
+              x: parseFloat(currentRotation.x) || 0,
+              y: newY,
+              z: parseFloat(currentRotation.z) || 0
+            });
+            
+            console.log(`Rotando modelo: ${this.data.direction} - Nueva Y: ${newY}`);
+          });
+        }
+      });
+      
+      // Componente simplificado para controlar video
+      AFRAME.registerComponent('control-video', {
+        schema: {
+          videoId: {type: 'string'}
+        },
+        init: function() {
+          this.videoEl = document.getElementById(this.data.videoId);
+          this.el.addEventListener('click', () => {
+            if (!this.videoEl) {
+              this.videoEl = document.getElementById(this.data.videoId);
+              if (!this.videoEl) {
+                console.warn(`Video con ID ${this.data.videoId} no encontrado`);
+                return;
+              }
+            }
+            
+            if (this.videoEl.paused) {
+              this.videoEl.play().catch(e => console.warn('Error al reproducir:', e));
+              console.log("Reproduciendo video");
+            } else {
+              this.videoEl.pause();
+              console.log("Pausando video");
+            }
+          });
+        }
+      });
+      
+      // Componente para manejar eventos de tarjeta (target)
+      AFRAME.registerComponent('target-handler', {
+        schema: {
+          index: {type: 'number'},
+          message: {type: 'string', default: ''}
+        },
+        init: function() {
+          this.el.addEventListener('targetFound', () => {
+            console.log(`Tarjeta ${this.data.index} encontrada`);
+            const infoPanel = document.getElementById('info-panel');
+            if (infoPanel && this.data.message) {
+              infoPanel.textContent = this.data.message;
+            }
+            
+            // Si es la tarjeta de video (0), reproducir video
+            if (this.data.index === 0) {
+              const videoEl = document.getElementById('ar-video');
+              if (videoEl) {
+                videoEl.play().catch(e => console.warn('Error al reproducir video en targetFound:', e));
+              }
+            }
+          });
+          
+          this.el.addEventListener('targetLost', () => {
+            console.log(`Tarjeta ${this.data.index} perdida`);
+            const infoPanel = document.getElementById('info-panel');
+            if (infoPanel) {
+              infoPanel.textContent = 'Apunte la cámara a una de las tarjetas para ver el contenido AR';
+            }
+            
+            // Si es la tarjeta de video (0), pausar video
+            if (this.data.index === 0) {
+              const videoEl = document.getElementById('ar-video');
+              if (videoEl) {
+                videoEl.pause();
+              }
+            }
+          });
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div class="info-panel" id="info-panel">
+      Apunte la cámara a una de las tarjetas para ver el contenido AR
     </div>
+    <button class="button" id="switch-camera">Cambiar Cámara</button>
+    
+    <a-scene 
+      mindar-image="imageTargetSrc: tarjetas/targets.mind; maxTrack: 2; warmupTolerance: 5; missTolerance: 5;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true;" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false"
+      loading-screen="dotsColor: white; backgroundColor: black">
+      
+      <a-assets>
+        <!-- Texturas para las tarjetas -->
+        <img id="t1" src="tarjetas/t1.png" crossorigin="anonymous"/>
+        <img id="t2" src="tarjetas/t2.png" crossorigin="anonymous"/>
+        <img id="t3" src="tarjetas/t3.png" crossorigin="anonymous"/>
+        <img id="t4" src="tarjetas/t4.png" crossorigin="anonymous"/>
+        
+        <!-- Modelo 3D para la tarjeta 3 -->
+        <a-asset-item id="model3D" src="media/shiba/scene.gltf" crossorigin="anonymous"></a-asset-item>
+        
+        <!-- Video para la tarjeta 1 -->
+        <video id="ar-video" src="media/video.mp4" preload="auto" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
+        
+        <!-- Otras imágenes y recursos -->
+        <img id="link-icon" src="media/link-icon.png" crossorigin="anonymous"/>
+        <img id="loading-img" src="media/loading.gif" crossorigin="anonymous"/>
+      </a-assets>
 
-    <!-- Instrucciones para el usuario -->
-    <div class="instructions" id="instructions">
-        <div class="instructions-content">
-            <h2>Instrucciones</h2>
-            <p>Apunta la cámara a una IMAGEN del libro para ver contenido interactivo y espera unos segundos.</p>
-            <p>Cada página activará diferentes tipos de contenido: modelos 3D, videos, test o aplicaciones
-                interactivas.</p>
-            <p><strong>Configuración:</strong> Usa el icono ⚙️ en la esquina superior derecha para acceder a opciones avanzadas.</p>
-            <button onclick="document.getElementById('instructions').style.display='none'">Entendido</button>
-        </div>
-    </div>
-
-    <!-- Indicador de estado - Nuevo -->
-    <div id="status-indicator"></div>
-
-    <!-- Título de contenido -->
-    <div id="content-title"></div>
-
-    <!-- Panel de información interactivo (HTML) - NUEVO -->
-    <div id="info-panel" class="info-panel">
-        <button class="info-panel-close" onclick="closeInfoPanel()">✕</button>
-        <h3 id="info-panel-title">Título</h3>
-        <div id="info-panel-content" class="info-panel-content">
-            <img id="info-panel-image" class="info-panel-image" src="" alt="">
-            <p id="info-panel-text">Contenido</p>
-        </div>
-    </div>
-
-    <!-- Contenedor para iframe (Formularios, GeoGebra, etc.) -->
-    <iframe id="web-content" class="web-content" allowfullscreen
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
-    <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
-
-    <!-- Pantalla de fallback para cuando iframe falla -->
-    <div id="fallback-container" class="fallback-container">
-        <h3>Esta página no permite ser mostrada en ventana integrada</h3>
-        <p>El sitio web que intentas ver no permite ser mostrado dentro de esta aplicación.</p>
-        <button class="btn" id="open-external-btn">Abrir en nueva ventana</button>
-        <button class="btn btn-secondary" id="close-fallback-btn">Cancelar</button>
-    </div>
-
-    <!-- Contenedor para videos -->
-    <div id="video-container" class="video-container">
-        <div id="video-wrapper"></div>
-        <button class="close-button" onclick="closeVideo()">✕</button>
-    </div>
-
-    <!-- Escena A-Frame con configuración NFT optimizada -->
-    <a-scene vr-mode-ui="enabled: false;" renderer="logarithmicDepthBuffer: true; antialias: true;" embedded
-        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
-
-        <!-- Los marcadores NFT se agregarán dinámicamente aquí -->
-        <a-entity id="nft-markers-container"></a-entity>
-
-        <!-- Cámara modificada: eliminado el cursor para evitar activaciones no deseadas -->
-        <a-entity camera></a-entity>
+      <!-- Cámara con cursor para interacción -->
+      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="objects: .clickable"></a-camera>
+      
+      <!-- Tarjeta 1: Video -->
+      <a-entity 
+        visible="false" 
+        mindar-image-target="targetIndex: 0" 
+        id="tarjeta1"
+        target-handler="index: 0; message: Tarjeta 1: Video educativo. Toque para reproducir/pausar.">
+        <a-plane src="#t1" position="0 0 0" height="0.552" width="1" rotation="0 0 0" opacity="1"></a-plane>
+        <a-video 
+          id="ar-video-player" 
+          src="#ar-video" 
+          position="0 0 0.1" 
+          width="1.6" 
+          height="0.9" 
+          rotation="-15 0 0"
+          class="clickable"
+          play-on-click>
+        </a-video>
+        <a-plane 
+          color="#FFF" 
+          width="0.15" 
+          height="0.15" 
+          position="0.7 -0.35 0.2" 
+          rotation="-15 0 0" 
+          opacity="0.8"
+          class="clickable"
+          control-video="videoId: ar-video">
+          <a-text value="▶/⏸" position="0 0 0.01" color="black" align="center" scale="0.5 0.5 0.5"></a-text>
+        </a-plane>
+      </a-entity>
+      
+      <!-- Tarjeta 2: Enlace a página web mejorado -->
+      <a-entity 
+        visible="false" 
+        mindar-image-target="targetIndex: 1" 
+        id="tarjeta2"
+        target-handler="index: 1; message: Tarjeta 2: Portal MEP. Toque el botón para visitar.">
+        <a-plane src="#t2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+        <a-entity position="0 0 0.1" rotation="0 0 0">
+          <a-plane 
+            color="#4CC3D9" 
+            width="1.2" 
+            height="0.6" 
+            position="0 0 0.01" 
+            opacity="0.8"
+            animation="property: scale; to: 1.05 1.05 1.05; dur: 2000; loop: true; dir: alternate; easing: easeInOutQuad;">
+          </a-plane>
+          <a-text 
+            value="Visitar el MEP" 
+            color="white" 
+            align="center" 
+            position="0 0.1 0.02" 
+            width="5" 
+            font="kelsonsans">
+          </a-text>
+          <a-plane 
+            color="#FFF" 
+            width="0.8" 
+            height="0.25" 
+            position="0 -0.15 0.03" 
+            opacity="1"
+            class="clickable"
+            open-url="url: https://www.mep.go.cr">
+            <a-text 
+              value="Haga clic aquí" 
+              color="#333" 
+              align="center" 
+              position="0 0 0.01" 
+              width="2.5">
+            </a-text>
+          </a-plane>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Tarjeta 3: Modelo 3D mejorado con controles -->
+      <a-entity 
+        visible="false" 
+        mindar-image-target="targetIndex: 2" 
+        id="tarjeta3"
+        target-handler="index: 2; message: Tarjeta 3: Modelo 3D. Use los controles para rotar.">
+        <a-plane src="#t3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+        <a-gltf-model 
+          id="modelo3d" 
+          src="#model3D" 
+          rotation="0 0 0" 
+          position="0 0.2 0.1" 
+          scale="0.5 0.5 0.5"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"
+          animation-mixer>
+        </a-gltf-model>
+        <!-- Control para rotar el modelo -->
+        <a-entity position="0 -0.4 0.1">
+          <a-plane 
+            color="#FFF" 
+            width="0.2" 
+            height="0.1" 
+            position="-0.25 0 0" 
+            opacity="0.8"
+            class="clickable"
+            rotate-model="target: #modelo3d; direction: left">
+            <a-text value="←" color="black" align="center" position="0 0 0.01"></a-text>
+          </a-plane>
+          <a-plane 
+            color="#FFF" 
+            width="0.2" 
+            height="0.1" 
+            position="0.25 0 0" 
+            opacity="0.8"
+            class="clickable"
+            rotate-model="target: #modelo3d; direction: right">
+            <a-text value="→" color="black" align="center" position="0 0 0.01"></a-text>
+          </a-plane>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Tarjeta 4: GeoGebra alternativa con iframe embedido -->
+      <a-entity 
+        visible="false" 
+        mindar-image-target="targetIndex: 3" 
+        id="tarjeta4"
+        target-handler="index: 3; message: Tarjeta 4: Applet GeoGebra. Toque para abrir.">
+        <a-plane src="#t4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+        <a-entity position="0 0 0.1" rotation="0 0 0">
+          <a-plane color="#FFFFFF" width="1.5" height="1" position="0 0 0.01" opacity="0.9"></a-plane>
+          <a-text value="GeoGebra" color="black" align="center" position="0 0.3 0.02" width="3"></a-text>
+          <!-- Alternativa: Imagen estática con botón para abrir GeoGebra en nueva ventana -->
+          <a-plane 
+            src="#t4" 
+            width="1.4" 
+            height="0.8" 
+            position="0 -0.1 0.02"
+            class="clickable"
+            open-url="url: https://www.geogebra.org/m/qzjfkvpm">
+          </a-plane>
+          <a-text 
+            value="Toque para abrir el applet" 
+            color="black" 
+            align="center" 
+            position="0 -0.5 0.03" 
+            width="1.5" 
+            scale="0.75 0.75 0.75">
+          </a-text>
+        </a-entity>
+      </a-entity>
     </a-scene>
 
-    <script src="markers.js"></script>
-    <script src="3d-functions.js"></script>
-    <script src="video-functions.js"></script>
-    <script src="web-functions.js"></script>
-    <script src="main.js"></script>
-    <script src="config-sensores.js"></script>
-</body>
-
+    <script>
+      // Configuración de los recursos
+      const YOUTUBE_VIDEO_ID = "z3bF6Op-2Ok";
+      const GEOGEBRA_APP_ID = "qzjfkvpm";
+      const MEP_URL = "https://www.mep.go.cr";
+      
+      // Mejora para cambiar de cámara
+      document.getElementById('switch-camera').addEventListener('click', function() {
+        const sceneEl = document.querySelector('a-scene');
+        const arSystem = sceneEl.systems["mindar-image-system"];
+        
+        if (arSystem) {
+          // Detener el sistema AR actual
+          arSystem.stop();
+          
+          // Esperar un momento y reiniciar con otra cámara
+          setTimeout(() => {
+            arSystem.switchCamera();
+            arSystem.start();
+            document.getElementById('info-panel').textContent = 'Cámara cambiada. Apunte a una tarjeta.';
+          }, 500);
+        } else {
+          console.warn("Sistema AR no encontrado");
+          document.getElementById('info-panel').textContent = 'No se pudo cambiar la cámara. Intente recargar.';
+        }
+      });
+      
+      // Asegúrate de que el video esté completamente cargado
+      const videoEl = document.getElementById('ar-video');
+      videoEl.addEventListener('loadeddata', () => {
+        console.log("Video completamente cargado y listo para reproducir");
+      });
+      
+      // Manejador de errores global con mejor detección
+      window.addEventListener('error', function(event) {
+        // Filtramos los errores de targetIndex ya que los manejamos con nuestro componente target-handler
+        if (event.message && !event.message.includes('targetIndex')) {
+          console.error('Error en la aplicación AR:', event.message);
+          document.getElementById('info-panel').textContent = 
+            'Ha ocurrido un error. Intente recargar la página o utilizar otro navegador.';
+        }
+      });
+      
+      // Inicialización
+      window.addEventListener('load', function() {
+        console.log('Aplicación AR cargada');
+        document.getElementById('info-panel').textContent = 
+          'AR iniciada. Apunte la cámara a una de las tarjetas.';
+          
+        // Precarga los videos para evitar problemas
+        videoEl.load();
+      });
+    </script>
+  </body>
 </html>
