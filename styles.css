@@ -1,5 +1,3 @@
-/* Ajustes CSS para que el botón de cerrar aparezca visualmente dentro del iframe */
-
 .arjs-loader {
     height: 100%;
     width: 100%;
@@ -35,7 +33,7 @@
     transition: background-color 0.3s ease;
 }
 
-/* Contenedor para el iframe y el botón de cerrar */
+/* Reemplazar las reglas existentes de .web-content-container */
 .web-content-container {
     position: fixed;
     top: 50%;
@@ -44,25 +42,40 @@
     width: 80%;
     height: 80%;
     z-index: 1000;
-    display: none; /* Se mostrará vía JavaScript cuando sea necesario */
+    display: none; /* Cambiado de opacity: 0 */
+    background: transparent; /* Fondo transparente */
+}
+
+.web-content-container.active {
+    display: block; /* Mostrar normalmente */
+}
+
+/* Estilos adicionales para solucionar problemas de visualización */
+
+/* Contenedor principal para el iframe */
+.web-content-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    height: 80%;
+    z-index: 1000;
+    display: none;
+}
+
+/* Estilos del iframe */
+.web-content {
+    width: 100%;
+    height: 100%;
+    border: none;
     border-radius: 10px;
-    overflow: hidden; /* Importante para que el iframe se ajuste a las esquinas redondeadas */
+    background-color: white;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
-/* Iframe para contenido web (formularios, GeoGebra, etc.) */
-.web-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: white;
-    border: none;
-}
-
-/* Botón de cerrar - ahora con un posicionamiento más preciso */
-#close-button {
+/* Botón para cerrar el iframe */
+.close-button {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -70,19 +83,33 @@
     color: white;
     border: 3px solid white;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
     cursor: pointer;
-    z-index: 1002; /* Incrementado para estar encima del iframe */
+    display: none;
+    z-index: 1001;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     font-weight: bold;
-    display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Video container ahora con estilos similares al web-content-container */
+
+
+
+/* Asegurar visibilidad de elementos importantes */
+.web-content-container.visible, 
+.web-content-container.visible .web-content,
+.web-content-container.visible .close-button {
+    display: block !important;
+}
+
+.web-content-container.visible .close-button {
+    display: flex !important;
+}
+
+/* Contenedor de video */
 .video-container {
     position: fixed;
     top: 50%;
@@ -104,20 +131,6 @@
     height: 100%;
     border: none;
     display: block;
-}
-
-/* Botones en general para que sean consistentes */
-.close-button {
-    background-color: red;
-    color: white;
-    border: 3px solid white;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 /* Estilo para el título de contenido */
@@ -274,13 +287,10 @@
         width: 90%;
     }
 
-    .web-content-container {
-        width: 95%;
-        height: 70%;
-    }
-
+    .web-content,
     .fallback-container {
         width: 95%;
+        height: 70%;
     }
 
     .info-panel {
@@ -289,10 +299,21 @@
     }
 }
 
-@media (max-height: 500px) {
+/* Optimizaciones para móviles */
+@media (max-width: 768px) {
     #content-title {
         font-size: 14px;
         padding: 5px 10px;
+    }    
+    .web-content-container {
+        width: 95%;
+        height: 75%;
+    }
+    
+    .close-button {
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
     }
 }
 
