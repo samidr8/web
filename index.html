@@ -49,8 +49,12 @@
 
     <!-- Contenedor para iframe y su botón de cerrar -->
     <div id="web-content-container" class="web-content-container">
-        <iframe id="web-content" class="web-content" allowfullscreen
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+        <!-- MODIFICADO: Añadidos atributos para mejorar compatibilidad con GeoGebra -->
+        <iframe id="web-content" class="web-content" allowfullscreen="true"
+            allow="fullscreen; camera; microphone; clipboard-read; clipboard-write"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            style="border:0; overflow:hidden; width:100%; height:100%;">
+        </iframe>
         <button id="close-button" class="close-button" onclick="closeWebContent()">✕</button>
     </div>
 
@@ -85,6 +89,31 @@
     <script src="web-functions.js"></script>
     <script src="main.js"></script>
     <script src="config-sensores.js"></script>
+    
+    <!-- AGREGADO: Script adicional para solucionar problemas con iframes -->
+    <script>
+        // Solución alternativa para GeoGebra
+        document.addEventListener('DOMContentLoaded', function() {
+            // Evitar que el foco en iframe cause problemas
+            window.addEventListener('blur', function(e) {
+                if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                    // Permitir foco en iframe sin interferir con AR.js
+                    e.stopPropagation();
+                }
+            }, true);
+            
+            // Manejo especial para iframes
+            const webContentContainer = document.querySelector('.web-content-container');
+            const iframe = document.getElementById('web-content');
+            
+            // Evento para monitorear la carga del iframe
+            iframe.addEventListener('load', function() {
+                console.log('Iframe cargado correctamente');
+                // Asegurarse de que el contenedor sea visible cuando el iframe se cargue
+                webContentContainer.classList.add('visible');
+            });
+        });
+    </script>
 </body>
 
 </html>

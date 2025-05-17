@@ -1,4 +1,4 @@
-// Función mejorada para mostrar contenido web (iframe)
+// Función mejorada para mostrar contenido web (iframe) con manejo especial para GeoGebra
 function showWebContent(url, fallbackEnabled = false, title = '') {
     const webContentContainer = document.querySelector('.web-content-container');
     const iframe = document.getElementById('web-content');
@@ -7,6 +7,11 @@ function showWebContent(url, fallbackEnabled = false, title = '') {
     // Limpiar primero
     iframe.src = '';
     
+    // Mostrar título si se proporciona
+    if (title) {
+        showContentTitle(title);
+    }
+
     // Lista de sitios conocidos que necesitan tratamiento especial
     const knownPatterns = [
         {
@@ -15,7 +20,32 @@ function showWebContent(url, fallbackEnabled = false, title = '') {
         },
         {
             pattern: 'geogebra.org/material/iframe',
-            needsFallback: false // GeoGebra con URL de iframe funciona bien
+            needsFallback: false, // GeoGebra con URL de iframe funciona bien
+            transform: function(url) {
+                // Modificar URL de GeoGebra para asegurar que funcione en iframe
+                // Asegurar que tiene los parámetros necesarios
+                let geogebraUrl = url;
+                if (!geogebraUrl.includes('width=')) {
+                    geogebraUrl += (geogebraUrl.includes('?') ? '&' : '?') + 'width=800';
+                }
+                if (!geogebraUrl.includes('height=')) {
+                    geogebraUrl += (geogebraUrl.includes('?') ? '&' : '?') + 'height=600';
+                }
+                // Agregar parámetros para mejorar compatibilidad con iframes
+                if (!geogebraUrl.includes('ld=')) {
+                    geogebraUrl += '&ld=true'; // Loading dialog
+                }
+                if (!geogebraUrl.includes('sdz=')) {
+                    geogebraUrl += '&sdz=true'; // Scale to zero
+                }
+                if (!geogebraUrl.includes('smb=')) {
+                    geogebraUrl += '&smb=false'; // Show menu bar
+                }
+                if (!geogebraUrl.includes('sri=')) {
+                    geogebraUrl += '&sri=true'; // Script right interface
+                }
+                return geogebraUrl;
+            }
         },
         {
             pattern: 'forms.office.com',
@@ -62,46 +92,71 @@ function showWebContent(url, fallbackEnabled = false, title = '') {
         return;
     }
 
-    // Mostrar título si se proporciona
-    if (title) {
-        showContentTitle(title);
-    }
-
+    // Caso especial para GeoGebra - Detectar si es una URL de GeoGebra
+    const isGeogebra = url.includes('geogebra.org');
+    
+    console.log(`Mostrando contenido web: ${transformedUrl}`);
+    
     // Intentar cargar el iframe
     try {
-        // Configurar el iframe antes de mostrarlo
+        // Para GeoGebra, agregar un manejo específico
+        if (isGeogebra) {
+            console.log("Detectado contenido de GeoGebra, aplicando configuración especial");
+            
+            // 1. Asegurar que el iframe tiene sandbox con los permisos adecuados
+            iframe.sandbox = "allow-same-origin allow-scripts allow-forms allow-popups";
+            
+            // 2. Establecer attributes específicos para GeoGebra
+            iframe.setAttribute('allowfullscreen', 'true');
+            iframe.setAttribute('scrolling', 'no');
+            
+            // 3. Configurar el estilo para que se vea bien
+            iframe.style.border = "none";
+            iframe.style.overflow = "hidden";
+            
+            // 4. Establecer título para accesibilidad
+            iframe.title = "GeoGebra Math Applet";
+        }
+        
+        // Configurar el src del iframe
         iframe.src = transformedUrl;
         
-        // Importante: asegurarse de que tanto el contenedor como el iframe son visibles
+        // Hacer visible el contenedor y el botón de cierre
         webContentContainer.classList.add('visible');
         closeButton.style.display = 'flex';
-
-        console.log(`Mostrando contenido web: ${transformedUrl}`);
         
         // Comprobar errores de carga después de un tiempo
         setTimeout(function() {
             // Intentar acceder a contenido para ver si cargó
             try {
-                const iframeContent = iframe.contentWindow || iframe.contentDocument;
-                if (!iframeContent || !iframeContent.document) {
-                    // Si hay problemas, mostrar fallback
-                    if (fallbackEnabled) {
-                        showFallbackScreen(transformedUrl, title);
-                        webContentContainer.classList.remove('visible');
+                // Para GeoGebra, no intentamos acceder al contenido
+                // ya que esto siempre falla debido a las restricciones de CORS
+                if (!isGeogebra) {
+                    const iframeContent = iframe.contentWindow || iframe.contentDocument;
+                    
+                    if (!iframeContent || !iframeContent.document) {
+                        // Si hay problemas, mostrar fallback
+                        if (fallbackEnabled) {
+                            showFallbackScreen(transformedUrl, title);
+                            webContentContainer.classList.remove('visible');
+                        }
                     }
                 }
             } catch (e) {
-                // Error al acceder al contenido (error de seguridad/origen cruzado)
-                console.error('Error de acceso al iframe: probablemente X-Frame-Options bloqueó carga');
-                if (fallbackEnabled) {
+                console.error('Error de acceso al iframe: probablemente X-Frame-Options bloqueó carga', e);
+                
+                // Para GeoGebra, no mostramos el fallback incluso si hay error
+                // porque el contenido generalmente se carga bien a pesar del error CORS
+                if (!isGeogebra && fallbackEnabled) {
                     showFallbackScreen(transformedUrl, title);
                     webContentContainer.classList.remove('visible');
                 }
             }
-        }, 1500);
+        }, 2000); // Aumentado el tiempo para cargar
     } catch (error) {
         console.error('Error al cargar contenido web:', error);
-        if (fallbackEnabled) {
+        
+        if (fallbackEnabled && !isGeogebra) {
             showFallbackScreen(transformedUrl, title);
         } else {
             showErrorMessage('Error al cargar el contenido. Verifique su conexión a Internet.');
