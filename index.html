@@ -38,6 +38,67 @@
         font-weight: bold;
         z-index: 100;
       }
+      
+      /* Estilos para la ventana emergente */
+      .popup-container {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 200;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+      
+      .popup-content {
+        width: 90%;
+        max-width: 800px;
+        background-color: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+      
+      .popup-video {
+        width: 100%;
+        max-height: 80vh;
+      }
+      
+      .close-popup {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 201;
+      }
+      
+      .fullscreen-btn {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background-color: rgba(70, 130, 180, 0.8);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        z-index: 201;
+      }
     </style>
     
     <!-- Definimos los componentes personalizados antes de cargar la escena -->
@@ -48,51 +109,30 @@
           this.onClick = this.onClick.bind(this);
           this.el.addEventListener('click', this.onClick);
           this.videoEl = null;
-          
-          // Espera a que el video esté listo
-          this.el.addEventListener('materialtextureloaded', () => {
-            try {
-              if (this.el.components.material && 
-                  this.el.components.material.material && 
-                  this.el.components.material.material.map && 
-                  this.el.components.material.material.map.image) {
-                this.videoEl = this.el.components.material.material.map.image;
-                console.log("Video cargado correctamente");
-              }
-            } catch (error) {
-              console.warn("Error al acceder al video:", error);
-            }
-          });
         },
         onClick: function () {
-          try {
-            // Intenta obtener el video si aún no existe
-            if (!this.videoEl) {
-              const videoId = this.el.getAttribute('src').replace('#', '');
-              this.videoEl = document.getElementById(videoId);
-              
-              if (!this.videoEl && this.el.components.material && 
-                  this.el.components.material.material && 
-                  this.el.components.material.material.map && 
-                  this.el.components.material.material.map.image) {
-                this.videoEl = this.el.components.material.material.map.image;
-              }
-            }
+          // En lugar de reproducir en AR, abrimos la ventana emergente
+          const popupContainer = document.getElementById('popup-container');
+          const popupVideo = document.getElementById('popup-video');
+          
+          if (popupContainer && popupVideo) {
+            // Detener cualquier reproducción en curso
+            popupVideo.pause();
             
-            if (!this.videoEl) {
-              console.warn('No se pudo encontrar el video');
-              return;
-            }
+            // Configurar el video emergente con la misma fuente
+            popupVideo.src = document.getElementById('ar-video').src;
             
-            if (this.videoEl.paused) {
-              this.videoEl.play().catch(e => console.warn('Error al reproducir video:', e));
-              console.log("Reproduciendo video");
-            } else {
-              this.videoEl.pause();
-              console.log("Pausando video");
-            }
-          } catch (error) {
-            console.warn("Error al controlar el video:", error);
+            // Mostrar la ventana emergente
+            popupContainer.style.display = 'flex';
+            
+            // Reproducir el video con sonido
+            popupVideo.muted = false;
+            popupVideo.play().catch(e => {
+              console.warn('Error al reproducir video en popup:', e);
+              // Mostrar mensaje para informar al usuario que debe interactuar primero
+              document.getElementById('info-panel').textContent = 
+                'Toque la pantalla para permitir el audio del video';
+            });
           }
         },
         remove: function () {
@@ -147,28 +187,28 @@
         }
       });
       
-      // Componente simplificado para controlar video
-      AFRAME.registerComponent('control-video', {
-        schema: {
-          videoId: {type: 'string'}
-        },
+      // Componente para abrir el video en ventana emergente
+      AFRAME.registerComponent('open-video', {
         init: function() {
-          this.videoEl = document.getElementById(this.data.videoId);
           this.el.addEventListener('click', () => {
-            if (!this.videoEl) {
-              this.videoEl = document.getElementById(this.data.videoId);
-              if (!this.videoEl) {
-                console.warn(`Video con ID ${this.data.videoId} no encontrado`);
-                return;
-              }
-            }
+            const popupContainer = document.getElementById('popup-container');
+            const popupVideo = document.getElementById('popup-video');
             
-            if (this.videoEl.paused) {
-              this.videoEl.play().catch(e => console.warn('Error al reproducir:', e));
-              console.log("Reproduciendo video");
-            } else {
-              this.videoEl.pause();
-              console.log("Pausando video");
+            if (popupContainer && popupVideo) {
+              // Configurar el video emergente
+              popupVideo.src = document.getElementById('ar-video').src;
+              
+              // Mostrar la ventana emergente
+              popupContainer.style.display = 'flex';
+              
+              // Reproducir el video con sonido
+              popupVideo.muted = false;
+              popupVideo.play().catch(e => {
+                console.warn('Error al reproducir video en popup:', e);
+              });
+              
+              document.getElementById('info-panel').textContent = 
+                'Video abierto en ventana emergente. Toque fuera para volver a AR.';
             }
           });
         }
@@ -187,14 +227,6 @@
             if (infoPanel && this.data.message) {
               infoPanel.textContent = this.data.message;
             }
-            
-            // Si es la tarjeta de video (0), reproducir video
-            if (this.data.index === 0) {
-              const videoEl = document.getElementById('ar-video');
-              if (videoEl) {
-                videoEl.play().catch(e => console.warn('Error al reproducir video en targetFound:', e));
-              }
-            }
           });
           
           this.el.addEventListener('targetLost', () => {
@@ -202,14 +234,6 @@
             const infoPanel = document.getElementById('info-panel');
             if (infoPanel) {
               infoPanel.textContent = 'Apunte la cámara a una de las tarjetas para ver el contenido AR';
-            }
-            
-            // Si es la tarjeta de video (0), pausar video
-            if (this.data.index === 0) {
-              const videoEl = document.getElementById('ar-video');
-              if (videoEl) {
-                videoEl.pause();
-              }
             }
           });
         }
@@ -221,6 +245,15 @@
       Apunte la cámara a una de las tarjetas para ver el contenido AR
     </div>
     <button class="button" id="switch-camera">Cambiar Cámara</button>
+    
+    <!-- Ventana emergente para el video -->
+    <div class="popup-container" id="popup-container">
+      <div class="popup-content">
+        <video id="popup-video" class="popup-video" controls></video>
+        <button class="fullscreen-btn" id="fullscreen-btn">Pantalla Completa</button>
+      </div>
+      <button class="close-popup" id="close-popup">X</button>
+    </div>
     
     <a-scene 
       mindar-image="imageTargetSrc: tarjetas/targets.mind; maxTrack: 2; warmupTolerance: 5; missTolerance: 5;" 
@@ -240,23 +273,24 @@
         <!-- Modelo 3D para la tarjeta 3 -->
         <a-asset-item id="model3D" src="media/shiba/scene.gltf" crossorigin="anonymous"></a-asset-item>
         
-        <!-- Video para la tarjeta 1 -->
-        <video id="ar-video" src="media/video.mp4" preload="auto" loop crossorigin="anonymous" webkit-playsinline playsinline muted></video>
+        <!-- Video para la tarjeta 1 (sin muted para permitir audio) -->
+        <video id="ar-video" src="media/video.mp4" preload="auto" loop crossorigin="anonymous" webkit-playsinline playsinline></video>
         
         <!-- Otras imágenes y recursos -->
         <img id="link-icon" src="media/link-icon.png" crossorigin="anonymous"/>
         <img id="loading-img" src="media/loading.gif" crossorigin="anonymous"/>
+        <img id="expand-icon" src="media/expand.png" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2klEQVR4nO2WMQ6CQBBFf2mMhdF4AY/hDSzs1cILWdlZegcST2NhaeEBtNbiEiyMG0KALDs7myXMn0w1zPz/mMnugq7rX0NABJwpeYBKfJxM1o4VSBq+JoBoTc+9piaAt9fGMQHcgSIgfQdYA0fg4LO9GcQNKL03umQ5sJslrgkgbtBX/m7WuP1oWzPQmFPjtWfgCUyBkW0CK6A0CvDQOMM0gbMMftI4I2Uik9wqkSvDyq0SOa8JbJ5kS80zM9AhzA0qm8DXKSVQppTAvyeQNZnFzO8v0ioRA6lBfoUXBVP8F6bh/JgAAAAASUVORK5CYII='" crossorigin="anonymous"/>
       </a-assets>
 
       <!-- Cámara con cursor para interacción -->
       <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="objects: .clickable"></a-camera>
       
-      <!-- Tarjeta 1: Video -->
+      <!-- Tarjeta 1: Video con botón para abrir en ventana emergente -->
       <a-entity 
         visible="false" 
         mindar-image-target="targetIndex: 0" 
         id="tarjeta1"
-        target-handler="index: 0; message: Tarjeta 1: Video educativo. Toque para reproducir/pausar.">
+        target-handler="index: 0; message: Tarjeta 1: Video educativo. Toque para abrir en ventana emergente.">
         <a-plane src="#t1" position="0 0 0" height="0.552" width="1" rotation="0 0 0" opacity="1"></a-plane>
         <a-video 
           id="ar-video-player" 
@@ -269,15 +303,15 @@
           play-on-click>
         </a-video>
         <a-plane 
-          color="#FFF" 
-          width="0.15" 
-          height="0.15" 
-          position="0.7 -0.35 0.2" 
+          color="#4CC3D9" 
+          width="0.8" 
+          height="0.2" 
+          position="0 -0.6 0.2" 
           rotation="-15 0 0" 
-          opacity="0.8"
+          opacity="0.9"
           class="clickable"
-          control-video="videoId: ar-video">
-          <a-text value="▶/⏸" position="0 0 0.01" color="black" align="center" scale="0.5 0.5 0.5"></a-text>
+          open-video>
+          <a-text value="Abrir en ventana emergente" position="0 0 0.01" color="white" align="center" scale="0.5 0.5 0.5"></a-text>
         </a-plane>
       </a-entity>
       
@@ -286,7 +320,7 @@
         visible="false" 
         mindar-image-target="targetIndex: 1" 
         id="tarjeta2"
-        target-handler="index: 1; message: Tarjeta 2: Portal MEP. Toque el botón para visitar.">
+        target-handler="index: 1; message: Tarjeta 2: Portal MEP. Toque el botón para visitar en nueva ventana.">
         <a-plane src="#t2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
         <a-entity position="0 0 0.1" rotation="0 0 0">
           <a-plane 
@@ -314,7 +348,7 @@
             class="clickable"
             open-url="url: https://www.mep.go.cr">
             <a-text 
-              value="Haga clic aquí" 
+              value="Abrir en nueva ventana" 
               color="#333" 
               align="center" 
               position="0 0 0.01" 
@@ -365,33 +399,43 @@
         </a-entity>
       </a-entity>
       
-      <!-- Tarjeta 4: GeoGebra alternativa con iframe embedido -->
+      <!-- Tarjeta 4: GeoGebra con mejora visual y mensaje más claro -->
       <a-entity 
         visible="false" 
         mindar-image-target="targetIndex: 3" 
         id="tarjeta4"
-        target-handler="index: 3; message: Tarjeta 4: Applet GeoGebra. Toque para abrir.">
+        target-handler="index: 3; message: Tarjeta 4: Applet GeoGebra. Toque para abrir en nueva ventana.">
         <a-plane src="#t4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
         <a-entity position="0 0 0.1" rotation="0 0 0">
           <a-plane color="#FFFFFF" width="1.5" height="1" position="0 0 0.01" opacity="0.9"></a-plane>
           <a-text value="GeoGebra" color="black" align="center" position="0 0.3 0.02" width="3"></a-text>
-          <!-- Alternativa: Imagen estática con botón para abrir GeoGebra en nueva ventana -->
+          
+          <!-- Imagen principal con indicación clara -->
           <a-plane 
             src="#t4" 
             width="1.4" 
             height="0.8" 
-            position="0 -0.1 0.02"
-            class="clickable"
-            open-url="url: https://www.geogebra.org/m/qzjfkvpm">
+            position="0 -0.1 0.02">
           </a-plane>
-          <a-text 
-            value="Toque para abrir el applet" 
-            color="black" 
-            align="center" 
+          
+          <!-- Botón claro para abrir en navegador -->
+          <a-plane 
+            color="#4CC3D9" 
+            width="1.2" 
+            height="0.2" 
             position="0 -0.5 0.03" 
-            width="1.5" 
-            scale="0.75 0.75 0.75">
-          </a-text>
+            opacity="0.9"
+            class="clickable"
+            open-url="url: https://www.geogebra.org/m/qzjfkvpm"
+            animation="property: scale; to: 1.05 1.05 1.05; dur: 1500; loop: true; dir: alternate; easing: easeInOutQuad;">
+            <a-text 
+              value="Abrir en navegador" 
+              color="white" 
+              align="center" 
+              position="0 0 0.01" 
+              width="1.5">
+            </a-text>
+          </a-plane>
         </a-entity>
       </a-entity>
     </a-scene>
@@ -401,6 +445,56 @@
       const YOUTUBE_VIDEO_ID = "z3bF6Op-2Ok";
       const GEOGEBRA_APP_ID = "qzjfkvpm";
       const MEP_URL = "https://www.mep.go.cr";
+      
+      // Configuración de la ventana emergente de video
+      const popupContainer = document.getElementById('popup-container');
+      const popupVideo = document.getElementById('popup-video');
+      const closePopupBtn = document.getElementById('close-popup');
+      const fullscreenBtn = document.getElementById('fullscreen-btn');
+      
+      // Cerrar la ventana emergente
+      closePopupBtn.addEventListener('click', function() {
+        popupVideo.pause();
+        popupContainer.style.display = 'none';
+        document.getElementById('info-panel').textContent = 
+          'Apunte la cámara a una de las tarjetas para ver el contenido AR';
+      });
+      
+      // Función para abrir video en pantalla completa
+      fullscreenBtn.addEventListener('click', function() {
+        if (popupVideo.requestFullscreen) {
+          popupVideo.requestFullscreen();
+        } else if (popupVideo.webkitRequestFullscreen) { /* Safari */
+          popupVideo.webkitRequestFullscreen();
+        } else if (popupVideo.msRequestFullscreen) { /* IE11 */
+          popupVideo.msRequestFullscreen();
+        }
+      });
+      
+      // Habilitar el componente open-video
+      AFRAME.registerComponent('open-video', {
+        init: function() {
+          this.el.addEventListener('click', () => {
+            const popupVideo = document.getElementById('popup-video');
+            const arVideo = document.getElementById('ar-video');
+            const popupContainer = document.getElementById('popup-container');
+            
+            if (popupVideo && arVideo && popupContainer) {
+              popupVideo.src = arVideo.src;
+              popupContainer.style.display = 'flex';
+              
+              // Asegurar que el video no esté silenciado
+              popupVideo.muted = false;
+              popupVideo.play().catch(e => {
+                console.warn('Error al reproducir video:', e);
+                // Informar al usuario que debe interactuar primero
+                document.getElementById('info-panel').textContent = 
+                  'Toque la pantalla para permitir el audio';
+              });
+            }
+          });
+        }
+      });
       
       // Mejora para cambiar de cámara
       document.getElementById('switch-camera').addEventListener('click', function() {
@@ -423,30 +517,27 @@
         }
       });
       
-      // Asegúrate de que el video esté completamente cargado
-      const videoEl = document.getElementById('ar-video');
-      videoEl.addEventListener('loadeddata', () => {
-        console.log("Video completamente cargado y listo para reproducir");
-      });
-      
-      // Manejador de errores global con mejor detección
-      window.addEventListener('error', function(event) {
-        // Filtramos los errores de targetIndex ya que los manejamos con nuestro componente target-handler
-        if (event.message && !event.message.includes('targetIndex')) {
-          console.error('Error en la aplicación AR:', event.message);
-          document.getElementById('info-panel').textContent = 
-            'Ha ocurrido un error. Intente recargar la página o utilizar otro navegador.';
-        }
-      });
-      
       // Inicialización
       window.addEventListener('load', function() {
         console.log('Aplicación AR cargada');
         document.getElementById('info-panel').textContent = 
           'AR iniciada. Apunte la cámara a una de las tarjetas.';
-          
-        // Precarga los videos para evitar problemas
-        videoEl.load();
+      });
+      
+      // Escuchar el evento de tecla ESC para cerrar el popup
+      document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape" && popupContainer.style.display === 'flex') {
+          popupVideo.pause();
+          popupContainer.style.display = 'none';
+        }
+      });
+      
+      // También cerrar el popup si se toca fuera del contenido
+      popupContainer.addEventListener('click', function(event) {
+        if (event.target === popupContainer) {
+          popupVideo.pause();
+          popupContainer.style.display = 'none';
+        }
       });
     </script>
   </body>
