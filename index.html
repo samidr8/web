@@ -60,10 +60,11 @@
       <a-assets>
         <img id="card" src="tarjetas/t1.png" />
         <img id="card2" src="tarjetas/t2.png" />
+        <img id="playButton" src="media/play-button.png" />
         <a-asset-item id="avatarModel" src="media/shiba/scene.gltf"></a-asset-item>
       </a-assets>
       
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false" raycaster="objects: .clickable" cursor="fuse: false; rayOrigin: mouse;"></a-camera>
       
       <a-entity mindar-image-target="targetIndex: 0">
         <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
@@ -72,26 +73,45 @@
       
       <a-entity mindar-image-target="targetIndex: 1">
         <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-        <a-plane color="blue" opacity="0.5" position="0 0 0.1" height="0.3" width="0.3" rotation="0 0 0" class="clickable" video-control></a-plane>
+        <a-plane color="blue" opacity="0.5" position="0 0 0.1" height="0.3" width="0.3" rotation="0 0 0" class="clickable" video-control>
+          <!-- Agregar un icono de reproducción visible -->
+          <a-image src="#playButton" position="0 0 0.01" height="0.15" width="0.15" opacity="1"></a-image>
+        </a-plane>
       </a-entity>
     </a-scene>
 
     <script>
+      AFRAME.registerComponent('video-control', {
+        init: function() {
+          const videoContainer = document.getElementById("videoContainer");
+          const youtubeVideo = document.getElementById("youtubeVideo");
+          
+          // Usar touchstart para dispositivos móviles y click para escritorio
+          this.el.addEventListener('click', openVideo);
+          this.el.addEventListener('touchstart', openVideo);
+          
+          function openVideo(evt) {
+            // Prevenir comportamiento por defecto para evitar problemas en dispositivos móviles
+            evt.preventDefault();
+            videoContainer.style.display = "flex";
+            // Reiniciar el video si ya estaba reproducido
+            youtubeVideo.src = youtubeVideo.src;
+          }
+          
+          // Hacer visible cuando el usuario mira el objeto
+          this.el.addEventListener('mouseenter', function() {
+            this.setAttribute('scale', '1.1 1.1 1.1');
+          });
+          this.el.addEventListener('mouseleave', function() {
+            this.setAttribute('scale', '1 1 1');
+          });
+        }
+      });
+      
       document.addEventListener("DOMContentLoaded", function() {
         const videoContainer = document.getElementById("videoContainer");
         const closeBtn = document.getElementById("closeBtn");
         const youtubeVideo = document.getElementById("youtubeVideo");
-        
-        // Componente para controlar el video
-        AFRAME.registerComponent('video-control', {
-          init: function() {
-            this.el.addEventListener('click', function() {
-              videoContainer.style.display = "flex";
-              // Reiniciar el video si ya estaba reproducido
-              youtubeVideo.src = youtubeVideo.src;
-            });
-          }
-        });
         
         // Cerrar el video al hacer clic en el botón
         closeBtn.addEventListener('click', function() {
@@ -100,17 +120,23 @@
           youtubeVideo.src = youtubeVideo.src.split("?")[0];
         });
         
-        // Hacer que los elementos con clase "clickable" sean interactivos
-        const clickableEls = document.querySelectorAll('.clickable');
-        clickableEls.forEach(el => {
-          el.setAttribute('class', 'clickable');
-          el.addEventListener('mouseenter', function() {
-            this.setAttribute('scale', '1.1 1.1 1.1');
+        // Asegurarse de que la escena A-Frame esté inicializada correctamente
+        const scene = document.querySelector('a-scene');
+        if (scene.hasLoaded) {
+          initClickable();
+        } else {
+          scene.addEventListener('loaded', initClickable);
+        }
+        
+        function initClickable() {
+          // Asegurarse de que los elementos clickables tengan los atributos correctos
+          const clickableEls = document.querySelectorAll('.clickable');
+          clickableEls.forEach(el => {
+            el.setAttribute('class', 'clickable');
           });
-          el.addEventListener('mouseleave', function() {
-            this.setAttribute('scale', '1 1 1');
-          });
-        });
+          
+          console.log('Elementos clickables inicializados:', clickableEls.length);
+        }
       });
     </script>
   </body>
