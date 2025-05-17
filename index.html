@@ -126,11 +126,11 @@
     
     <!-- Segundo marcador: Video de YouTube -->
     <a-entity mindar-image-target="targetIndex: 1">
-      <!-- Simplemente un plano para visualizar el marcador -->
       <a-plane color="#fff" opacity="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-      <!-- Botón invisible que activa el video -->
-      <a-plane color="#ffffff" opacity="0" position="0 0 0.01" height="0.552" width="1" rotation="0 0 0"
-               class="clickable" youtube-video="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></a-plane>
+      <a-plane color="#FF0000" opacity="0.8" position="0 0 0.01" height="0.2" width="0.2" rotation="0 0 0"
+               class="clickable" youtube-video="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+        <a-text value="▶ Play" align="center" position="0 0 0.01" color="#FFFFFF" scale="0.2 0.2 0.2"></a-text>
+      </a-plane>
     </a-entity>
     
     <!-- Puedes añadir más entidades para los otros marcadores siguiendo el mismo patrón -->
@@ -138,7 +138,28 @@
   </a-scene>
   
   <script>
-    // Función para mostrar mensajes de error
+    // Función para hacer visibles y clickeables los elementos AR
+document.addEventListener('DOMContentLoaded', function() {
+  // Configurar interacción con la escena AR
+  const sceneEl = document.querySelector('a-scene');
+  
+  // Añadir raycaster a la cámara para interacción
+  const camera = document.querySelector('a-camera');
+  camera.setAttribute('cursor', 'rayOrigin: mouse');
+  camera.setAttribute('raycaster', 'objects: .clickable');
+  
+  // Activar manejo de clics
+  const clickables = document.querySelectorAll('.clickable');
+  clickables.forEach(clickable => {
+    clickable.addEventListener('click', function() {
+      console.log('Elemento clickeado', this);
+    });
+  });
+  
+  console.log("Configuración de interacción completada");
+});
+
+// Función para mostrar mensajes de error
     function showErrorMessage(message) {
       const errorMessage = document.getElementById('error-message');
       errorMessage.textContent = message;
@@ -248,48 +269,17 @@
       schema: {type: 'string', default: ''},
       
       init: function() {
-        // Variables para detectar cambios en la visibilidad del marcador
-        this.targetFound = false;
-        this.videoShown = false;
-        
         // Referencia al elemento
         const el = this.el;
         const videoUrl = this.data;
         
-        // Detectar cuando el marcador se encuentra
-        el.sceneEl.addEventListener('targetFound', (event) => {
-          // Verificar que sea nuestro marcador (targetIndex 1)
-          if (event.detail.target.targetIndex === 1) {
-            console.log("Marcador encontrado:", event.detail.target.targetIndex);
-            this.targetFound = true;
-            
-            // Mostrar el video solo una vez cuando se encuentra el marcador
-            if (!this.videoShown) {
-              showContentTitle("Video de YouTube");
-              showVideo(videoUrl);
-              this.videoShown = true;
-            }
-          }
-        });
+        console.log("Componente de video inicializado con URL:", videoUrl);
         
-        // Detectar cuando se pierde el marcador
-        el.sceneEl.addEventListener('targetLost', (event) => {
-          // Verificar que sea nuestro marcador (targetIndex 1)
-          if (event.detail.target.targetIndex === 1) {
-            console.log("Marcador perdido:", event.detail.target.targetIndex);
-            this.targetFound = false;
-            // No cerrar el video automáticamente cuando se pierde el marcador
-            // El usuario debe cerrar el video manualmente con el botón de cierre
-          }
-        });
-        
-        // Manejar clic en el marcador (alternativa)
+        // Manejar clic en el botón de reproducción
         el.addEventListener('click', () => {
-          if (this.targetFound && !this.videoShown) {
-            showContentTitle("Video de YouTube");
-            showVideo(videoUrl);
-            this.videoShown = true;
-          }
+          console.log("Click en botón de reproducción, mostrando video:", videoUrl);
+          showContentTitle("Video de YouTube");
+          showVideo(videoUrl);
         });
       }
     });
