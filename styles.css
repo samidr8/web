@@ -33,26 +33,7 @@
     transition: background-color 0.3s ease;
 }
 
-/* Reemplazar las reglas existentes de .web-content-container */
-.web-content-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80%;
-    height: 80%;
-    z-index: 1000;
-    display: none; /* Cambiado de opacity: 0 */
-    background: transparent; /* Fondo transparente */
-}
-
-.web-content-container.active {
-    display: block; /* Mostrar normalmente */
-}
-
-/* Estilos adicionales para solucionar problemas de visualización */
-
-/* Contenedor principal para el iframe */
+/* Contenedor principal para el iframe - CORREGIDO */
 .web-content-container {
     position: fixed;
     top: 50%;
@@ -62,9 +43,15 @@
     height: 80%;
     z-index: 1000;
     display: none;
+    background: transparent;
 }
 
-/* Estilos del iframe */
+/* Clase para activar visibilidad - CORREGIDO */
+.web-content-container.visible {
+    display: block;
+}
+
+/* Estilos del iframe - CORREGIDO */
 .web-content {
     width: 100%;
     height: 100%;
@@ -93,20 +80,6 @@
     font-weight: bold;
     justify-content: center;
     align-items: center;
-}
-
-
-
-
-/* Asegurar visibilidad de elementos importantes */
-.web-content-container.visible, 
-.web-content-container.visible .web-content,
-.web-content-container.visible .close-button {
-    display: block !important;
-}
-
-.web-content-container.visible .close-button {
-    display: flex !important;
 }
 
 /* Contenedor de video */
@@ -287,8 +260,7 @@
         width: 90%;
     }
 
-    .web-content,
-    .fallback-container {
+    .web-content-container {
         width: 95%;
         height: 70%;
     }

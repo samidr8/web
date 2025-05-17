@@ -6,14 +6,7 @@ function showWebContent(url, fallbackEnabled = false, title = '') {
 
     // Limpiar primero
     iframe.src = '';
-    webContentContainer.style.display = 'none';
-    closeButton.style.display = 'none';
-
-    // Mostrar título si se proporciona
-    if (title) {
-        showContentTitle(title);
-    }
-
+    
     // Lista de sitios conocidos que necesitan tratamiento especial
     const knownPatterns = [
         {
@@ -69,12 +62,22 @@ function showWebContent(url, fallbackEnabled = false, title = '') {
         return;
     }
 
+    // Mostrar título si se proporciona
+    if (title) {
+        showContentTitle(title);
+    }
+
     // Intentar cargar el iframe
     try {
+        // Configurar el iframe antes de mostrarlo
         iframe.src = transformedUrl;
-        webContentContainer.style.display = 'block';
+        
+        // Importante: asegurarse de que tanto el contenedor como el iframe son visibles
+        webContentContainer.classList.add('visible');
         closeButton.style.display = 'flex';
 
+        console.log(`Mostrando contenido web: ${transformedUrl}`);
+        
         // Comprobar errores de carga después de un tiempo
         setTimeout(function() {
             // Intentar acceder a contenido para ver si cargó
@@ -84,8 +87,7 @@ function showWebContent(url, fallbackEnabled = false, title = '') {
                     // Si hay problemas, mostrar fallback
                     if (fallbackEnabled) {
                         showFallbackScreen(transformedUrl, title);
-                        webContentContainer.style.display = 'none';
-                        closeButton.style.display = 'none';
+                        webContentContainer.classList.remove('visible');
                     }
                 }
             } catch (e) {
@@ -93,13 +95,10 @@ function showWebContent(url, fallbackEnabled = false, title = '') {
                 console.error('Error de acceso al iframe: probablemente X-Frame-Options bloqueó carga');
                 if (fallbackEnabled) {
                     showFallbackScreen(transformedUrl, title);
-                    webContentContainer.style.display = 'none';
-                    closeButton.style.display = 'none';
+                    webContentContainer.classList.remove('visible');
                 }
             }
         }, 1500);
-
-        console.log(`Mostrando contenido web: ${transformedUrl}`);
     } catch (error) {
         console.error('Error al cargar contenido web:', error);
         if (fallbackEnabled) {
@@ -119,8 +118,7 @@ function closeWebContent() {
     const fallbackContainer = document.getElementById('fallback-container');
 
     iframe.src = '';
-    webContentContainer.style.display = 'none';
-    closeButton.style.display = 'none';
+    webContentContainer.classList.remove('visible');
     fallbackContainer.style.display = 'none';
 
     // Ocultar título al cerrar contenido
