@@ -1,124 +1,144 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      .youtube-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        display: none;
-        z-index: 9999;
-      }
-      .youtube-player {
-        position: absolute;
-        width: 320px;
-        height: 180px;
-        background: #000;
-        border: 2px solid #fff;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        pointer-events: auto;
-      }
-      .fullscreen-btn {
-        position: absolute;
-        bottom: 5px;
-        right: 5px;
-        background: rgba(0,0,0,0.5);
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 12px;
-      }
-    </style>
-  </head>
-  <body>
-    <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      <a-assets>
-        <img id="card" src="tarjetas/t1.png" />
-      </a-assets>
-      
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      
-      <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-      </a-entity>
-    </a-scene>
 
-    <div id="youtube-container" class="youtube-container">
-      <div id="youtube-player" class="youtube-player">
-        <iframe id="youtube-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
-        <button class="fullscreen-btn" onclick="toggleFullscreen()">Pantalla completa</button>
-      </div>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    .youtube-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: none;
+      z-index: 9999;
+    }
+
+    .youtube-player {
+      position: absolute;
+      width: 320px;
+      height: 180px;
+      background: #000;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+    }
+
+    .fullscreen-btn {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+    <a-assets>
+      <img id="card" src="tarjetas/t1.png" />
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+    </a-entity>
+  </a-scene>
+
+  <div id="youtube-container" class="youtube-container">
+    <div id="youtube-player" class="youtube-player">
+      <iframe id="youtube-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+      <button class="fullscreen-btn" onclick="toggleFullscreen()">Pantalla completa</button>
     </div>
+  </div>
 
-    <script>
-      // Configuración del video (reemplaza con tu ID de YouTube)
-      const YOUTUBE_VIDEO_ID = "dQw4w9WgXcQ";
-      let isTargetVisible = false;
-      let playerElement = document.getElementById('youtube-player');
-      let containerElement = document.getElementById('youtube-container');
-      let iframeElement = document.getElementById('youtube-iframe');
-      
-      // Inicializar el reproductor
-      iframeElement.src = `https://www.youtube.com/embed/64msXB6DNTc?autoplay=1&mute=1&enablejsapi=1`;
-      
-      // Escuchar eventos de MindAR
-      const scene = document.querySelector('a-scene');
-      scene.addEventListener('targetFound', event => {
-        if (event.target.getAttribute('mindar-image-target').targetIndex === 0) {
-          isTargetVisible = true;
-          containerElement.style.display = 'block';
-          positionVideoElement();
-        }
+  <script>
+    // Configuración del video (reemplaza con tu ID de YouTube)
+    // Configuración del video
+    const YOUTUBE_VIDEO_ID = "64msXB6DNTc";
+    let isTargetVisible = false;
+    let playerElement = document.getElementById('youtube-player');
+    let containerElement = document.getElementById('youtube-container');
+    let iframeElement = document.getElementById('youtube-iframe');
+
+    // Inicializar el reproductor CON SONIDO
+    iframeElement.src = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&enablejsapi=1&controls=1`;
+
+    // Manejar el sonido después de interacción del usuario
+    iframeElement.onload = function () {
+      document.body.addEventListener('click', function unmuteVideo() {
+        iframeElement.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'unmute',
+          args: []
+        }), '*');
+        document.body.removeEventListener('click', unmuteVideo);
       });
-      
-      scene.addEventListener('targetLost', event => {
-        if (event.target.getAttribute('mindar-image-target').targetIndex === 0) {
-          isTargetVisible = false;
-          containerElement.style.display = 'none';
-        }
-      });
-      
-      // Posicionar el video sobre el marcador
-      function positionVideoElement() {
-        if (!isTargetVisible) return;
-        
-        // Obtener posición del marcador en la pantalla
-        const target = document.querySelector('[mindar-image-target="targetIndex: 0"]');
-        const position = target.object3D.position.clone();
-        position.project(scene.camera);
-        
-        // Convertir coordenadas normalizadas a píxeles
-        const x = (position.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-(position.y * 0.5) + 0.5) * window.innerHeight;
-        
-        // Posicionar el elemento
-        playerElement.style.left = `${x - playerElement.offsetWidth/2}px`;
-        playerElement.style.top = `${y - playerElement.offsetHeight/2}px`;
-        
-        requestAnimationFrame(positionVideoElement);
+    };
+
+    // Escuchar eventos de MindAR
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('targetFound', event => {
+      if (event.target.getAttribute('mindar-image-target').targetIndex === 0) {
+        isTargetVisible = true;
+        containerElement.style.display = 'block';
+        positionVideoElement();
       }
-      
-      // Función para pantalla completa
-      function toggleFullscreen() {
-        if (!document.fullscreenElement) {
-          iframeElement.requestFullscreen().catch(err => {
-            alert(`Error al intentar pantalla completa: ${err.message}`);
-          });
-        } else {
-          document.exitFullscreen();
-        }
+    });
+
+    scene.addEventListener('targetLost', event => {
+      if (event.target.getAttribute('mindar-image-target').targetIndex === 0) {
+        isTargetVisible = false;
+        containerElement.style.display = 'none';
       }
-      
-      // Redimensionar al cambiar tamaño de ventana
-      window.addEventListener('resize', positionVideoElement);
-    </script>
-  </body>
+    });
+
+    // Posicionar el video sobre el marcador
+    function positionVideoElement() {
+      if (!isTargetVisible) return;
+
+      // Obtener posición del marcador en la pantalla
+      const target = document.querySelector('[mindar-image-target="targetIndex: 0"]');
+      const position = target.object3D.position.clone();
+      position.project(scene.camera);
+
+      // Convertir coordenadas normalizadas a píxeles
+      const x = (position.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-(position.y * 0.5) + 0.5) * window.innerHeight;
+
+      // Posicionar el elemento
+      playerElement.style.left = `${x - playerElement.offsetWidth / 2}px`;
+      playerElement.style.top = `${y - playerElement.offsetHeight / 2}px`;
+
+      requestAnimationFrame(positionVideoElement);
+    }
+
+    // Función para pantalla completa
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        iframeElement.requestFullscreen().catch(err => {
+          alert(`Error al intentar pantalla completa: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Redimensionar al cambiar tamaño de ventana
+    window.addEventListener('resize', positionVideoElement);
+  </script>
+</body>
+
 </html>
