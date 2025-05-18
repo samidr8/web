@@ -42,7 +42,7 @@
 
     /* Estilo para el visor de páginas web */
     .webpage-player {
-      width: 80%;
+      width: 90%;
       height: 80vh;
       max-width: 500px;
       background: #fff;
@@ -99,7 +99,7 @@
 
     /* Nuevos estilos para el mensaje alternativo */
     .webpage-alert {
-      width: 80%;
+      width: 90%;
       max-width: 400px;
       padding: 20px;
       background: #fff;
@@ -213,95 +213,78 @@
   </div>
 
   <script>
-    // Configuración
-    const CONTENT_CONFIG = {
-      0: {
-        type: "video",
-        container: "youtube",
-        youtubeId: "64msXB6DNTc" // Reemplaza con tu ID de YouTube
-      },
-      1: {
-        type: "3d"
-      },
-      2: {
-        type: "geogebra",
-        container: "geogebra",
-        appletId: "qzjfkvpm" // Reemplaza con tu ID de applet GeoGebra
-      },
-      3: {
-        type: "webpage",
-        container: "webpage",
-        url: "https://www.mep.go.cr" // URL de la página web
-      }
-    };
+  // Configuración
+  const CONTENT_CONFIG = {
+    0: {
+      type: "video",
+      container: "youtube",
+      youtubeId: "64msXB6DNTc"
+    },
+    1: {
+      type: "3d"
+    },
+    2: {
+      type: "geogebra",
+      container: "geogebra",
+      appletId: "qzjfkvpm"
+    },
+    3: {
+      type: "webpage",
+      container: "webpage",
+      url: "https://www.mep.go.cr"
+    }
+  };
 
-    // Inicialización
-    document.addEventListener('DOMContentLoaded', function () {
-      // Configurar YouTube
-      const youtubeIframe = document.getElementById('youtube-iframe');
-      youtubeIframe.src = `https://www.youtube.com/embed/${CONTENT_CONFIG[0].youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
+  // Variables globales para el estado
+  let currentTargetType = null;
 
-      // Manejar sonido para YouTube
-      youtubeIframe.onload = function () {
-        document.body.addEventListener('click', function unmuteVideo() {
-          youtubeIframe.contentWindow.postMessage(JSON.stringify({
-            event: 'command',
-            func: 'unmute',
-            args: []
-          }), '*');
-          document.body.removeEventListener('click', unmuteVideo);
-        });
-      };
-
-      // Configurar GeoGebra
-      const geogebraIframe = document.getElementById('geogebra-iframe');
-      geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[2].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
-
-      // Configurar Página Web con detección de errores
-      const webpageIframe = document.getElementById('webpage-iframe');
-      const webpageViewer = document.getElementById('webpage-viewer');
-      const webpageAlert = document.getElementById('webpage-alert');
-
-      webpageIframe.src = CONTENT_CONFIG[3].url;
-
-      webpageIframe.onload = function () {
-        try {
-          // Intentar acceder al contenido para detectar políticas de seguridad
-          if (webpageIframe.contentWindow.document.body.innerHTML === "") {
-            throw new Error("Bloqueado por políticas de seguridad");
-          }
-        } catch (e) {
-          // Mostrar mensaje alternativo
-          webpageViewer.style.display = 'none';
-          webpageAlert.style.display = 'block';
+  // Inicialización
+  document.addEventListener('DOMContentLoaded', function() {
+    // Configuraciones anteriores de YouTube y GeoGebra...
+    
+    // Configuración mejorada para la página web
+    const webpageIframe = document.getElementById('webpage-iframe');
+    const webpageViewer = document.getElementById('webpage-viewer');
+    const webpageAlert = document.getElementById('webpage-alert');
+    
+    webpageIframe.src = CONTENT_CONFIG[3].url;
+    
+    webpageIframe.onload = webpageIframe.onerror = function() {
+      try {
+        // Verificar si el iframe está bloqueado
+        if (!webpageIframe.contentWindow || 
+            webpageIframe.contentWindow.document.body.innerHTML === "" || 
+            webpageIframe.contentWindow.location.href === "about:blank") {
+          throw new Error("Bloqueado por políticas de seguridad");
         }
-      };
-
-      webpageIframe.onerror = function () {
+      } catch (e) {
+        // Mostrar mensaje alternativo
         webpageViewer.style.display = 'none';
         webpageAlert.style.display = 'block';
-      };
-    });
-
-    // Eventos de MindAR
-    const scene = document.querySelector('a-scene');
-    scene.addEventListener('targetFound', event => {
-      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-      const contentConfig = CONTENT_CONFIG[targetIndex];
-
-      if (contentConfig && contentConfig.container) {
-        const container = document.getElementById(`${contentConfig.container}-container`);
-        container.style.display = 'block';
       }
-    });
+    };
+  });
 
-    // Funciones de control
-    function closeContent(type) {
-      const container = document.getElementById(`${type}-container`);
+  // Eventos de MindAR mejorados
+  const scene = document.querySelector('a-scene');
+  scene.addEventListener('targetFound', event => {
+    const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
+    const contentConfig = CONTENT_CONFIG[targetIndex];
+    
+    if (contentConfig && contentConfig.container) {
+      currentTargetType = contentConfig.type;
+      const container = document.getElementById(`${contentConfig.container}-container`);
+      container.style.display = 'block';
+    }
+  });
+
+  // Funciones de control mejoradas
+  function closeContent(type) {
+    const container = document.getElementById(`${type}-container`);
+    if (container) {
       container.style.display = 'none';
-
+      
       if (type === 'youtube') {
-        // Pausar el video de YouTube
         const iframe = document.getElementById('youtube-iframe');
         iframe.contentWindow.postMessage(JSON.stringify({
           event: 'command',
@@ -310,25 +293,26 @@
         }), '*');
       }
     }
+  }
 
-    function toggleFullscreen(type) {
-      const iframe = document.getElementById(`${type}-iframe`);
-      if (!document.fullscreenElement) {
-        iframe.requestFullscreen().catch(err => {
-          alert(`Error al intentar pantalla completa: ${err.message}`);
-        });
-      } else {
-        document.exitFullscreen();
-      }
+  function toggleFullscreen(type) {
+    const container = document.getElementById(`${type}-container`);
+    if (!document.fullscreenElement) {
+      container.requestFullscreen().catch(err => {
+        alert(`Error al intentar pantalla completa: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
     }
+  }
 
-    function openExternalBrowser() {
-      // Abrir la URL en el navegador externo
+  function openExternalBrowser() {
+    if (currentTargetType === 'webpage') {
       window.open(CONTENT_CONFIG[3].url, '_blank');
-      // Cerrar el contenedor de la página web
       closeContent('webpage');
     }
-  </script>
+  }
+</script>
 </body>
 
 </html>
