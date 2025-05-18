@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
@@ -40,16 +39,25 @@
       position: relative;
     }
 
-    /* Estilo para el visor de páginas web */
-    .webpage-player {
-      width: 90%;
-      height: 80vh;
-      max-width: 500px;
+    /* Estilo para el mensaje de página web */
+    .webpage-alert {
+      width: 80%;
+      max-width: 400px;
+      padding: 25px;
       background: #fff;
-      border: 2px solid #ddd;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      border: 2px solid #e74c3c;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
       pointer-events: auto;
       position: relative;
+    }
+
+    .webpage-alert p {
+      margin-bottom: 25px;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.5;
     }
 
     /* Botones comunes */
@@ -82,40 +90,6 @@
       align-items: center;
       justify-content: center;
       z-index: 10000;
-    }
-
-    .open-external-btn {
-      position: absolute;
-      bottom: 5px;
-      right: 90px;
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    /* Nuevos estilos para el mensaje alternativo */
-    .webpage-alert {
-      width: 80%;
-      max-width: 400px;
-      padding: 25px;
-      background: #fff;
-      border-radius: 8px;
-      border: 2px solid #e74c3c;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      display: none;
-      position: relative;
-    }
-
-    .webpage-alert p {
-      margin-bottom: 25px;
-      color: #333;
-      font-size: 16px;
-      line-height: 1.5;
     }
 
     .alert-btn {
@@ -196,30 +170,29 @@
   <!-- Contenedor para YouTube -->
   <div id="youtube-container" class="content-container">
     <div class="youtube-player">
-      <button class="close-btn" onclick="closeContent('youtube')">X</button>
+      <button class="close-btn" id="youtube-close-btn">X</button>
       <iframe id="youtube-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
-      <button class="fullscreen-btn" onclick="toggleFullscreen('youtube')">Pantalla completa</button>
+      <button class="fullscreen-btn" id="youtube-fullscreen-btn">Pantalla completa</button>
     </div>
   </div>
 
   <!-- Contenedor para GeoGebra -->
   <div id="geogebra-container" class="content-container">
     <div class="geogebra-player">
-      <button class="close-btn" onclick="closeContent('geogebra')">X</button>
+      <button class="close-btn" id="geogebra-close-btn">X</button>
       <iframe id="geogebra-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
-      <button class="fullscreen-btn" onclick="toggleFullscreen('geogebra')">Pantalla completa</button>
+      <button class="fullscreen-btn" id="geogebra-fullscreen-btn">Pantalla completa</button>
     </div>
   </div>
 
   <!-- Contenedor para Página Web -->
   <div id="webpage-container" class="content-container">
-    <!-- Mensaje alternativo (siempre visible para este caso) -->
     <div class="webpage-alert" id="webpage-alert">
-      <button class="close-btn" onclick="handleWebpageClose()">X</button>
-      <p>El sitio del MEP no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?</p>
+      <button class="close-btn" id="webpage-close-btn">X</button>
+      <p>El sitio web no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?</p>
       <div style="margin-top: 20px;">
-        <button class="alert-btn open-browser-btn" onclick="openExternalBrowser()">Abrir en navegador</button>
-        <button class="alert-btn cancel-btn" onclick="handleWebpageClose()">Cancelar</button>
+        <button class="alert-btn open-browser-btn" id="open-browser-btn">Abrir en navegador</button>
+        <button class="alert-btn cancel-btn" id="cancel-webpage-btn">Cancelar</button>
       </div>
     </div>
   </div>
@@ -257,6 +230,19 @@
       const geogebraIframe = document.getElementById('geogebra-iframe');
       geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[2].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
       
+      // Configurar listeners para YouTube
+      document.getElementById('youtube-close-btn').addEventListener('click', () => closeContent('youtube'));
+      document.getElementById('youtube-fullscreen-btn').addEventListener('click', () => toggleFullscreen('youtube'));
+      
+      // Configurar listeners para GeoGebra
+      document.getElementById('geogebra-close-btn').addEventListener('click', () => closeContent('geogebra'));
+      document.getElementById('geogebra-fullscreen-btn').addEventListener('click', () => toggleFullscreen('geogebra'));
+      
+      // Configurar listeners para la página web
+      document.getElementById('webpage-close-btn').addEventListener('click', handleWebpageClose);
+      document.getElementById('cancel-webpage-btn').addEventListener('click', handleWebpageClose);
+      document.getElementById('open-browser-btn').addEventListener('click', openExternalBrowser);
+      
       // Manejar sonido para YouTube
       youtubeIframe.onload = function() {
         document.body.addEventListener('click', function unmuteVideo() {
@@ -278,11 +264,13 @@
       
       if (contentConfig && contentConfig.container) {
         const container = document.getElementById(`${contentConfig.container}-container`);
-        container.style.display = 'block';
-        
-        // Mostrar directamente el mensaje para la página web
-        if (targetIndex === 3) {
-          document.getElementById('webpage-alert').style.display = 'block';
+        if (container) {
+          container.style.display = 'block';
+          container.style.pointerEvents = 'auto';
+          
+          if (targetIndex === 3) {
+            document.getElementById('webpage-alert').style.display = 'block';
+          }
         }
       }
     });
@@ -290,15 +278,19 @@
     // Funciones de control
     function closeContent(type) {
       const container = document.getElementById(`${type}-container`);
-      container.style.display = 'none';
-      
-      if (type === 'youtube') {
-        const iframe = document.getElementById('youtube-iframe');
-        iframe.contentWindow.postMessage(JSON.stringify({
-          event: 'command',
-          func: 'pauseVideo',
-          args: []
-        }), '*');
+      if (container) {
+        container.style.display = 'none';
+        
+        if (type === 'youtube') {
+          const iframe = document.getElementById('youtube-iframe');
+          if (iframe.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({
+              event: 'command',
+              func: 'pauseVideo',
+              args: []
+            }), '*');
+          }
+        }
       }
     }
 
@@ -307,10 +299,10 @@
     }
 
     function toggleFullscreen(type) {
-      const iframe = document.getElementById(`${type}-iframe`);
+      const container = document.getElementById(`${type}-container`);
       if (!document.fullscreenElement) {
-        iframe.requestFullscreen().catch(err => {
-          alert(`Error al intentar pantalla completa: ${err.message}`);
+        container.requestFullscreen().catch(err => {
+          console.log(`Error al intentar pantalla completa: ${err.message}`);
         });
       } else {
         document.exitFullscreen();
@@ -318,8 +310,19 @@
     }
 
     function openExternalBrowser() {
-      // Abrir la URL en el navegador externo
-      window.open(CONTENT_CONFIG[3].url, '_blank');
+      try {
+        // Intenta abrir en nueva pestaña
+        const newWindow = window.open(CONTENT_CONFIG[3].url, '_blank');
+        
+        // Fallback si el navegador bloquea la ventana emergente
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          window.location.href = CONTENT_CONFIG[3].url;
+        }
+      } catch (e) {
+        console.error('Error al abrir el navegador:', e);
+        window.location.href = CONTENT_CONFIG[3].url;
+      }
+      
       // Cerrar el contenedor de la página web
       closeContent('webpage');
     }
