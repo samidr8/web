@@ -30,8 +30,10 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 400px;
+  max-width: 90%;
+  width: calc(100% - 40px); /* Añadir margen interno */
+  margin: 0 auto; /* Centrar */
+  overflow: hidden; /* Eliminar barras de desplazamiento */
   background: rgba(0, 0, 0, 0.85);
   border-radius: 10px;
   padding: 20px;
@@ -42,6 +44,9 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.ar-config-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
 .ar-config-panel h3 {
   margin-top: 0;
   color: #4CAF50;
@@ -50,7 +55,9 @@
 
 .ar-config-content {
   max-height: 60vh;
-  overflow-y: auto;
+  overflow-y: auto; /* Solo desplazamiento vertical si es necesario */
+  padding-right: 5px; /* Espacio para evitar solapamiento */
+  scrollbar-width: none; /* Firefox */
 }
 
 .sensor-check {

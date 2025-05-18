@@ -190,23 +190,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function checkCamera() {
-    const cameraStatus = document.getElementById('camera-status');
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(() => {
-          cameraStatus.textContent = 'Disponible';
-          cameraStatus.className = 'sensor-status sensor-ok';
-        })
-        .catch(() => {
-          cameraStatus.textContent = 'No disponible';
-          cameraStatus.className = 'sensor-status sensor-error';
-        });
-    } else {
-      cameraStatus.textContent = 'No soportado';
-      cameraStatus.className = 'sensor-status sensor-error';
-    }
+function checkCamera() {
+  const cameraStatus = document.getElementById('camera-status');
+  if (navigator.mediaDevices?.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        cameraStatus.textContent = 'Disponible';
+        cameraStatus.className = 'sensor-status sensor-ok';
+        // Detener todos los tracks para liberar la cámara
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(err => {
+        cameraStatus.textContent = 
+          err.name === 'NotAllowedError' ? 'Permiso denegado' : 'No disponible';
+        cameraStatus.className = 'sensor-status sensor-error';
+      });
+  } else {
+    cameraStatus.textContent = 'API no soportada';
+    cameraStatus.className = 'sensor-status sensor-error';
   }
+}
 
   // Control de la linterna
   function toggleFlash() {
