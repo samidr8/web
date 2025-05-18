@@ -77,8 +77,8 @@
     renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
     <a-assets>
-      <img id="card1" src="tarjetas/t1.png" />
-      
+
+      <img id="card2" src="tarjetas/t2.png" />
       <a-asset-item id="avatarModel" src="media/shiba/scene.gltf"></a-asset-item>
       <video id="youtube-video" autoplay loop crossorigin="anonymous" webkit-playsinline playsinline></video>
     </a-assets>
@@ -86,11 +86,11 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+      
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 1">
-      
+      <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
       <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.5 0.5 0.5" src="#avatarModel" 
         animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
       </a-gltf-model>
@@ -112,7 +112,7 @@
     // Configuración
     const YOUTUBE_VIDEO_ID = "64msXB6DNTc";
     const TARGET_CONFIG = {
-      0: { image: "tarjetas/t1.png", type: "video" },
+
       1: { image: "tarjetas/t2.png", type: "3d" }
     };
 
