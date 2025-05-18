@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
       <a href="https://get.webgl.org" target="_blank" class="webgl-link">Probar WebGL</a>
       
+      <div class="section-title">Sensores</div>
+      
       <div class="sensor-check">
         <span>ARCore/ARKit:</span>
         <span class="sensor-status" id="arcore-status">No verificado</span>
@@ -48,11 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <span>Sensor de Proximidad:</span>
         <span class="sensor-status" id="prox-status">No verificado</span>
       </div>
-      
-      <div class="sensor-check">
-        <span>Cámara:</span>
-        <span class="sensor-status" id="camera-status">No verificado</span>
-      </div>
     </div>
   `;
   document.body.appendChild(configPanel);
@@ -65,10 +62,14 @@ document.addEventListener('DOMContentLoaded', function() {
   configIcon.addEventListener('click', function() {
     configPanel.style.display = 'block';
     checkSensors();
+    checkFlashSupport(); // Verificar soporte de linterna al abrir el panel
   });
 
   document.querySelector('.close-panel-btn').addEventListener('click', function() {
     configPanel.style.display = 'none';
+    if (flashOn) {
+      toggleFlash(); // Apagar linterna al cerrar panel
+    }
   });
 
   document.getElementById('toggle-flash').addEventListener('click', toggleFlash);
@@ -81,7 +82,29 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAccelerometer();
     checkMagnetometer();
     checkProximity();
-    checkCamera();
+  }
+
+  function checkFlashSupport() {
+    const flashStatus = document.getElementById('flash-status');
+    if (!('mediaDevices' in navigator) || !('getUserMedia' in navigator.mediaDevices)) {
+      flashStatus.textContent = 'No soportado';
+      flashStatus.className = 'sensor-status sensor-error';
+      document.getElementById('toggle-flash').disabled = true;
+      return;
+    }
+    
+    // Verificar si el dispositivo es móvil (donde es más probable tener linterna)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (!isMobile) {
+      flashStatus.textContent = 'Solo móviles';
+      flashStatus.className = 'sensor-status sensor-error';
+      document.getElementById('toggle-flash').disabled = true;
+    } else {
+      flashStatus.textContent = 'Listo';
+      flashStatus.className = 'sensor-status sensor-ok';
+      document.getElementById('toggle-flash').disabled = false;
+    }
   }
 
   function checkWebGL() {
@@ -190,77 +213,66 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-function checkCamera() {
-  const cameraStatus = document.getElementById('camera-status');
-  if (navigator.mediaDevices?.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        cameraStatus.textContent = 'Disponible';
-        cameraStatus.className = 'sensor-status sensor-ok';
-        // Detener todos los tracks para liberar la cámara
-        stream.getTracks().forEach(track => track.stop());
-      })
-      .catch(err => {
-        cameraStatus.textContent = 
-          err.name === 'NotAllowedError' ? 'Permiso denegado' : 'No disponible';
-        cameraStatus.className = 'sensor-status sensor-error';
-      });
-  } else {
-    cameraStatus.textContent = 'API no soportada';
-    cameraStatus.className = 'sensor-status sensor-error';
-  }
-}
-
   // Control de la linterna
   function toggleFlash() {
     const flashStatus = document.getElementById('flash-status');
     const flashError = document.getElementById('flash-error');
+    const flashButton = document.getElementById('toggle-flash');
     
-    if (!('mediaDevices' in navigator)) {
+    if (!('mediaDevices' in navigator) || !('getUserMedia' in navigator.mediaDevices)) {
       flashError.textContent = 'API de medios no soportada';
-      return;
-    }
-
-    const track = getCameraTrack();
-    if (!track) {
-      flashError.textContent = 'No se encontró cámara activa';
-      return;
-    }
-
-    if (!('applyConstraints' in track)) {
-      flashError.textContent = 'No se puede controlar la linterna';
       return;
     }
 
     flashOn = !flashOn;
     
-    track.applyConstraints({
-      advanced: [{ torch: flashOn }]
-    }).then(() => {
-      flashSupported = true;
-      flashStatus.textContent = flashOn ? 'Activada' : 'Apagada';
-      document.getElementById('toggle-flash').textContent = flashOn ? 'Apagar Linterna' : 'Activar Linterna';
-      flashError.textContent = '';
-    }).catch(err => {
-      flashSupported = false;
-      flashOn = false;
-      flashStatus.textContent = 'No soportado';
-      flashError.textContent = 'Este dispositivo no soporta control de linterna';
-      console.error('Error al controlar linterna:', err);
-    });
-  }
-
-  function getCameraTrack() {
-    const videoElements = document.getElementsByTagName('video');
-    for (let video of videoElements) {
-      if (video.srcObject) {
-        const stream = video.srcObject;
-        const tracks = stream.getVideoTracks();
-        if (tracks.length > 0) {
-          return tracks[0];
+    if (flashOn) {
+      // Activar linterna
+      navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          torch: true
         }
+      }).then(stream => {
+        const track = stream.getVideoTracks()[0];
+        track.applyConstraints({
+          advanced: [{ torch: true }]
+        }).then(() => {
+          flashStatus.textContent = 'Activada';
+          flashButton.textContent = 'Apagar Linterna';
+          flashError.textContent = '';
+          flashSupported = true;
+        }).catch(err => {
+          flashError.textContent = 'No se pudo activar la linterna';
+          console.error('Error al activar linterna:', err);
+          flashOn = false;
+          stream.getTracks().forEach(track => track.stop());
+        });
+      }).catch(err => {
+        flashError.textContent = 'Error al acceder a la cámara';
+        console.error('Error de cámara:', err);
+        flashOn = false;
+      });
+    } else {
+      // Apagar linterna
+      const videoElements = document.querySelectorAll('video');
+      let found = false;
+      
+      videoElements.forEach(video => {
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach(track => {
+            if (track.kind === 'video') {
+              track.stop();
+              found = true;
+            }
+          });
+        }
+      });
+      
+      if (found) {
+        flashStatus.textContent = 'Apagada';
+        flashButton.textContent = 'Activar Linterna';
       }
     }
-    return null;
   }
 });
