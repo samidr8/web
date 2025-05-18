@@ -1,5 +1,28 @@
 /* Estilos para el panel de configuración y sus elementos */
 
+  /* Agregar esto para el panel de información */
+  .info-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 10000;
+    display: none;
+  }
+  .info-panel-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+  }
+  
 /* Icono de configuración */
 .config-icon {
     position: fixed;

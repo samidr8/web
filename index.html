@@ -132,6 +132,17 @@
 </head>
 
 <body>
+
+  <!-- Panel de información interactivo (HTML) - NUEVO -->
+  <div id="info-panel" class="info-panel">
+    <button class="info-panel-close" onclick="closeInfoPanel()">✕</button>
+    <h3 id="info-panel-title">Título</h3>
+    <div id="info-panel-content" class="info-panel-content">
+      <img id="info-panel-image" class="info-panel-image" src="" alt="">
+      <p id="info-panel-text">Contenido</p>
+    </div>
+  </div>
+
   <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB"
     renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
