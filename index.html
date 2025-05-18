@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
@@ -41,9 +42,9 @@
 
     /* Estilo para el visor de páginas web */
     .webpage-player {
-      width: 90%;
+      width: 80%;
       height: 80vh;
-      max-width: 800px;
+      max-width: 500px;
       background: #fff;
       border: 2px solid #ddd;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -95,6 +96,43 @@
       cursor: pointer;
       font-size: 12px;
     }
+
+    /* Nuevos estilos para el mensaje alternativo */
+    .webpage-alert {
+      width: 80%;
+      max-width: 400px;
+      padding: 20px;
+      background: #fff;
+      border: 2px solid #ddd;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      display: none;
+      position: relative;
+    }
+
+    .webpage-alert p {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .alert-btn {
+      padding: 8px 15px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .open-browser-btn {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .cancel-btn {
+      background: #f44336;
+      color: white;
+    }
   </style>
 </head>
 
@@ -121,7 +159,7 @@
     <!-- Target 1: Modelo 3D -->
     <a-entity mindar-image-target="targetIndex: 1">
       <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-      <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.5 0.5 0.5" src="#avatarModel" 
+      <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.5 0.5 0.5" src="#avatarModel"
         animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
       </a-gltf-model>
     </a-entity>
@@ -157,26 +195,35 @@
 
   <!-- Contenedor para Página Web -->
   <div id="webpage-container" class="content-container">
-    <div class="webpage-player">
+    <!-- Visor normal (se ocultará si falla) -->
+    <div class="webpage-player" id="webpage-viewer">
       <button class="close-btn" onclick="closeContent('webpage')">X</button>
       <iframe id="webpage-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
       <button class="fullscreen-btn" onclick="toggleFullscreen('webpage')">Pantalla completa</button>
       <button class="open-external-btn" onclick="openExternalBrowser()">Abrir en navegador</button>
+    </div>
+
+    <!-- Mensaje alternativo cuando falla el iframe -->
+    <div class="webpage-alert" id="webpage-alert">
+      <button class="close-btn" onclick="closeContent('webpage')">X</button>
+      <p>Esta página no puede mostrarse directamente. ¿Deseas abrirla en tu navegador?</p>
+      <button class="alert-btn open-browser-btn" onclick="openExternalBrowser()">Abrir en navegador</button>
+      <button class="alert-btn cancel-btn" onclick="closeContent('webpage')">Cancelar</button>
     </div>
   </div>
 
   <script>
     // Configuración
     const CONTENT_CONFIG = {
-      0: { 
-        type: "video", 
+      0: {
+        type: "video",
         container: "youtube",
         youtubeId: "64msXB6DNTc" // Reemplaza con tu ID de YouTube
       },
-      1: { 
-        type: "3d" 
+      1: {
+        type: "3d"
       },
-      2: { 
+      2: {
         type: "geogebra",
         container: "geogebra",
         appletId: "qzjfkvpm" // Reemplaza con tu ID de applet GeoGebra
@@ -189,21 +236,13 @@
     };
 
     // Inicialización
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // Configurar YouTube
       const youtubeIframe = document.getElementById('youtube-iframe');
       youtubeIframe.src = `https://www.youtube.com/embed/${CONTENT_CONFIG[0].youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
-      
-      // Configurar GeoGebra
-      const geogebraIframe = document.getElementById('geogebra-iframe');
-      geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[2].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
-      
-      // Configurar Página Web
-      const webpageIframe = document.getElementById('webpage-iframe');
-      webpageIframe.src = CONTENT_CONFIG[3].url;
-      
+
       // Manejar sonido para YouTube
-      youtubeIframe.onload = function() {
+      youtubeIframe.onload = function () {
         document.body.addEventListener('click', function unmuteVideo() {
           youtubeIframe.contentWindow.postMessage(JSON.stringify({
             event: 'command',
@@ -213,6 +252,35 @@
           document.body.removeEventListener('click', unmuteVideo);
         });
       };
+
+      // Configurar GeoGebra
+      const geogebraIframe = document.getElementById('geogebra-iframe');
+      geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[2].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
+
+      // Configurar Página Web con detección de errores
+      const webpageIframe = document.getElementById('webpage-iframe');
+      const webpageViewer = document.getElementById('webpage-viewer');
+      const webpageAlert = document.getElementById('webpage-alert');
+
+      webpageIframe.src = CONTENT_CONFIG[3].url;
+
+      webpageIframe.onload = function () {
+        try {
+          // Intentar acceder al contenido para detectar políticas de seguridad
+          if (webpageIframe.contentWindow.document.body.innerHTML === "") {
+            throw new Error("Bloqueado por políticas de seguridad");
+          }
+        } catch (e) {
+          // Mostrar mensaje alternativo
+          webpageViewer.style.display = 'none';
+          webpageAlert.style.display = 'block';
+        }
+      };
+
+      webpageIframe.onerror = function () {
+        webpageViewer.style.display = 'none';
+        webpageAlert.style.display = 'block';
+      };
     });
 
     // Eventos de MindAR
@@ -220,7 +288,7 @@
     scene.addEventListener('targetFound', event => {
       const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
       const contentConfig = CONTENT_CONFIG[targetIndex];
-      
+
       if (contentConfig && contentConfig.container) {
         const container = document.getElementById(`${contentConfig.container}-container`);
         container.style.display = 'block';
@@ -231,7 +299,7 @@
     function closeContent(type) {
       const container = document.getElementById(`${type}-container`);
       container.style.display = 'none';
-      
+
       if (type === 'youtube') {
         // Pausar el video de YouTube
         const iframe = document.getElementById('youtube-iframe');
@@ -262,4 +330,5 @@
     }
   </script>
 </body>
+
 </html>
