@@ -1,344 +1,124 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-  <style>
-    #video-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      z-index: 999;
-      display: none;
-    }
-    
-    #video-wrapper {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 80%;
-      max-width: 800px;
-    }
-    
-    #video-wrapper iframe,
-    #video-wrapper video {
-      width: 100%;
-      border: none;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    }
-    
-    .close-button {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
-      background-color: rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    
-    .close-button:before,
-    .close-button:after {
-      content: '';
-      position: absolute;
-      width: 20px;
-      height: 4px;
-      background-color: white;
-    }
-    
-    .close-button:before {
-      transform: rotate(45deg);
-    }
-    
-    .close-button:after {
-      transform: rotate(-45deg);
-    }
-
-    #error-message {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(255, 0, 0, 0.8);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 1000;
-      display: none;
-    }
-
-    #content-title {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 8px 15px;
-      border-radius: 5px;
-      z-index: 1000;
-      display: none;
-      font-family: Arial, sans-serif;
-      font-size: 16px;
-    }
-    
-    /* Estilo para el botón manual */
-    #manual-video-button {
-      position: fixed;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 900;
-      display: block;
-    }
-    
-    #manual-video-button button {
-      background-color: #FF0000;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-size: 16px;
-      font-weight: bold;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      cursor: pointer;
-    }
-    
-    /* Indicador de detección de marcador */
-    #marker-status {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      background-color: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      z-index: 900;
-    }
-  </style>
-</head>
-<body>
-  // Video container for YouTube -->
-  <div id="video-container">
-    <div id="video-wrapper"></div>
-    <div class="close-button" onclick="closeVideo()"></div>
-  </div>
-  
-  <div id="error-message"></div>
-  <div id="content-title"></div>
-  
-  <!-- Botón manual para dispositivos móviles -->
-  <div id="manual-video-button">
-    <button onclick="playYoutubeVideo('https://www.youtube.com/watch?v=dQw4w9WgXcQ')">
-      Reproducir Video
-    </button>
-  </div>
-
-  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB" 
-           renderer="colorManagement: true, physicallyCorrectLights" 
-           vr-mode-ui="enabled: false" 
-           device-orientation-permission-ui="enabled: false">
-    
-    <a-assets>
-      <img id="card1" src="tarjetas/t1.png" />
-      <a-asset-item id="avatarModel" src="media/shiba/scene.gltf"></a-asset-item>
-      <!-- Añadir más assets si son necesarios para los otros marcadores -->
-    </a-assets>
-    
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-    
-    <!-- Primer marcador: Modelo 3D (como ya tenías) -->
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-      <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.5 0.5 0.5" src="#avatarModel" 
-                    animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-gltf-model>
-    </a-entity>
-    
-    <!-- Segundo marcador: Video de YouTube -->
-    <a-entity mindar-image-target="targetIndex: 1" id="marker-target-1">
-      <a-plane color="#fff" opacity="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-      <a-plane color="#FF0000" opacity="0.8" position="0 0 0.01" height="0.2" width="0.2" rotation="0 0 0">
-        <a-text value="▶ Play" align="center" position="0 0 0.01" color="#FFFFFF" scale="0.2 0.2 0.2"></a-text>
-      </a-plane>
-    </a-entity>
-  </a-scene>
-  
-  <!-- Indicador de estado del marcador -->
-  <div id="marker-status">Estado: Buscando marcador...</div>
-    
-    <!-- Puedes añadir más entidades para los otros marcadores siguiendo el mismo patrón -->
-    
-  </a-scene>
-  
-  <script>
-    // Función para hacer visibles y clickeables los elementos AR
-document.addEventListener('DOMContentLoaded', function() {
-  // Configurar interacción con la escena AR
-  const sceneEl = document.querySelector('a-scene');
-  
-  // Añadir raycaster a la cámara para interacción
-  const camera = document.querySelector('a-camera');
-  camera.setAttribute('cursor', 'rayOrigin: mouse');
-  camera.setAttribute('raycaster', 'objects: .clickable');
-  
-  // Activar manejo de clics
-  const clickables = document.querySelectorAll('.clickable');
-  clickables.forEach(clickable => {
-    clickable.addEventListener('click', function() {
-      console.log('Elemento clickeado', this);
-    });
-  });
-  
-  console.log("Configuración de interacción completada");
-});
-
-// Función para mostrar mensajes de error
-    function showErrorMessage(message) {
-      const errorMessage = document.getElementById('error-message');
-      errorMessage.textContent = message;
-      errorMessage.style.display = 'block';
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      .youtube-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        display: none;
+        z-index: 9999;
+      }
+      .youtube-player {
+        position: absolute;
+        width: 320px;
+        height: 180px;
+        background: #000;
+        border: 2px solid #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        pointer-events: auto;
+      }
+      .fullscreen-btn {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        background: rgba(0,0,0,0.5);
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-assets>
+        <img id="card" src="tarjetas/t1.png" />
+      </a-assets>
       
-      // Ocultar después de 3 segundos
-      setTimeout(() => {
-        errorMessage.style.display = 'none';
-      }, 3000);
-    }
-    
-    // Función para mostrar/ocultar título de contenido
-    function showContentTitle(title) {
-      const contentTitle = document.getElementById('content-title');
-      contentTitle.textContent = title;
-      contentTitle.style.display = 'block';
-    }
-    
-    function hideContentTitle() {
-      const contentTitle = document.getElementById('content-title');
-      contentTitle.style.display = 'none';
-    }
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+      </a-entity>
+    </a-scene>
 
-    // Función mejorada para mostrar video
-    function showVideo(url) {
-      const videoContainer = document.getElementById('video-container');
-      const videoWrapper = document.getElementById('video-wrapper');
-      const closeButton = videoContainer.querySelector('.close-button');
+    <div id="youtube-container" class="youtube-container">
+      <div id="youtube-player" class="youtube-player">
+        <iframe id="youtube-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+        <button class="fullscreen-btn" onclick="toggleFullscreen()">Pantalla completa</button>
+      </div>
+    </div>
 
-      // Limpiar el contenedor
-      videoWrapper.innerHTML = '';
-
-      try {
-        // Verificar si es un enlace de YouTube
-        if (url.includes('youtube.com') || url.includes('youtu.be')) {
-          // Extraer el ID del video de YouTube con mejor manejo de formatos
-          let videoId = '';
-          if (url.includes('youtube.com/watch?v=')) {
-            videoId = url.split('v=')[1].split(/[&?]/)[0];
-          } else if (url.includes('youtu.be/')) {
-            videoId = url.split('youtu.be/')[1].split(/[&?]/)[0];
-          } else if (url.includes('youtube.com/embed/')) {
-            videoId = url.split('embed/')[1].split(/[&?]/)[0];
-          }
-
-          if (videoId) {
-            // Crear un iframe para el video de YouTube con mejores opciones
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
-            iframe.setAttribute('allowfullscreen', 'true');
-            iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
-            iframe.style.height = '360px'; // Altura estándar para proporción 16:9
-
-            videoWrapper.appendChild(iframe);
-            console.log(`Reproduciendo video de YouTube: ${videoId}`);
-          } else {
-            throw new Error('No se pudo extraer el ID del video de YouTube');
-          }
-        } else {
-          // Es un video MP4 u otro formato directo
-          const video = document.createElement('video');
-          video.src = url;
-          video.controls = true;
-          video.autoplay = true;
-          video.playsInline = true;
-          video.style.width = '100%';
-
-          videoWrapper.appendChild(video);
-          console.log(`Reproduciendo video directo: ${url}`);
-
-          // Manejo de errores
-          video.onerror = function () {
-            throw new Error('Error al cargar el video');
-          };
+    <script>
+      // Configuración del video (reemplaza con tu ID de YouTube)
+      const YOUTUBE_VIDEO_ID = "dQw4w9WgXcQ";
+      let isTargetVisible = false;
+      let playerElement = document.getElementById('youtube-player');
+      let containerElement = document.getElementById('youtube-container');
+      let iframeElement = document.getElementById('youtube-iframe');
+      
+      // Inicializar el reproductor
+      iframeElement.src = `https://www.youtube.com/embed/64msXB6DNTc?autoplay=1&mute=1&enablejsapi=1`;
+      
+      // Escuchar eventos de MindAR
+      const scene = document.querySelector('a-scene');
+      scene.addEventListener('targetFound', event => {
+        if (event.target.getAttribute('mindar-image-target').targetIndex === 0) {
+          isTargetVisible = true;
+          containerElement.style.display = 'block';
+          positionVideoElement();
         }
-
-        // Mostrar el contenedor y el botón de cierre
-        videoContainer.style.display = 'block';
-        closeButton.style.display = 'flex';
-
-      } catch (error) {
-        console.error(`Error: ${error.message}`);
-        showErrorMessage(`Error al cargar el video: ${error.message}`);
-        hideContentTitle();
-      }
-    }
-
-    // Función para cerrar video
-    function closeVideo() {
-      const videoContainer = document.getElementById('video-container');
-      const videoWrapper = document.getElementById('video-wrapper');
-      const closeButton = videoContainer.querySelector('.close-button');
-
-      // Limpiar el contenedor
-      videoWrapper.innerHTML = '';
-      videoContainer.style.display = 'none';
-      closeButton.style.display = 'none';
-
-      // Ocultar título al cerrar video
-      hideContentTitle();
-
-      console.log('Video cerrado');
-    }
-    
-    // Registrar componente personalizado para manejar videos de YouTube
-    AFRAME.registerComponent('youtube-video', {
-      schema: {type: 'string', default: ''},
+      });
       
-      init: function() {
-        // Referencia al elemento
-        const el = this.el;
-        const videoUrl = this.data;
+      scene.addEventListener('targetLost', event => {
+        if (event.target.getAttribute('mindar-image-target').targetIndex === 0) {
+          isTargetVisible = false;
+          containerElement.style.display = 'none';
+        }
+      });
+      
+      // Posicionar el video sobre el marcador
+      function positionVideoElement() {
+        if (!isTargetVisible) return;
         
-        console.log("Componente de video inicializado con URL:", videoUrl);
+        // Obtener posición del marcador en la pantalla
+        const target = document.querySelector('[mindar-image-target="targetIndex: 0"]');
+        const position = target.object3D.position.clone();
+        position.project(scene.camera);
         
-        // Manejar clic en el botón de reproducción
-        el.addEventListener('click', () => {
-          console.log("Click en botón de reproducción, mostrando video:", videoUrl);
-          showContentTitle("Video de YouTube");
-          showVideo(videoUrl);
-        });
+        // Convertir coordenadas normalizadas a píxeles
+        const x = (position.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-(position.y * 0.5) + 0.5) * window.innerHeight;
+        
+        // Posicionar el elemento
+        playerElement.style.left = `${x - playerElement.offsetWidth/2}px`;
+        playerElement.style.top = `${y - playerElement.offsetHeight/2}px`;
+        
+        requestAnimationFrame(positionVideoElement);
       }
-    });
-
-    // Hacer los elementos clickeables
-    AFRAME.registerComponent('clickable', {
-      init: function() {
-        this.el.setAttribute('class', 'clickable');
-        this.el.addEventListener('click', function(evt) {
-          console.log('Elemento clickeado');
-        });
+      
+      // Función para pantalla completa
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          iframeElement.requestFullscreen().catch(err => {
+            alert(`Error al intentar pantalla completa: ${err.message}`);
+          });
+        } else {
+          document.exitFullscreen();
+        }
       }
-    });
-  </script>
-</body>
+      
+      // Redimensionar al cambiar tamaño de ventana
+      window.addEventListener('resize', positionVideoElement);
+    </script>
+  </body>
 </html>
