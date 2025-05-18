@@ -1,216 +1,121 @@
-/* Estilos para el panel de configuración y sus elementos */
-
-  /* Agregar esto para el panel de información */
-  .info-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    z-index: 10000;
-    display: none;
-  }
-  .info-panel-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
-  }
-  
-/* Icono de configuración */
-.config-icon {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    width: 40px;
-    height: 40px;
-    background-color: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    color: white;
-    transition: transform 0.3s ease;
+/* Icono de Configuración AR */
+.ar-config-icon {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10000;
+  animation: pulse 2s infinite;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.config-icon:hover {
-    transform: rotate(30deg);
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
-/* Panel de configuración */
-.config-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 300px;
-    background-color: rgba(30, 30, 30, 0.85);
-    color: white;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
-    z-index: 2001;
-    display: none;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
+/* Panel de Configuración AR */
+.ar-config-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 400px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 10px;
+  padding: 20px;
+  color: white;
+  z-index: 10001;
+  display: none;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.config-panel.visible {
-    display: block;
-    animation: fadeIn 0.3s;
+.ar-config-panel h3 {
+  margin-top: 0;
+  color: #4CAF50;
+  text-align: center;
 }
 
-/* Encabezado del panel */
-.config-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    background-color: rgba(0, 0, 0, 0.4);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.ar-config-content {
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
-.config-header h3 {
-    margin: 0;
-    font-size: 18px;
+.sensor-check {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
 }
 
-.config-close-btn {
-    background-color: transparent;
-    border: none;
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
+.sensor-status {
+  font-weight: bold;
 }
 
-/* Contenido del panel */
-.config-content {
-    padding: 15px;
+.sensor-ok {
+  color: #4CAF50;
 }
 
-/* Opciones del panel */
-.config-option {
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.sensor-error {
+  color: #f44336;
 }
 
-.config-option label {
-    font-size: 16px;
+.ar-config-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: bold;
 }
 
-/* Botón general */
-.config-button {
-    background-color: #4285f4;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    text-decoration: none;
-    display: inline-block;
-    text-align: center;
+.ar-config-btn:hover {
+  background: #45a049;
 }
 
-.config-button:hover {
-    background-color: #3367d6;
+.close-panel-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
 }
 
-/* Switch toggle para linterna */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
+.webgl-link {
+  color: #4CAF50;
+  text-decoration: none;
+  display: block;
+  margin: 15px 0;
+  text-align: center;
 }
 
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
+.webgl-link:hover {
+  text-decoration: underline;
 }
 
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-}
-
-input:checked + .slider {
-    background-color: #4CAF50;
-}
-
-input:focus + .slider {
-    box-shadow: 0 0 1px #4CAF50;
-}
-
-input:checked + .slider:before {
-    transform: translateX(26px);
-}
-
-.slider.round {
-    border-radius: 24px;
-}
-
-.slider.round:before {
-    border-radius: 50%;
-}
-
-/* Resultados de sensores */
-.sensors-result {
-    margin-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 15px;
-}
-
-.sensors-result p {
-    margin: 5px 0;
-    font-size: 14px;
-    color: #ddd;
-}
-
-/* Animación para el panel */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* Adaptación para móviles */
-@media (max-width: 360px) {
-    .config-panel {
-        width: 85%;
-    }
+.error-message {
+  color: #f44336;
+  font-size: 14px;
+  margin-top: 5px;
+  text-align: center;
 }

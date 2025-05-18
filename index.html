@@ -132,20 +132,12 @@
 </head>
 
 <body>
-
-  <!-- Panel de información interactivo (HTML) - NUEVO -->
-  <div id="info-panel" class="info-panel">
-    <button class="info-panel-close" onclick="closeInfoPanel()">✕</button>
-    <h3 id="info-panel-title">Título</h3>
-    <div id="info-panel-content" class="info-panel-content">
-      <img id="info-panel-image" class="info-panel-image" src="" alt="">
-      <p id="info-panel-text">Contenido</p>
-    </div>
-  </div>
-
-  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB"
-    renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false">
+  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" 
+           color-space="sRGB"
+           renderer="colorManagement: true, physicallyCorrectLights" 
+           vr-mode-ui="enabled: false"
+           device-orientation-permission-ui="enabled: false">
+           
     <a-assets>
       <img id="card1" src="tarjetas/t1.png" />
       <img id="card2" src="tarjetas/t2.png" />
@@ -159,7 +151,7 @@
 
     <!-- Target 0: Video de YouTube -->
     <a-entity mindar-image-target="targetIndex: 0">
-      
+    <!--  <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->  
     </a-entity>
 
     <!-- Target 1: Modelo 3D -->
@@ -172,12 +164,12 @@
 
     <!-- Target 2: GeoGebra -->
     <a-entity mindar-image-target="targetIndex: 2">
-      
+    <!--  <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->  
     </a-entity>
 
     <!-- Target 3: Página web -->
     <a-entity mindar-image-target="targetIndex: 3">
-      
+    <!--  <a-plane src="#card4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->  
     </a-entity>
   </a-scene>
 
