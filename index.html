@@ -39,7 +39,6 @@
       font-size: 12px;
     }
 
-    /* Nuevo estilo para el botón de cerrar */
     .close-btn {
       position: absolute;
       top: 5px;
@@ -58,21 +57,11 @@
       z-index: 10000;
     }
 
-    .target-image {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      width: 150px;
-      height: auto;
-      border: 2px solid white;
-      z-index: 9998;
-      display: none;
-    }
+    /* Eliminado el estilo .target-image ya que no lo usaremos */
   </style>
 </head>
 
 <body>
-  <!-- Todo el contenido de la escena AR se mantiene igual -->
   <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB"
     renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
@@ -97,11 +86,10 @@
     </a-entity>
   </a-scene>
 
-  <img id="target-preview" class="target-image" src="" alt="Imagen objetivo">
+  <!-- Eliminado el elemento img.target-image -->
 
   <div id="youtube-container" class="youtube-container">
     <div id="youtube-player" class="youtube-player">
-      <!-- Botón de cerrar añadido aquí -->
       <button class="close-btn" onclick="closeVideo()">X</button>
       <iframe id="youtube-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
       <button class="fullscreen-btn" onclick="toggleFullscreen()">Pantalla completa</button>
@@ -120,14 +108,13 @@
     const playerElement = document.getElementById('youtube-player');
     const containerElement = document.getElementById('youtube-container');
     const iframeElement = document.getElementById('youtube-iframe');
-    const targetPreview = document.getElementById('target-preview');
     const scene = document.querySelector('a-scene');
     let currentTarget = null;
 
     // Inicializar reproductor de YouTube
     iframeElement.src = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&enablejsapi=1&controls=1`;
 
-    // Función para cerrar el video (nueva función)
+    // Función para cerrar el video
     function closeVideo() {
       containerElement.style.display = 'none';
       // Pausar el video
@@ -150,14 +137,10 @@
       });
     };
 
-    // Eventos de MindAR
+    // Eventos de MindAR (simplificados sin manejo de imágenes de referencia)
     scene.addEventListener('targetFound', event => {
       const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
       currentTarget = targetIndex;
-      
-      // Mostrar imagen de referencia
-      targetPreview.src = TARGET_CONFIG[targetIndex].image;
-      targetPreview.style.display = 'block';
       
       // Mostrar video si es el target 0
       if (targetIndex === 0) {
@@ -167,11 +150,6 @@
 
     scene.addEventListener('targetLost', event => {
       const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-      
-      // Solo ocultar el modelo 3D (target 1), el video sigue visible
-      if (targetIndex === 1) {
-        targetPreview.style.display = 'none';
-      }
       
       // Si se pierde el target actual, limpiar
       if (targetIndex === currentTarget) {
@@ -189,7 +167,6 @@
         document.exitFullscreen();
       }
     }
-
   </script>
 </body>
 </html>
