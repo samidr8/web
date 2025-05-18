@@ -92,10 +92,46 @@
       font-family: Arial, sans-serif;
       font-size: 16px;
     }
+    
+    /* Estilo para el botón manual */
+    #manual-video-button {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 900;
+      display: block;
+    }
+    
+    #manual-video-button button {
+      background-color: #FF0000;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+    }
+    
+    /* Indicador de detección de marcador */
+    #marker-status {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      z-index: 900;
+    }
   </style>
 </head>
 <body>
-  <!-- Video container for YouTube -->
+  // Video container for YouTube -->
   <div id="video-container">
     <div id="video-wrapper"></div>
     <div class="close-button" onclick="closeVideo()"></div>
@@ -103,6 +139,13 @@
   
   <div id="error-message"></div>
   <div id="content-title"></div>
+  
+  <!-- Botón manual para dispositivos móviles -->
+  <div id="manual-video-button">
+    <button onclick="playYoutubeVideo('https://www.youtube.com/watch?v=dQw4w9WgXcQ')">
+      Reproducir Video
+    </button>
+  </div>
 
   <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB" 
            renderer="colorManagement: true, physicallyCorrectLights" 
@@ -125,13 +168,16 @@
     </a-entity>
     
     <!-- Segundo marcador: Video de YouTube -->
-    <a-entity mindar-image-target="targetIndex: 1">
+    <a-entity mindar-image-target="targetIndex: 1" id="marker-target-1">
       <a-plane color="#fff" opacity="0.5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
-      <a-plane color="#FF0000" opacity="0.8" position="0 0 0.01" height="0.2" width="0.2" rotation="0 0 0"
-               class="clickable" youtube-video="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+      <a-plane color="#FF0000" opacity="0.8" position="0 0 0.01" height="0.2" width="0.2" rotation="0 0 0">
         <a-text value="▶ Play" align="center" position="0 0 0.01" color="#FFFFFF" scale="0.2 0.2 0.2"></a-text>
       </a-plane>
     </a-entity>
+  </a-scene>
+  
+  <!-- Indicador de estado del marcador -->
+  <div id="marker-status">Estado: Buscando marcador...</div>
     
     <!-- Puedes añadir más entidades para los otros marcadores siguiendo el mismo patrón -->
     
