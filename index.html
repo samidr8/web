@@ -6,7 +6,8 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
   <style>
-    .youtube-container {
+    /* Contenedores para los diferentes tipos de contenido */
+    .content-container {
       position: fixed;
       top: 50%;
       left: 50%;
@@ -16,6 +17,7 @@
       z-index: 9999;
     }
 
+    /* Estilo para el reproductor de YouTube */
     .youtube-player {
       width: 320px;
       height: 180px;
@@ -26,6 +28,18 @@
       position: relative;
     }
 
+    /* Estilo para el applet de GeoGebra */
+    .geogebra-player {
+      width: 400px;
+      height: 400px;
+      background: #fff;
+      border: 2px solid #ddd;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+      position: relative;
+    }
+
+    /* Botones comunes */
     .fullscreen-btn {
       position: absolute;
       bottom: 5px;
@@ -56,8 +70,6 @@
       justify-content: center;
       z-index: 10000;
     }
-
-    /* Eliminado el estilo .target-image ya que no lo usaremos */
   </style>
 </head>
 
@@ -68,99 +80,123 @@
     <a-assets>
       <img id="card1" src="tarjetas/t1.png" />
       <img id="card2" src="tarjetas/t2.png" />
+      <img id="card3" src="tarjetas/t3.png" />
       <a-asset-item id="avatarModel" src="media/shiba/scene.gltf"></a-asset-item>
       <video id="youtube-video" autoplay loop crossorigin="anonymous" webkit-playsinline playsinline></video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+    <!-- Target 0: Video de YouTube -->
     <a-entity mindar-image-target="targetIndex: 0">
       <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
     </a-entity>
 
+    <!-- Target 1: Modelo 3D -->
     <a-entity mindar-image-target="targetIndex: 1">
       <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
       <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.5 0.5 0.5" src="#avatarModel" 
         animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
       </a-gltf-model>
     </a-entity>
+
+    <!-- Target 2: GeoGebra -->
+    <a-entity mindar-image-target="targetIndex: 2">
+      <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+    </a-entity>
   </a-scene>
 
-  <!-- Eliminado el elemento img.target-image -->
-
-  <div id="youtube-container" class="youtube-container">
-    <div id="youtube-player" class="youtube-player">
-      <button class="close-btn" onclick="closeVideo()">X</button>
+  <!-- Contenedor para YouTube -->
+  <div id="youtube-container" class="content-container">
+    <div class="youtube-player">
+      <button class="close-btn" onclick="closeContent('youtube')">X</button>
       <iframe id="youtube-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
-      <button class="fullscreen-btn" onclick="toggleFullscreen()">Pantalla completa</button>
+      <button class="fullscreen-btn" onclick="toggleFullscreen('youtube')">Pantalla completa</button>
+    </div>
+  </div>
+
+  <!-- Contenedor para GeoGebra -->
+  <div id="geogebra-container" class="content-container">
+    <div class="geogebra-player">
+      <button class="close-btn" onclick="closeContent('geogebra')">X</button>
+      <iframe id="geogebra-iframe" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+      <button class="fullscreen-btn" onclick="toggleFullscreen('geogebra')">Pantalla completa</button>
     </div>
   </div>
 
   <script>
     // Configuración
-    const YOUTUBE_VIDEO_ID = "64msXB6DNTc";
-    const TARGET_CONFIG = {
-      0: { image: "tarjetas/t1.png", type: "video" },
-      1: { image: "tarjetas/t2.png", type: "3d" }
+    const CONTENT_CONFIG = {
+      0: { 
+        type: "video", 
+        container: "youtube",
+        youtubeId: "64msXB6DNTc" // Reemplaza con tu ID de YouTube
+      },
+      1: { 
+        type: "3d" 
+      },
+      2: { 
+        type: "geogebra",
+        container: "geogebra",
+        appletId: "12345" // Reemplaza con tu ID de applet GeoGebra
+      }
     };
 
-    // Elementos del DOM
-    const playerElement = document.getElementById('youtube-player');
-    const containerElement = document.getElementById('youtube-container');
-    const iframeElement = document.getElementById('youtube-iframe');
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configurar YouTube
+      const youtubeIframe = document.getElementById('youtube-iframe');
+      youtubeIframe.src = `https://www.youtube.com/embed/${CONTENT_CONFIG[0].youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
+      
+      // Configurar GeoGebra
+      const geogebraIframe = document.getElementById('geogebra-iframe');
+      geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[2].appletId}/width/400/height/400/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
+      
+      // Manejar sonido para YouTube
+      youtubeIframe.onload = function() {
+        document.body.addEventListener('click', function unmuteVideo() {
+          youtubeIframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'unmute',
+            args: []
+          }), '*');
+          document.body.removeEventListener('click', unmuteVideo);
+        });
+      };
+    });
+
+    // Eventos de MindAR
     const scene = document.querySelector('a-scene');
-    let currentTarget = null;
-
-    // Inicializar reproductor de YouTube
-    iframeElement.src = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&enablejsapi=1&controls=1`;
-
-    // Función para cerrar el video
-    function closeVideo() {
-      containerElement.style.display = 'none';
-      // Pausar el video
-      iframeElement.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: 'pauseVideo',
-        args: []
-      }), '*');
-    }
-
-    // Manejar sonido después de interacción del usuario
-    iframeElement.onload = function() {
-      document.body.addEventListener('click', function unmuteVideo() {
-        iframeElement.contentWindow.postMessage(JSON.stringify({
-          event: 'command',
-          func: 'unmute',
-          args: []
-        }), '*');
-        document.body.removeEventListener('click', unmuteVideo);
-      });
-    };
-
-    // Eventos de MindAR (simplificados sin manejo de imágenes de referencia)
     scene.addEventListener('targetFound', event => {
       const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-      currentTarget = targetIndex;
+      const contentConfig = CONTENT_CONFIG[targetIndex];
       
-      // Mostrar video si es el target 0
-      if (targetIndex === 0) {
-        containerElement.style.display = 'block';
+      if (contentConfig && contentConfig.container) {
+        const container = document.getElementById(`${contentConfig.container}-container`);
+        container.style.display = 'block';
       }
     });
 
-    scene.addEventListener('targetLost', event => {
-      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
+    // Funciones de control
+    function closeContent(type) {
+      const container = document.getElementById(`${type}-container`);
+      container.style.display = 'none';
       
-      // Si se pierde el target actual, limpiar
-      if (targetIndex === currentTarget) {
-        currentTarget = null;
+      if (type === 'youtube') {
+        // Pausar el video de YouTube
+        const iframe = document.getElementById('youtube-iframe');
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'pauseVideo',
+          args: []
+        }), '*');
       }
-    });
+    }
 
-    // Función para pantalla completa
-    function toggleFullscreen() {
+    function toggleFullscreen(type) {
+      const iframe = document.getElementById(`${type}-iframe`);
       if (!document.fullscreenElement) {
-        iframeElement.requestFullscreen().catch(err => {
+        iframe.requestFullscreen().catch(err => {
           alert(`Error al intentar pantalla completa: ${err.message}`);
         });
       } else {
