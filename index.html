@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
@@ -21,25 +22,25 @@
 
     /* Estilo para el reproductor de YouTube */
     .youtube-player {
-      width: 90vw;                
-      max-width: 600px;           
-      aspect-ratio: 16/9;         
-      height: auto;               
-      margin: 0 auto;             
-      background: #000;           
-      border: 2px solid #fff;     
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); 
-      pointer-events: auto;       
-      position: relative;         
+      width: 90vw;
+      max-width: 600px;
+      aspect-ratio: 16/9;
+      height: auto;
+      margin: 0 auto;
+      background: #000;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+      position: relative;
     }
 
     /* Estilo para el applet de GeoGebra */
     .geogebra-player {
-      width: 90vw;                
-      max-width: 600px;           
-      aspect-ratio: 4/3;         
-      height: auto;               
-      margin: 0 auto; 
+      width: 90vw;
+      max-width: 600px;
+      aspect-ratio: 4/3;
+      height: auto;
+      margin: 0 auto;
       background: #fff;
       border: 2px solid #ddd;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -49,21 +50,21 @@
     }
 
     /* Estilo para el mensaje de página web */
-  .webpage-alert {
-      height: 90vw;                
-      max-height: 500px;           
-      aspect-ratio: 3/4;          
-      width: auto;               
-      margin: 20px auto;          
-      padding: 25px;              
-      background: #fff;           
-      border-radius: 8px;        
-      border: 2px solid #e74c3c; 
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
-      text-align: center;         
-      pointer-events: auto;       
-      position: relative;         
-      box-sizing: border-box;    
+    .webpage-alert {
+      height: 90vw;
+      max-height: 500px;
+      aspect-ratio: 3/4;
+      width: auto;
+      margin: 20px auto;
+      padding: 25px;
+      background: #fff;
+      border-radius: 8px;
+      border: 2px solid #e74c3c;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      pointer-events: auto;
+      position: relative;
+      box-sizing: border-box;
     }
 
     .webpage-alert p {
@@ -126,36 +127,50 @@
       background: #c0392b;
     }
 
-  /* Personaliza el loader nativo de A-Frame */
-  .a-canvas {
-    background: transparent !important;
-  }
-  .a-loader-title {
-    display: none; /* Oculta el texto 'Loading' */
-  }
+    /* Personaliza el loader nativo de A-Frame */
+    .a-canvas {
+      background: transparent !important;
+    }
 
-  .a-enter-ar-button, .a-enter-vr-button {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }  
+    .a-loader-title {
+      display: none;
+      /* Oculta el texto 'Loading' */
+    }
 
-  /* Elimina completamente el botón VR */
-  .a-enter-vr {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }  
-    </style>
+    .a-enter-ar-button,
+    .a-enter-vr-button {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* Elimina completamente el botón VR */
+    .a-enter-vr {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* Elimina cualquier rastro del loader nativo */
+    .a-canvas {
+      background-color: transparent !important;
+      opacity: 1 !important;
+    }
+
+    /* Fondo de la escena completamente transparente */
+    .a-scene {
+      background: transparent !important;
+    }
+  </style>
 </head>
 
 <body>
   <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" 
-           color-space="sRGB"
-           renderer="colorManagement: true, physicallyCorrectLights" 
-           vr-mode-ui="enabled: false"
-           device-orientation-permission-ui="enabled: false">
-
+    loading-screen="enabled: false" 
+    renderer="colorManagement: true; alpha: true" 
+    background="color: transparent" 
+    style="background-color: transparent !important" 
+    >
     <a-assets>
       <img id="card1" src="tarjetas/t1.png" />
       <img id="card2" src="tarjetas/t2.png" />
@@ -172,7 +187,7 @@
       <!--  <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
     </a-entity>
 
-        <!-- Target 1: GeoGebra -->
+    <!-- Target 1: GeoGebra -->
     <a-entity mindar-image-target="targetIndex: 1">
       <!--  <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
     </a-entity>
@@ -220,7 +235,7 @@
     </div>
   </div>
 
-<div id="ar-loader" style="
+  <div id="ar-loader" style="
   position: fixed;
   top: 0;
   left: 0;
@@ -236,14 +251,14 @@
   font-family: 'Arial';
   transition: opacity 0.5s;
 ">
-  <div style="text-align: center; max-width: 80%;">
-    <h2 style="margin-bottom: 20px;">Preparando experiencia de Realidad Aumentada</h2>
-    <p>Por favor espera mientras se cargan los recursos...</p>
-    <div style="width: 200px; height: 4px; background: rgba(255,255,255,0.2); margin: 30px auto; border-radius: 2px;">
-      <div id="loader-bar" style="width: 0%; height: 100%; background: #4CAF50; border-radius: 2px;"></div>
+    <div style="text-align: center; max-width: 80%;">
+      <h2 style="margin-bottom: 20px;">Preparando experiencia de Realidad Aumentada</h2>
+      <p>Por favor espera mientras se cargan los recursos...</p>
+      <div style="width: 200px; height: 4px; background: rgba(255,255,255,0.2); margin: 30px auto; border-radius: 2px;">
+        <div id="loader-bar" style="width: 0%; height: 100%; background: #4CAF50; border-radius: 2px;"></div>
+      </div>
     </div>
   </div>
-</div>
 
   <script>
     // Configuración
@@ -262,7 +277,7 @@
         type: "webpage",
         container: "webpage",
         url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos"
-      },      
+      },
       3: {
         type: "3d"
       }
@@ -362,27 +377,40 @@
       closeContent('webpage');
     }
 
-  // Control de progreso
-  const loader = document.getElementById('ar-loader');
-  const loaderBar = document.getElementById('loader-bar');
-  let progress = 0;
+    // Control de progreso
+    const loader = document.getElementById('ar-loader');
+    const loaderBar = document.getElementById('loader-bar');
+    let progress = 0;
 
-  const progressInterval = setInterval(() => {
-    progress += Math.random() * 10;
-    loaderBar.style.width = `${Math.min(progress, 90)}%`; // Nunca llega al 100%
-  }, 300);
-
-  // Ocultar cuando esté listo
-  document.querySelector('a-scene').addEventListener('loaded', () => {
-    clearInterval(progressInterval);
-    loaderBar.style.width = '100%';
-    setTimeout(() => {
-      loader.style.opacity = '0';
-      setTimeout(() => loader.remove(), 500);
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 10;
+      loaderBar.style.width = `${Math.min(progress, 90)}%`; // Nunca llega al 100%
     }, 300);
-  });    
+
+    // Ocultar cuando esté listo
+    document.querySelector('a-scene').addEventListener('loaded', () => {
+      clearInterval(progressInterval);
+      loaderBar.style.width = '100%';
+      setTimeout(() => {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.remove(), 500);
+      }, 300);
+    });    
+
+// Fuerza transparencia después de la carga
+document.querySelector('a-scene').addEventListener('loaded', function() {
+  const scene = this;
+  scene.setAttribute('background', 'color', 'transparent');
+  
+  // Asegura que el renderer use transparencia
+  if (scene.renderer) {
+    scene.renderer.setClearColor(0x000000, 0); // Alpha en 0
+  }
+});
+    
   </script>
 
   <script src="config-sensores.js"></script>
 </body>
+
 </html>
