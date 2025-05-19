@@ -151,26 +151,74 @@
       pointer-events: none !important;
     }
 
-    /* Elimina cualquier rastro del loader nativo */
-    .a-canvas {
-      background-color: transparent !important;
-      opacity: 1 !important;
+    /* Reemplaza el indicador predeterminado */
+    .mindar-ui-overlay {
+      background: rgba(0, 50, 100, 0.3) !important;
+      /* Fondo azul claro */
     }
 
-    /* Fondo de la escena completamente transparente */
-    .a-scene {
-      background: transparent !important;
+    .mindar-ui-target {
+      border-color: rgba(100, 200, 255, 0.8) !important;
+      /* Bordes azul brillante */
+      border-width: 3px !important;
+      animation: radar-scan 4s infinite ease-in-out !important;
+    }
+
+    /* Animación tipo radar horizontal */
+    @keyframes radar-scan {
+
+      0%,
+      100% {
+        transform: translateX(-50%) scaleX(1.2);
+        opacity: 0.8;
+      }
+
+      25% {
+        transform: translateX(10%) scaleX(0.8);
+      }
+
+      50% {
+        transform: translateX(50%) scaleX(1.5);
+        opacity: 1;
+      }
+
+      75% {
+        transform: translateX(10%) scaleX(0.8);
+      }
+    }
+
+    /* Esquinas personalizadas */
+    .mindar-ui-target::before,
+    .mindar-ui-target::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(100, 200, 255, 0.9);
+    }
+
+    .mindar-ui-target::before {
+      top: -5px;
+      left: -5px;
+      border-right: none;
+      border-bottom: none;
+    }
+
+    .mindar-ui-target::after {
+      bottom: -5px;
+      right: -5px;
+      border-left: none;
+      border-top: none;
     }
   </style>
+
 </head>
 
 <body>
-  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" 
-    loading-screen="enabled: false" 
-    renderer="colorManagement: true; alpha: true" 
-    background="color: transparent" 
-    style="background-color: transparent !important" 
-    >
+  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
     <a-assets>
       <img id="card1" src="tarjetas/t1.png" />
       <img id="card2" src="tarjetas/t2.png" />
@@ -395,19 +443,22 @@
         loader.style.opacity = '0';
         setTimeout(() => loader.remove(), 500);
       }, 300);
-    });    
+    });
 
-// Fuerza transparencia después de la carga
-document.querySelector('a-scene').addEventListener('loaded', function() {
-  const scene = this;
-  scene.setAttribute('background', 'color', 'transparent');
-  
-  // Asegura que el renderer use transparencia
-  if (scene.renderer) {
-    scene.renderer.setClearColor(0x000000, 0); // Alpha en 0
-  }
-});
-    
+    document.querySelector('a-scene').addEventListener('loaded', () => {
+      const target = document.querySelector('.mindar-ui-target');
+
+      // Cambia dinámicamente el color cuando se detecte el marcador
+      const scene = document.querySelector('a-scene');
+      scene.addEventListener('targetFound', () => {
+        target.style.borderColor = 'rgba(0, 255, 150, 0.8)'; // Verde al detectar
+      });
+
+      scene.addEventListener('targetLost', () => {
+        target.style.borderColor = 'rgba(100, 200, 255, 0.8)'; // Azul al perder
+      });
+    });
+
   </script>
 
   <script src="config-sensores.js"></script>
