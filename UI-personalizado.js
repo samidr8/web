@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Crear UI personalizado (INICIALMENTE OCULTO)
+  // 1. Crear UI personalizado
   const trackingUI = document.createElement('div');
   trackingUI.className = 'custom-tracking-ui';
-  trackingUI.style.opacity = '0'; // ← Inicia oculto
   trackingUI.innerHTML = `
     <div class="tracking-square">
       <span></span>
@@ -11,20 +10,36 @@ document.addEventListener('DOMContentLoaded', () => {
   `;
   document.body.appendChild(trackingUI);
 
-  // 2. Mostrar solo durante la carga
   const scene = document.querySelector('a-scene');
   
-  // Evento: Cuando el AR comienza a cargar (pero aún no está listo)
+  // Estado inicial
+  let isTracking = false;
+
+  // 2. Controlar visibilidad durante carga
   scene.addEventListener('renderstart', () => {
-    trackingUI.style.opacity = '1'; // ← Se muestra
+    if (!isTracking) {
+      trackingUI.style.opacity = '1';
+    }
   });
 
-  // Evento: Cuando el AR termina de cargar
   scene.addEventListener('loaded', () => {
-    trackingUI.style.opacity = '0'; // ← Se oculta
+    if (!isTracking) {
+      trackingUI.style.opacity = '0';
+    }
   });
 
-  // 3. Eliminar el UI original de MindAR (por si acaso)
+  // 3. Controlar detección de marcador
+  scene.addEventListener('targetFound', () => {
+    isTracking = true;
+    trackingUI.style.opacity = '0';
+  });
+
+  scene.addEventListener('targetLost', () => {
+    isTracking = false;
+    trackingUI.style.opacity = '1';
+  });
+
+  // 4. Eliminar UI original persistentemente
   const removeDefaultUI = setInterval(() => {
     const defaultUI = document.querySelector('.mindar-ui-overlay');
     if (defaultUI) defaultUI.remove();

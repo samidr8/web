@@ -12,14 +12,14 @@
   height: 100%;
   pointer-events: none;
   z-index: 9998;
-  opacity: 1;
+  opacity: 0; /* Inicia oculto */
   transition: opacity 0.3s ease;
 }
 
 /* Cuadrado con esquinas estilo "HUD" */
 .tracking-square {
   position: absolute;
-  width: 60vmin; /* Tamaño cuadrado responsivo */
+  width: 60vmin;
   height: 60vmin;
   top: 50%;
   left: 50%;
@@ -40,25 +40,25 @@
 }
 
 /* Posición de las esquinas */
-.tracking-square::before { /* Superior izquierda */
+.tracking-square::before {
   top: -2px;
   left: -2px;
   border-right: none;
   border-bottom: none;
 }
-.tracking-square::after { /* Inferior derecha */
+.tracking-square::after {
   bottom: -2px;
   right: -2px;
   border-left: none;
   border-top: none;
 }
-.tracking-square span::before { /* Superior derecha */
+.tracking-square span::before {
   top: -2px;
   right: -2px;
   border-left: none;
   border-bottom: none;
 }
-.tracking-square span::after { /* Inferior izquierda */
+.tracking-square span::after {
   bottom: -2px;
   left: -2px;
   border-right: none;
