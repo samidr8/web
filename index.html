@@ -228,7 +228,7 @@
 
       // Configurar GeoGebra
       const geogebraIframe = document.getElementById('geogebra-iframe');
-      geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[2].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
+      geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[1].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
 
       // Configurar listeners para YouTube
       document.getElementById('youtube-close-btn').addEventListener('click', () => closeContent('youtube'));
@@ -266,7 +266,7 @@
           container.style.display = 'block';
           container.style.pointerEvents = 'auto';
 
-          if (targetIndex === 3) {
+          if (targetIndex === 2) {
             document.getElementById('webpage-alert').style.display = 'block';
           }
         }
@@ -299,15 +299,15 @@
     function openExternalBrowser() {
       try {
         // Intenta abrir en nueva pestaña
-        const newWindow = window.open(CONTENT_CONFIG[3].url, '_blank');
+        const newWindow = window.open(CONTENT_CONFIG[2].url, '_blank');
 
         // Fallback si el navegador bloquea la ventana emergente
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-          window.location.href = CONTENT_CONFIG[3].url;
+          window.location.href = CONTENT_CONFIG[2].url;
         }
       } catch (e) {
         console.error('Error al abrir el navegador:', e);
-        window.location.href = CONTENT_CONFIG[3].url;
+        window.location.href = CONTENT_CONFIG[2].url;
       }
 
       // Cerrar el contenedor de la página web
