@@ -49,20 +49,21 @@
     }
 
     /* Estilo para el mensaje de página web */
-    .webpage-alert {
-      width: 90vw;                
-      max-width: 600px;           
-      aspect-ratio: 3/4;         
-      height: auto;               
-      margin: 0 auto; 
-      padding: 25px;
-      background: #fff;
-      border-radius: 8px;
-      border: 2px solid #e74c3c;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      pointer-events: auto;
-      position: relative;
+  .webpage-alert {
+      height: 90vw;                /* 90% del ancho del viewport */
+      max-height: 500px;           /* Ancho máximo */
+      aspect-ratio: 3/4;          /* Relación alto/ancho 3:4 */
+      width: auto;               /* Altura calculada automáticamente */
+      margin: 20px auto;          /* Margen superior/inferior de 20px y centrado horizontal */
+      padding: 25px;              /* Espacio interno */
+      background: #fff;           /* Fondo blanco */
+      border-radius: 8px;         /* Bordes redondeados */
+      border: 2px solid #e74c3c;  /* Borde rojo */
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Sombra */
+      text-align: center;         /* Texto centrado */
+      pointer-events: auto;       /* Permite interacción */
+      position: relative;         /* Posicionamiento relativo */
+      box-sizing: border-box;     /* Incluye padding y border en el ancho total */
     }
 
     .webpage-alert p {
@@ -204,7 +205,7 @@
       0: {
         type: "video",
         container: "youtube",
-        youtubeId: "64msXB6DNTc"
+        youtubeId: "dayfz0ff1Mc"
       },
       1: {
         type: "geogebra",
@@ -214,7 +215,7 @@
       2: {
         type: "webpage",
         container: "webpage",
-        url: "https://www.mep.go.cr"
+        url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos"
       },      
       3: {
         type: "3d"
