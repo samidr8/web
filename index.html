@@ -125,7 +125,28 @@
     .cancel-btn:hover {
       background: #c0392b;
     }
-  </style>
+
+  /* Personaliza el loader nativo de A-Frame */
+  .a-canvas {
+    background: transparent !important;
+  }
+  .a-loader-title {
+    display: none; /* Oculta el texto 'Loading' */
+  }
+
+  .a-enter-ar-button, .a-enter-vr-button {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }  
+
+  /* Elimina completamente el botón VR */
+  .a-enter-vr {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }  
+    </style>
 </head>
 
 <body>
@@ -198,6 +219,31 @@
       </div>
     </div>
   </div>
+
+<div id="ar-loader" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(10,30,50,0.8) 0%, rgba(0,0,20,0.9) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 9999;
+  color: white;
+  font-family: 'Arial';
+  transition: opacity 0.5s;
+">
+  <div style="text-align: center; max-width: 80%;">
+    <h2 style="margin-bottom: 20px;">Preparando experiencia de Realidad Aumentada</h2>
+    <p>Por favor espera mientras se cargan los recursos...</p>
+    <div style="width: 200px; height: 4px; background: rgba(255,255,255,0.2); margin: 30px auto; border-radius: 2px;">
+      <div id="loader-bar" style="width: 0%; height: 100%; background: #4CAF50; border-radius: 2px;"></div>
+    </div>
+  </div>
+</div>
 
   <script>
     // Configuración
@@ -315,6 +361,26 @@
       // Cerrar el contenedor de la página web
       closeContent('webpage');
     }
+
+  // Control de progreso
+  const loader = document.getElementById('ar-loader');
+  const loaderBar = document.getElementById('loader-bar');
+  let progress = 0;
+
+  const progressInterval = setInterval(() => {
+    progress += Math.random() * 10;
+    loaderBar.style.width = `${Math.min(progress, 90)}%`; // Nunca llega al 100%
+  }, 300);
+
+  // Ocultar cuando esté listo
+  document.querySelector('a-scene').addEventListener('loaded', () => {
+    clearInterval(progressInterval);
+    loaderBar.style.width = '100%';
+    setTimeout(() => {
+      loader.style.opacity = '0';
+      setTimeout(() => loader.remove(), 500);
+    }, 300);
+  });    
   </script>
 
   <script src="config-sensores.js"></script>
