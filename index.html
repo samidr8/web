@@ -21,15 +21,16 @@
 
     /* Estilo para el reproductor de YouTube */
     .youtube-player {
-      height: 95%;
-      max-height: 600px;
-      width: calc(100vw * 0.90); 
-      max-width: 450px;
-      background: #000;
-      border: 2px solid #fff;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-      pointer-events: auto;
-      position: relative;
+      width: 90vw;                /* 90% del ancho del viewport */
+      max-width: 600px;           /* Ancho máximo */
+      aspect-ratio: 16/9;         /* Relación de aspecto 16:9 (típica de YouTube) */
+      height: auto;               /* Altura automática basada en el aspect-ratio */
+      margin: 0 auto;             /* Centrado horizontal */
+      background: #000;           /* Fondo negro */
+      border: 2px solid #fff;     /* Borde blanco */
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Sombra suave */
+      pointer-events: auto;       /* Permite interacción */
+      position: relative;         /* Para posicionar elementos hijos */
     }
 
     /* Estilo para el applet de GeoGebra */
@@ -147,22 +148,22 @@
       <!--  <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
     </a-entity>
 
-    <!-- Target 1: Modelo 3D -->
+        <!-- Target 1: GeoGebra -->
     <a-entity mindar-image-target="targetIndex: 1">
+      <!--  <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
+    </a-entity>
+
+    <!-- Target 2: Página web -->
+    <a-entity mindar-image-target="targetIndex: 2">
+      <!--  <a-plane src="#card4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
+    </a-entity>
+
+    <!-- Target 3: Modelo 3D -->
+    <a-entity mindar-image-target="targetIndex: 3">
       <!--  <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
       <a-gltf-model rotation="0 0 0" position="0 0 0" scale="0.5 0.5 0.5" src="#avatarModel"
         animation="property: position; to: 0 0 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate; enabled: false">
       </a-gltf-model>
-    </a-entity>
-
-    <!-- Target 2: GeoGebra -->
-    <a-entity mindar-image-target="targetIndex: 2">
-      <!--  <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
-    </a-entity>
-
-    <!-- Target 3: Página web -->
-    <a-entity mindar-image-target="targetIndex: 3">
-      <!--  <a-plane src="#card4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
     </a-entity>
   </a-scene>
 
