@@ -21,24 +21,25 @@
 
     /* Estilo para el reproductor de YouTube */
     .youtube-player {
-      width: 90vw;                /* 90% del ancho del viewport */
-      max-width: 600px;           /* Ancho máximo */
-      aspect-ratio: 16/9;         /* Relación de aspecto 16:9 (típica de YouTube) */
-      height: auto;               /* Altura automática basada en el aspect-ratio */
-      margin: 0 auto;             /* Centrado horizontal */
-      background: #000;           /* Fondo negro */
-      border: 2px solid #fff;     /* Borde blanco */
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Sombra suave */
-      pointer-events: auto;       /* Permite interacción */
-      position: relative;         /* Para posicionar elementos hijos */
+      width: 90vw;                
+      max-width: 600px;           
+      aspect-ratio: 16/9;         
+      height: auto;               
+      margin: 0 auto;             
+      background: #000;           
+      border: 2px solid #fff;     
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); 
+      pointer-events: auto;       
+      position: relative;         
     }
 
     /* Estilo para el applet de GeoGebra */
     .geogebra-player {
-      height: 95%;
-      max-height: 600px;
-      width: calc(100vw * 0.90); 
-      max-width: 450px;
+      width: 90vw;                
+      max-width: 600px;           
+      aspect-ratio: 4/3;         
+      height: auto;               
+      margin: 0 auto; 
       background: #fff;
       border: 2px solid #ddd;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -205,17 +206,17 @@
         youtubeId: "64msXB6DNTc"
       },
       1: {
-        type: "3d"
-      },
-      2: {
         type: "geogebra",
         container: "geogebra",
         appletId: "qzjfkvpm"
       },
-      3: {
+      2: {
         type: "webpage",
         container: "webpage",
         url: "https://www.mep.go.cr"
+      },      
+      3: {
+        type: "3d"
       }
     };
 
