@@ -90,3 +90,14 @@
     opacity: 1;
   }
 }
+
+/* Asegurar que el canvas de A-Frame no muestre fondo blanco */
+.a-canvas {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+/* Mostrar el canvas solo cuando esté completamente listo */
+.a-canvas.ready {
+  opacity: 1;
+}

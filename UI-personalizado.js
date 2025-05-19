@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Crear UI personalizado
   const trackingUI = document.createElement('div');
   trackingUI.className = 'custom-tracking-ui';
-  trackingUI.style.opacity = '0'; // Inicia oculto
+  trackingUI.style.opacity = '0';
   trackingUI.innerHTML = `
     <div class="tracking-square">
       <span></span>
@@ -13,16 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const scene = document.querySelector('a-scene');
   
-  // 2. Mostrar durante carga inicial
+  // 2. Mostrar durante carga inicial - mantener visible hasta que todo esté listo
   scene.addEventListener('renderstart', () => {
     trackingUI.style.opacity = '1';
   });
 
-  // 3. Ocultar cuando el AR esté listo Y cuando se detecten marcadores
+  // 3. Ocultar solo cuando se detecten marcadores
   const hideUI = () => trackingUI.style.opacity = '0';
   const showUI = () => trackingUI.style.opacity = '1';
 
-  scene.addEventListener('loaded', hideUI);
+  // Eliminar el event listener de 'loaded' que ocultaba el UI demasiado pronto
+  // scene.removeEventListener('loaded', hideUI); // Esto ya no es necesario
   
   // Controlar todos los targets
   const targets = document.querySelectorAll('[mindar-image-target]');
