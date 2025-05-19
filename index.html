@@ -22,8 +22,10 @@
 
     /* Estilo para el reproductor de YouTube */
     .youtube-player {
-      width: 320px;
-      height: 180px;
+      width: 90%;
+      max-width: 400px;
+      height: calc(90vw * 0.75);    /* 75% del ancho (4:3) */
+      max-height: 300px;
       background: #000;
       border: 2px solid #fff;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -33,13 +35,16 @@
 
     /* Estilo para el applet de GeoGebra */
     .geogebra-player {
-      width: 400px;
-      height: 300px;
+      width: 90%;
+      max-width: 400px;
+      height: calc(90vw * 0.75);    /* 75% del ancho (4:3) */
+      max-height: 300px;
       background: #fff;
       border: 2px solid #ddd;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
       pointer-events: auto;
       position: relative;
+      margin: 0 auto;
     }
 
     /* Estilo para el mensaje de página web */
@@ -84,8 +89,8 @@
       background: rgba(255, 0, 0, 0.7);
       color: white;
       border: none;
-      width: 20px;
-      height: 20px;
+      width: 25px;
+      height: 25px;
       border-radius: 50%;
       cursor: pointer;
       font-size: 12px;
@@ -132,12 +137,10 @@
 </head>
 
 <body>
-  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" 
-           color-space="sRGB"
-           renderer="colorManagement: true, physicallyCorrectLights" 
-           vr-mode-ui="enabled: false"
-           device-orientation-permission-ui="enabled: false">
-           
+  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
     <a-assets>
       <img id="card1" src="tarjetas/t1.png" />
       <img id="card2" src="tarjetas/t2.png" />
@@ -151,12 +154,12 @@
 
     <!-- Target 0: Video de YouTube -->
     <a-entity mindar-image-target="targetIndex: 0">
-    <!--  <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->  
+      <!--  <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
     </a-entity>
 
     <!-- Target 1: Modelo 3D -->
     <a-entity mindar-image-target="targetIndex: 1">
-     <!--  <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
+      <!--  <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
       <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.5 0.5 0.5" src="#avatarModel"
         animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
       </a-gltf-model>
@@ -164,12 +167,12 @@
 
     <!-- Target 2: GeoGebra -->
     <a-entity mindar-image-target="targetIndex: 2">
-    <!--  <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->  
+      <!--  <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
     </a-entity>
 
     <!-- Target 3: Página web -->
     <a-entity mindar-image-target="targetIndex: 3">
-    <!--  <a-plane src="#card4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->  
+      <!--  <a-plane src="#card4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
     </a-entity>
   </a-scene>
 
