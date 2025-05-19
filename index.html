@@ -24,8 +24,7 @@
     .youtube-player {
       height: 95%;
       max-height: 600px;
-      width: calc(90vw * 0.90);
-      /* 75% del ancho (4:3) */
+      width: calc(90vw * 0.90); /* 75% del ancho (4:3) */
       max-width: 450px;
       background: #000;
       border: 2px solid #fff;
@@ -38,8 +37,7 @@
     .geogebra-player {
       height: 95%;
       max-height: 600px;
-      width: calc(90vw * 0.75);
-      /* 75% del ancho (4:3) */
+      width: calc(90vw * 0.75); /* 75% del ancho (4:3) */
       max-width: 450px;
       background: #fff;
       border: 2px solid #ddd;
@@ -143,9 +141,11 @@
 </head>
 
 <body>
-  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" color-space="sRGB"
-    renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false">
+  <a-scene mindar-image="imageTargetSrc: tarjetas/targets.mind;" 
+           color-space="sRGB"
+           renderer="colorManagement: true, physicallyCorrectLights" 
+           vr-mode-ui="enabled: false"
+           device-orientation-permission-ui="enabled: false">
 
     <a-assets>
       <img id="card1" src="tarjetas/t1.png" />
