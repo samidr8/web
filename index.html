@@ -22,9 +22,10 @@
 
     /* Estilo para el reproductor de YouTube */
     .youtube-player {
-      height: 90%;
-      max-height: 400px;
-      width: calc(90vw * 0.75);    /* 75% del ancho (4:3) */
+      height: 95%;
+      max-height: 500px;
+      width: calc(90vw * 0.75);
+      /* 75% del ancho (4:3) */
       max-width: 400px;
       background: #000;
       border: 2px solid #fff;
@@ -35,9 +36,10 @@
 
     /* Estilo para el applet de GeoGebra */
     .geogebra-player {
-      height: 90%;
-      max-height: 400px;
-      width: calc(90vw * 0.75);    /* 75% del ancho (4:3) */
+      height: 95%;
+      max-height: 500px;
+      width: calc(90vw * 0.75);
+      /* 75% del ancho (4:3) */
       max-width: 400px;
       background: #fff;
       border: 2px solid #ddd;
@@ -49,9 +51,10 @@
 
     /* Estilo para el mensaje de página web */
     .webpage-alert {
-      height: 90%;
-      max-height: 400px;
-      width: calc(90vw * 0.75);    /* 75% del ancho (4:3) */
+      height: 95%;
+      max-height: 500px;
+      width: calc(90vw * 0.75);
+      /* 75% del ancho (4:3) */
       max-width: 400px;
       padding: 25px;
       background: #fff;
@@ -163,7 +166,7 @@
     <a-entity mindar-image-target="targetIndex: 1">
       <!--  <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
       <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="0.5 0.5 0.5" src="#avatarModel"
-        animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
+        animation="property: position; to: 0 0 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
       </a-gltf-model>
     </a-entity>
 
@@ -202,7 +205,7 @@
       <button class="close-btn" id="webpage-close-btn">X</button>
       <p>El sitio web no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?
       </p>
-      <div style="margin-top: 20px;">
+      <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
         <button class="alert-btn open-browser-btn" id="open-browser-btn">Abrir en navegador</button>
         <button class="alert-btn cancel-btn" id="cancel-webpage-btn">Cancelar</button>
       </div>
