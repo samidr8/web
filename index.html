@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.0.1/dist/aframe-extras.min.js"></script>
 
   <link rel="stylesheet" href="config-sensores.css">
+  <link rel="stylesheet" href="UI-personalizado.css">
   <style>
     /* Contenedores para los diferentes tipos de contenido */
     .content-container {
@@ -150,68 +151,7 @@
       opacity: 0 !important;
       pointer-events: none !important;
     }
-
-    /* Reemplaza el indicador predeterminado */
-    .mindar-ui-overlay {
-      background: rgba(0, 50, 100, 0.3) !important;
-      /* Fondo azul claro */
-    }
-
-    .mindar-ui-target {
-      border-color: rgba(100, 200, 255, 0.8) !important;
-      /* Bordes azul brillante */
-      border-width: 3px !important;
-      animation: radar-scan 4s infinite ease-in-out !important;
-    }
-
-    /* Animación tipo radar horizontal */
-    @keyframes radar-scan {
-
-      0%,
-      100% {
-        transform: translateX(-50%) scaleX(1.2);
-        opacity: 0.8;
-      }
-
-      25% {
-        transform: translateX(10%) scaleX(0.8);
-      }
-
-      50% {
-        transform: translateX(50%) scaleX(1.5);
-        opacity: 1;
-      }
-
-      75% {
-        transform: translateX(10%) scaleX(0.8);
-      }
-    }
-
-    /* Esquinas personalizadas */
-    .mindar-ui-target::before,
-    .mindar-ui-target::after {
-      content: '';
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(100, 200, 255, 0.9);
-    }
-
-    .mindar-ui-target::before {
-      top: -5px;
-      left: -5px;
-      border-right: none;
-      border-bottom: none;
-    }
-
-    .mindar-ui-target::after {
-      bottom: -5px;
-      right: -5px;
-      border-left: none;
-      border-top: none;
-    }
   </style>
-
 </head>
 
 <body>
@@ -443,25 +383,11 @@
         loader.style.opacity = '0';
         setTimeout(() => loader.remove(), 500);
       }, 300);
-    });
-
-    document.querySelector('a-scene').addEventListener('loaded', () => {
-      const target = document.querySelector('.mindar-ui-target');
-
-      // Cambia dinámicamente el color cuando se detecte el marcador
-      const scene = document.querySelector('a-scene');
-      scene.addEventListener('targetFound', () => {
-        target.style.borderColor = 'rgba(0, 255, 150, 0.8)'; // Verde al detectar
-      });
-
-      scene.addEventListener('targetLost', () => {
-        target.style.borderColor = 'rgba(100, 200, 255, 0.8)'; // Azul al perder
-      });
-    });
-
+    });    
   </script>
 
   <script src="config-sensores.js"></script>
+  <script src="UI-personalizado.js"></script>
 </body>
 
 </html>
