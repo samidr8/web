@@ -1,6 +1,7 @@
-/* Eliminar el indicador predeterminado */
+/* Asegurar que el UI original esté oculto */
 .mindar-ui-overlay, .mindar-ui-target {
   display: none !important;
+  visibility: hidden !important;
 }
 
 /* Contenedor principal */
@@ -13,7 +14,7 @@
   pointer-events: none;
   z-index: 9998;
   opacity: 0; /* Inicia oculto */
-  transition: opacity 0.3s ease;
+  transition: opacity 0.5s ease !important;
 }
 
 /* Cuadrado con esquinas estilo "HUD" */
