@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,207 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.0.1/dist/aframe-extras.min.js"></script>
 
+  <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="config-sensores.css">
   <link rel="stylesheet" href="UI-personalizado.css">
-  <style>
-    /* Contenedores para los diferentes tipos de contenido */
-    .content-container {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      display: none;
-      z-index: 9999;
-    }
-
-    /* Estilo para el reproductor de YouTube */
-    .youtube-player {
-      width: 90vw;
-      max-width: 600px;
-      aspect-ratio: 16/9;
-      height: auto;
-      margin: 0 auto;
-      background: #000;
-      border: 2px solid #fff;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-      pointer-events: auto;
-      position: relative;
-    }
-
-    /* Estilo para el applet de GeoGebra */
-    .geogebra-player {
-      width: 90vw;
-      max-width: 600px;
-      aspect-ratio: 4/3;
-      height: auto;
-      margin: 0 auto;
-      background: #fff;
-      border: 2px solid #ddd;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-      pointer-events: auto;
-      position: relative;
-      margin: 0 auto;
-    }
-
-    /* Estilo para el mensaje de página web */
-    .webpage-alert {
-      height: 90vw;
-      max-height: 500px;
-      aspect-ratio: 3/4;
-      width: auto;
-      margin: 20px auto;
-      padding: 25px;
-      background: #fff;
-      border-radius: 8px;
-      border: 2px solid #e74c3c;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      pointer-events: auto;
-      position: relative;
-      box-sizing: border-box;
-    }
-
-    .webpage-alert p {
-      margin-bottom: 25px;
-      color: #333;
-      font-size: 16px;
-      line-height: 1.5;
-    }
-
-    /* Estilo para el reproductor de audio */
-    .audio-player {
-      width: 90vw;
-      max-width: 400px;
-      background: rgba(0, 0, 0, 0.85);
-      border-radius: 10px;
-      padding: 20px;
-      color: white;
-      pointer-events: auto;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
-
-    .audio-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-      margin-top: 15px;
-    }
-
-    .audio-btn {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
-
-    .audio-btn:hover {
-      background: #45a049;
-    }
-
-    .audio-progress {
-      width: 100%;
-      margin: 15px 0;
-    }
-
-    .audio-time {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: #ccc;
-    }
-
-    .audio-title {
-      text-align: center;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-
-    /* Botones comunes */
-    .close-btn {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: rgba(255, 0, 0, 0.7);
-      color: white;
-      border: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-
-    .alert-btn {
-      padding: 10px 20px;
-      margin: 0 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-      transition: all 0.3s ease;
-    }
-
-    .alert-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    .open-browser-btn {
-      background: #2ecc71;
-      color: white;
-    }
-
-    .open-browser-btn:hover {
-      background: #27ae60;
-    }
-
-    .cancel-btn {
-      background: #e74c3c;
-      color: white;
-    }
-
-    .cancel-btn:hover {
-      background: #c0392b;
-    }
-
-    /* Personaliza el loader nativo de A-Frame */
-    .a-canvas {
-      background: transparent !important;
-    }
-
-    .a-loader-title {
-      display: none;
-      /* Oculta el texto 'Loading' */
-    }
-
-    .a-enter-ar-button,
-    .a-enter-vr-button {
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    /* Elimina completamente el botón VR */
-    .a-enter-vr {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-  </style>
 </head>
 
 <body>
@@ -216,13 +18,7 @@
     device-orientation-permission-ui="enabled: false">
 
     <a-assets>
-      <!-- 
-      <img id="card1" src="tarjetas/t1.png" />
-      <img id="card2" src="tarjetas/t2.png" />
-      <img id="card3" src="tarjetas/t3.png" />
-      <img id="card4" src="tarjetas/t4.png" /> 
-      <img id="card5" src="tarjetas/t5.png" />
-      -->
+      <!-- <img id="card1" src="tarjetas/t1.png" /> -->
       <a-asset-item id="avatarModel" src="media/shiba/scene.gltf"></a-asset-item>
       <video id="youtube-video" autoplay loop crossorigin="anonymous" webkit-playsinline playsinline></video>
       <audio id="podcast-audio" src="sound/canto.mp3" preload="auto"></audio>
@@ -230,33 +26,15 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Target 0: Video de YouTube -->
-    <a-entity mindar-image-target="targetIndex: 0">
-      <!--  <a-plane src="#card1" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
-    </a-entity>
-
-    <!-- Target 1: GeoGebra -->
-    <a-entity mindar-image-target="targetIndex: 1">
-      <!--  <a-plane src="#card3" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
-    </a-entity>
-
-    <!-- Target 2: Página web -->
-    <a-entity mindar-image-target="targetIndex: 2">
-      <!--  <a-plane src="#card4" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
-    </a-entity>
-
-    <!-- Target 3: Modelo 3D -->
+    <a-entity mindar-image-target="targetIndex: 0"></a-entity>
+    <a-entity mindar-image-target="targetIndex: 1"></a-entity>
+    <a-entity mindar-image-target="targetIndex: 2"></a-entity>
     <a-entity mindar-image-target="targetIndex: 3">
-      <!--  <a-plane src="#card2" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
       <a-gltf-model rotation="0 0 0" position="0 0 0" scale="0.5 0.5 0.5" src="#avatarModel"
         animation="property: position; to: 0 0 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate; enabled: false">
       </a-gltf-model>
     </a-entity>
-
-    <!-- Target 4: Podcast -->
-    <a-entity mindar-image-target="targetIndex: 4">
-      <!--  <a-plane src="#card5" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane> -->
-    </a-entity>
+    <a-entity mindar-image-target="targetIndex: 4"></a-entity>
   </a-scene>
 
   <!-- Contenedor para YouTube -->
@@ -279,8 +57,7 @@
   <div id="webpage-container" class="content-container">
     <div class="webpage-alert" id="webpage-alert">
       <button class="close-btn" id="webpage-close-btn">X</button>
-      <p>El sitio web no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?
-      </p>
+      <p>El sitio web no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?</p>
       <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
         <button class="alert-btn open-browser-btn" id="open-browser-btn">Abrir en navegador</button>
         <button class="alert-btn cancel-btn" id="cancel-webpage-btn">Cancelar</button>
@@ -306,22 +83,23 @@
     </div>
   </div>
 
+  <!-- Loader de AR -->
   <div id="ar-loader" style="
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(10,30,50,0.8) 0%, rgba(0,0,20,0.9) 100%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  z-index: 9999;
-  color: white;
-  font-family: 'Arial';
-  transition: opacity 0.5s;
-">
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(10,30,50,0.8) 0%, rgba(0,0,20,0.9) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 9999;
+    color: white;
+    font-family: 'Arial';
+    transition: opacity 0.5s;
+  ">
     <div style="text-align: center; max-width: 80%;">
       <h2 style="margin-bottom: 20px;">Preparando experiencia de Realidad Aumentada</h2>
       <p>Por favor espera mientras se cargan los recursos...</p>
@@ -331,31 +109,23 @@
     </div>
   </div>
 
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker-caching.js')
+        .then(reg => console.log('Service Worker registrado', reg))
+        .catch(err => console.warn('SW error:', err));
+    }
+  </script>
+
   <script>
     // Configuración
     const CONTENT_CONFIG = {
-      0: {
-        type: "video",
-        container: "youtube",
-        youtubeId: "dayfz0ff1Mc"
-      },
-      1: {
-        type: "geogebra",
-        container: "geogebra",
-        appletId: "qzjfkvpm"
-      },
-      2: {
-        type: "webpage",
-        container: "webpage",
-        url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos"
-      },
-      3: {
-        type: "3d"
-      },
-      4: {
-        type: "podcast",
-        container: "podcast"
-      }
+      0: { type: "video", container: "youtube", youtubeId: "dayfz0ff1Mc" },
+      1: { type: "geogebra", container: "geogebra", appletId: "qzjfkvpm" },
+      2: { type: "webpage", container: "webpage", url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos" },
+      3: { type: "3d" },
+      4: { type: "podcast", container: "podcast" }
     };
 
     // Inicialización
@@ -368,24 +138,17 @@
       const geogebraIframe = document.getElementById('geogebra-iframe');
       geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[1].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
 
-      // Configurar listeners para YouTube
+      // Listeners
       document.getElementById('youtube-close-btn').addEventListener('click', () => closeContent('youtube'));
-
-      // Configurar listeners para GeoGebra
       document.getElementById('geogebra-close-btn').addEventListener('click', () => closeContent('geogebra'));
-
-      // Configurar listeners para la página web
       document.getElementById('webpage-close-btn').addEventListener('click', handleWebpageClose);
       document.getElementById('cancel-webpage-btn').addEventListener('click', handleWebpageClose);
       document.getElementById('open-browser-btn').addEventListener('click', openExternalBrowser);
-
-      // Configurar listeners para el podcast
       document.getElementById('podcast-close-btn').addEventListener('click', () => closeContent('podcast'));
       document.getElementById('podcast-play-btn').addEventListener('click', playPodcast);
       document.getElementById('podcast-pause-btn').addEventListener('click', pausePodcast);
       document.getElementById('podcast-stop-btn').addEventListener('click', stopPodcast);
 
-      // Manejar sonido para YouTube
       youtubeIframe.onload = function () {
         document.body.addEventListener('click', function unmuteVideo() {
           youtubeIframe.contentWindow.postMessage(JSON.stringify({
@@ -397,69 +160,115 @@
         });
       };
 
-      // Configurar el reproductor de podcast
       setupPodcastPlayer();
     });
 
-    // Configuración del reproductor de podcast
+    // Podcast
     function setupPodcastPlayer() {
       const audio = document.getElementById('podcast-audio');
       const progress = document.getElementById('podcast-progress');
       const currentTime = document.getElementById('podcast-current-time');
       const duration = document.getElementById('podcast-duration');
-
-      // Actualizar duración cuando esté disponible
       audio.addEventListener('loadedmetadata', () => {
         duration.textContent = formatTime(audio.duration);
       });
-
-      // Actualizar progreso durante la reproducción
       audio.addEventListener('timeupdate', () => {
         progress.value = (audio.currentTime / audio.duration) * 100;
         currentTime.textContent = formatTime(audio.currentTime);
       });
-
-      // Permitir saltar a diferentes partes del audio
       progress.addEventListener('input', () => {
         const seekTime = (progress.value / 100) * audio.duration;
         audio.currentTime = seekTime;
       });
     }
-
     function formatTime(seconds) {
       const minutes = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
-
-    function playPodcast() {
-      const audio = document.getElementById('podcast-audio');
-      audio.play();
-    }
-
-    function pausePodcast() {
-      const audio = document.getElementById('podcast-audio');
-      audio.pause();
-    }
-
+    function playPodcast() { document.getElementById('podcast-audio').play(); }
+    function pausePodcast() { document.getElementById('podcast-audio').pause(); }
     function stopPodcast() {
       const audio = document.getElementById('podcast-audio');
       audio.pause();
       audio.currentTime = 0;
     }
 
+    // Recursos locales a precargar (no videos externos)
+    const AR_RESOURCES = {
+      "3d": { url: "media/shiba/scene.gltf", loaded: false, elementId: "avatarModel" },
+      "audio": { url: "sound/canto.mp3", loaded: false, elementId: "podcast-audio" }
+    };
+    function precargarRecursos() {
+      Object.keys(AR_RESOURCES).forEach(key => {
+        const resource = AR_RESOURCES[key];
+        if (!resource.url.startsWith("http")) {
+          fetch(resource.url)
+            .then(resp => {
+              if (!resp.ok) throw new Error("Error al cargar " + resource.url);
+              resource.loaded = true;
+              if (resource.elementId) {
+                const el = document.getElementById(resource.elementId);
+                if (el.tagName === "A-ASSET-ITEM") {
+                  el.setAttribute("src", resource.url);
+                } else if (el.tagName === "AUDIO") {
+                  el.src = resource.url;
+                }
+              }
+            })
+            .catch(err => {
+              console.warn("No se pudo precargar", resource.url, err);
+            });
+        } else {
+          resource.loaded = true;
+        }
+      });
+    }
+
+    // Solo carga recursos locales en segundo plano después de que la cámara se muestre
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelector('a-scene').addEventListener('loaded', () => {
+        setTimeout(() => {
+          precargarRecursos();
+        }, 300);
+      });
+    });
+
+    // Loader de recursos al detectar marcador
+    function onTargetFound(targetIndex) {
+      let mensajeCargando;
+      switch (targetIndex) {
+        case 3:
+          if (!AR_RESOURCES["3d"].loaded) mensajeCargando = 'El modelo 3D aún se está cargando...';
+          break;
+        case 4:
+          if (!AR_RESOURCES.audio.loaded) mensajeCargando = 'El audio aún se está cargando...';
+          break;
+      }
+      if (mensajeCargando) mostrarLoaderRecursos(mensajeCargando);
+      else ocultarLoaderRecursos();
+    }
+    function mostrarLoaderRecursos(mensaje) {
+      let loader = document.getElementById('ar-loader');
+      loader.style.display = 'flex';
+      loader.querySelector('p').textContent = mensaje;
+    }
+    function ocultarLoaderRecursos() {
+      let loader = document.getElementById('ar-loader');
+      loader.style.display = 'none';
+    }
+
     // Eventos de MindAR
     const scene = document.querySelector('a-scene');
     scene.addEventListener('targetFound', event => {
       const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
+      onTargetFound(targetIndex);
       const contentConfig = CONTENT_CONFIG[targetIndex];
-
       if (contentConfig && contentConfig.container) {
         const container = document.getElementById(`${contentConfig.container}-container`);
         if (container) {
           container.style.display = 'block';
           container.style.pointerEvents = 'auto';
-
           if (targetIndex === 2) {
             document.getElementById('webpage-alert').style.display = 'block';
           }
@@ -467,12 +276,10 @@
       }
     });
 
-    // Funciones de control
     function closeContent(type) {
       const container = document.getElementById(`${type}-container`);
       if (container) {
         container.style.display = 'none';
-
         if (type === 'youtube') {
           const iframe = document.getElementById('youtube-iframe');
           if (iframe.contentWindow) {
@@ -487,56 +294,41 @@
         }
       }
     }
-
-    function handleWebpageClose() {
-      closeContent('webpage');
-    }
-
+    function handleWebpageClose() { closeContent('webpage'); }
     function openExternalBrowser() {
       try {
-        // Intenta abrir en nueva pestaña
         const newWindow = window.open(CONTENT_CONFIG[2].url, '_blank');
-
-        // Fallback si el navegador bloquea la ventana emergente
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
           window.location.href = CONTENT_CONFIG[2].url;
         }
       } catch (e) {
-        console.error('Error al abrir el navegador:', e);
         window.location.href = CONTENT_CONFIG[2].url;
       }
-
-      // Cerrar el contenedor de la página web
       closeContent('webpage');
     }
 
-    // Control de progreso de carga
+    // Loader de inicio (progreso visual)
     const loader = document.getElementById('ar-loader');
     const loaderBar = document.getElementById('loader-bar');
     let progress = 0;
-
     const progressInterval = setInterval(() => {
       progress += Math.random() * 10;
       loaderBar.style.width = `${Math.min(progress, 90)}%`;
     }, 300);
 
-    // Ocultar cuando esté listo - agregar retraso adicional
     document.querySelector('a-scene').addEventListener('loaded', () => {
       clearInterval(progressInterval);
       loaderBar.style.width = '100%';
-      
-      // Agregar un retraso adicional antes de ocultar el loader
       setTimeout(() => {
         loader.style.opacity = '0';
         setTimeout(() => {
-          loader.style.display = 'none'; // Cambiar a display:none después de la transición
+          loader.style.display = 'none';
         }, 500);
-      }, 1000); // Retraso de 1 segundo adicional para asegurar que todo esté listo
-      // Agregar esta línea para mostrar el canvas gradualmente
+      }, 1000);
       setTimeout(() => {
         document.querySelector('.a-canvas').classList.add('ready');
       }, 500);
-    });   
+    });
   </script>
 
   <script src="config-sensores.js"></script>

@@ -1,0 +1,197 @@
+    /* Contenedores para los diferentes tipos de contenido */
+    .content-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      display: none;
+      z-index: 9999;
+    }
+
+    /* Estilo para el reproductor de YouTube */
+    .youtube-player {
+      width: 90vw;
+      max-width: 600px;
+      aspect-ratio: 16/9;
+      height: auto;
+      margin: 0 auto;
+      background: #000;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+      position: relative;
+    }
+
+    /* Estilo para el applet de GeoGebra */
+    .geogebra-player {
+      width: 90vw;
+      max-width: 600px;
+      aspect-ratio: 4/3;
+      height: auto;
+      margin: 0 auto;
+      background: #fff;
+      border: 2px solid #ddd;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+      position: relative;
+      margin: 0 auto;
+    }
+
+    /* Estilo para el mensaje de página web */
+    .webpage-alert {
+      height: 90vw;
+      max-height: 500px;
+      aspect-ratio: 3/4;
+      width: auto;
+      margin: 20px auto;
+      padding: 25px;
+      background: #fff;
+      border-radius: 8px;
+      border: 2px solid #e74c3c;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      pointer-events: auto;
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    .webpage-alert p {
+      margin-bottom: 25px;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* Estilo para el reproductor de audio */
+    .audio-player {
+      width: 90vw;
+      max-width: 400px;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: 10px;
+      padding: 20px;
+      color: white;
+      pointer-events: auto;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .audio-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .audio-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .audio-btn:hover {
+      background: #45a049;
+    }
+
+    .audio-progress {
+      width: 100%;
+      margin: 15px 0;
+    }
+
+    .audio-time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    .audio-title {
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    /* Botones comunes */
+    .close-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(255, 0, 0, 0.7);
+      color: white;
+      border: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+
+    .alert-btn {
+      padding: 10px 20px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .alert-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .open-browser-btn {
+      background: #2ecc71;
+      color: white;
+    }
+
+    .open-browser-btn:hover {
+      background: #27ae60;
+    }
+
+    .cancel-btn {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .cancel-btn:hover {
+      background: #c0392b;
+    }
+
+    /* Personaliza el loader nativo de A-Frame */
+    .a-canvas {
+      background: transparent !important;
+    }
+
+    .a-loader-title {
+      display: none;
+      /* Oculta el texto 'Loading' */
+    }
+
+    .a-enter-ar-button,
+    .a-enter-vr-button {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* Elimina completamente el botón VR */
+    .a-enter-vr {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
