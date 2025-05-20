@@ -1,10 +1,10 @@
 // service-worker-caching.js
 const CACHE_NAME = 'ar-experience-v1';
-// Solo incluye archivos locales que realmente EXISTAN en tu servidor/proyecto
 const PRECACHE_URLS = [
+    // Agrega aquí archivos LOCALES pequeños que realmente existan, por ejemplo:
   'index.html',
   'index.css',
-  'tarjetas/targets.mind',
+  'media/shiba/scene.gltf'
 ];
 
 self.addEventListener('install', event => {
@@ -21,8 +21,6 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-
-  // Solo responde del cache si está en PRECACHE_URLS, sino fetch normal
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))
