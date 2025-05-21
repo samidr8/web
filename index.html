@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="UI-personalizado.css">
   
   <style>
-    /* Estilos para el loader de recursos AR */
+    /* Estilos mejorados para el loader de recursos AR */
     #ar-resource-loader {
       position: fixed;
       top: 0;
@@ -149,7 +149,14 @@
       0: { type: "video", container: "youtube", youtubeId: "dayfz0ff1Mc", loaded: false, visible: false },
       1: { type: "geogebra", container: "geogebra", appletId: "qzjfkvpm", loaded: false, visible: false },
       2: { type: "webpage", container: "webpage", url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos", loaded: false, visible: false },
-      3: { type: "3d", modelPath: "media/shiba/scene.gltf", imagePath: "tarjetas/t2.png", loaded: false, visible: false },
+      3: { 
+        type: "3d", 
+        modelPath: "media/shiba/scene.gltf", 
+        imagePath: "tarjetas/t2.png", 
+        loaded: false, 
+        visible: false,
+        assetsLoaded: 0
+      },
       4: { type: "podcast", container: "podcast", audioPath: "sound/canto.mp3", loaded: false, visible: false }
     };
 
@@ -253,21 +260,22 @@
 
     function load3DModelAssets(config, targetIndex) {
       const assets = document.querySelector('a-assets');
-      let assetsLoaded = 0;
       
       // Cargar modelo 3D
       const modelEl = document.createElement('a-asset-item');
       modelEl.setAttribute('id', `target-${targetIndex}-model`);
       modelEl.setAttribute('src', config.modelPath);
       
-      modelEl.addEventListener('model-loaded', () => {
+      modelEl.addEventListener('loaded', () => {
         console.log('Modelo 3D cargado');
-        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
+        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        check3DModelLoaded(config, targetIndex);
       });
       
-      modelEl.addEventListener('error', () => {
-        console.error('Error cargando modelo 3D');
-        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
+      modelEl.addEventListener('error', (e) => {
+        console.error('Error cargando modelo 3D:', e);
+        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        check3DModelLoaded(config, targetIndex);
       });
       
       // Cargar imagen
@@ -277,16 +285,27 @@
       
       imgEl.addEventListener('load', () => {
         console.log('Imagen cargada');
-        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
+        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        check3DModelLoaded(config, targetIndex);
       });
       
-      imgEl.addEventListener('error', () => {
-        console.error('Error cargando imagen');
-        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
+      imgEl.addEventListener('error', (e) => {
+        console.error('Error cargando imagen:', e);
+        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        check3DModelLoaded(config, targetIndex);
       });
       
       assets.appendChild(modelEl);
       assets.appendChild(imgEl);
+    }
+
+    function check3DModelLoaded(config, targetIndex) {
+      if (CONTENT_CONFIG[targetIndex].assetsLoaded === 2) {
+        config.loaded = true;
+        if (config.visible) {
+          show3DModel(targetIndex);
+        }
+      }
     }
 
     function loadAudioAsset(config, targetIndex) {
@@ -304,22 +323,20 @@
       
       audioEl.addEventListener('canplaythrough', () => {
         console.log('Audio completamente cargado');
-        markAsLoaded(config, targetIndex);
+        config.loaded = true;
+        if (config.visible) {
+          showPodcastPlayer();
+        }
+        hideResourceLoader();
       });
       
-      audioEl.addEventListener('error', () => {
-        console.error('Error cargando audio');
-        markAsLoaded(config, targetIndex);
+      audioEl.addEventListener('error', (e) => {
+        console.error('Error cargando audio:', e);
+        config.loaded = true;
+        hideResourceLoader();
       });
       
       document.querySelector('a-assets').appendChild(audioEl);
-    }
-
-    function markAsLoaded(config, targetIndex) {
-      config.loaded = true;
-      if (config.visible) {
-        showContent(targetIndex);
-      }
     }
 
     function handleTargetFound(event) {
@@ -331,7 +348,6 @@
       currentLoadingTarget = targetIndex;
       config.visible = true;
       
-      // Mostrar loader para todos los tipos de contenido
       if (!config.loaded) {
         showResourceLoader(targetIndex);
         
@@ -366,20 +382,27 @@
       bar.style.width = '0%';
       
       // Animación de progreso
-      let progress = 0;
       progressInterval = setInterval(() => {
-        progress = Math.min(progress + 2, 90);
-        bar.style.width = `${progress}%`;
-      }, 100);
+        const currentWidth = parseInt(bar.style.width) || 0;
+        const newWidth = Math.min(currentWidth + 5, 90);
+        bar.style.width = `${newWidth}%`;
+      }, 300);
     }
 
     function hideResourceLoader() {
       const loader = document.getElementById('ar-resource-loader');
-      loader.style.display = 'none';
+      const bar = document.getElementById('resource-loader-bar');
       
-      // Limpiar intervalos
-      if (progressInterval) clearInterval(progressInterval);
-      if (resourceLoadInterval) clearInterval(resourceLoadInterval);
+      // Completar la barra antes de ocultar
+      bar.style.width = '100%';
+      
+      setTimeout(() => {
+        loader.style.display = 'none';
+        
+        // Limpiar intervalos
+        if (progressInterval) clearInterval(progressInterval);
+        if (resourceLoadInterval) clearInterval(resourceLoadInterval);
+      }, 500);
     }
 
     function showContent(targetIndex) {
@@ -407,16 +430,9 @@
 
     function show3DModel(targetIndex) {
       const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
+      
+      // Limpiar contenido previo
       targetEntity.innerHTML = '';
-      
-      // Verificar si los recursos existen
-      const model = document.querySelector(`#target-${targetIndex}-model`);
-      const image = document.querySelector(`#target-${targetIndex}-image`);
-      
-      if (!model || !image) {
-        console.error('Recursos no encontrados');
-        return;
-      }
       
       // Crear plano con imagen
       const plane = document.createElement('a-plane');
@@ -436,6 +452,10 @@
       // Verificar carga del modelo en escena
       gltfModel.addEventListener('model-loaded', () => {
         console.log('Modelo 3D mostrado correctamente');
+      });
+      
+      gltfModel.addEventListener('error', (e) => {
+        console.error('Error mostrando modelo 3D:', e);
       });
       
       targetEntity.appendChild(plane);
