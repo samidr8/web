@@ -5,239 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.0.1/dist/aframe-extras.min.js"></script>
+
+  <link rel="stylesheet" href="index-avanzado.css">
   <link rel="stylesheet" href="config-sensores.css">
   <link rel="stylesheet" href="UI-personalizado.css">
-  <style>
-    /* Contenedores para los diferentes tipos de contenido */
-    .content-container {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      display: none;
-      z-index: 9999;
-    }
-
-    /* Estilo para el reproductor de YouTube */
-    .youtube-player {
-      width: 90vw;
-      max-width: 600px;
-      aspect-ratio: 16/9;
-      height: auto;
-      margin: 0 auto;
-      background: #000;
-      border: 2px solid #fff;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-      pointer-events: auto;
-      position: relative;
-    }
-
-    /* Estilo para el applet de GeoGebra */
-    .geogebra-player {
-      width: 90vw;
-      max-width: 600px;
-      aspect-ratio: 4/3;
-      height: auto;
-      margin: 0 auto;
-      background: #fff;
-      border: 2px solid #ddd;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-      pointer-events: auto;
-      position: relative;
-      margin: 0 auto;
-    }
-
-    /* Estilo para el mensaje de página web */
-    .webpage-alert {
-      height: 90vw;
-      max-height: 500px;
-      aspect-ratio: 3/4;
-      width: auto;
-      margin: 20px auto;
-      padding: 25px;
-      background: #fff;
-      border-radius: 8px;
-      border: 2px solid #e74c3c;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      pointer-events: auto;
-      position: relative;
-      box-sizing: border-box;
-    }
-
-    .webpage-alert p {
-      margin-bottom: 25px;
-      color: #333;
-      font-size: 16px;
-      line-height: 1.5;
-    }
-
-    /* Estilo para el reproductor de audio */
-    .audio-player {
-      width: 90vw;
-      max-width: 400px;
-      background: rgba(0, 0, 0, 0.85);
-      border-radius: 10px;
-      padding: 20px;
-      color: white;
-      pointer-events: auto;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
-
-    .audio-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-      margin-top: 15px;
-    }
-
-    .audio-btn {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
-
-    .audio-btn:hover {
-      background: #45a049;
-    }
-
-    .audio-progress {
-      width: 100%;
-      margin: 15px 0;
-    }
-
-    .audio-time {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: #ccc;
-    }
-
-    .audio-title {
-      text-align: center;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-
-    /* Botones comunes */
-    .close-btn {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: rgba(255, 0, 0, 0.7);
-      color: white;
-      border: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-
-    .alert-btn {
-      padding: 10px 20px;
-      margin: 0 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-      transition: all 0.3s ease;
-    }
-
-    .alert-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    .open-browser-btn {
-      background: #2ecc71;
-      color: white;
-    }
-
-    .open-browser-btn:hover {
-      background: #27ae60;
-    }
-
-    .cancel-btn {
-      background: #e74c3c;
-      color: white;
-    }
-
-    .cancel-btn:hover {
-      background: #c0392b;
-    }
-
-    /* Personaliza el loader nativo de A-Frame */
-    .a-canvas {
-      background: transparent !important;
-    }
-
-    .a-loader-title {
-      display: none;
-      /* Oculta el texto 'Loading' */
-    }
-
-    .a-enter-ar-button,
-    .a-enter-vr-button {
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    /* Elimina completamente el botón VR */
-    .a-enter-vr {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-    
-    /* Loader para recursos pendientes */
-    .resource-loader {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
-      z-index: 10001;
-      display: none;
-      text-align: center;
-    }
-    
-    .resource-progress {
-      width: 200px;
-      height: 4px;
-      background: rgba(255,255,255,0.2);
-      margin: 15px auto;
-      border-radius: 2px;
-    }
-    
-    .resource-progress-bar {
-      width: 0%;
-      height: 100%;
-      background: #4CAF50;
-      border-radius: 2px;
-      transition: width 0.3s;
-    }
-  </style>
 </head>
 
 <body>
@@ -246,35 +18,25 @@
     device-orientation-permission-ui="enabled: false">
 
     <a-assets>
-      <!-- Assets se cargarán dinámicamente -->
-      <video id="youtube-video" autoplay loop crossorigin="anonymous" webkit-playsinline playsinline></video>
-      <audio id="podcast-audio" preload="auto"></audio>
+      <!-- Los recursos se cargarán dinámicamente después -->
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Target 0: Video de YouTube -->
-    <a-entity mindar-image-target="targetIndex: 0">
-    </a-entity>
+    <a-entity mindar-image-target="targetIndex: 0"></a-entity>
 
     <!-- Target 1: GeoGebra -->
-    <a-entity mindar-image-target="targetIndex: 1">
-    </a-entity>
+    <a-entity mindar-image-target="targetIndex: 1"></a-entity>
 
     <!-- Target 2: Página web -->
-    <a-entity mindar-image-target="targetIndex: 2">
-    </a-entity>
+    <a-entity mindar-image-target="targetIndex: 2"></a-entity>
 
     <!-- Target 3: Modelo 3D -->
-    <a-entity mindar-image-target="targetIndex: 3">
-      <a-gltf-model rotation="0 0 0" position="0 0 0" scale="0.5 0.5 0.5" src="#avatarModel"
-        animation="property: position; to: 0 0 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate; enabled: false">
-      </a-gltf-model>
-    </a-entity>
+    <a-entity mindar-image-target="targetIndex: 3"></a-entity>
 
     <!-- Target 4: Podcast -->
-    <a-entity mindar-image-target="targetIndex: 4">
-    </a-entity>
+    <a-entity mindar-image-target="targetIndex: 4"></a-entity>
   </a-scene>
 
   <!-- Contenedor para YouTube -->
@@ -324,35 +86,23 @@
     </div>
   </div>
 
-  <!-- Loader para recursos pendientes -->
-  <div id="resource-loader" class="resource-loader">
-    <div id="resource-message">Cargando recurso...</div>
-    <div class="resource-progress">
-      <div id="resource-progress-bar" class="resource-progress-bar"></div>
+  <!-- Mensaje de carga de recurso AR -->
+  <div id="ar-resource-loader" class="content-container" style="display: none;">
+    <div class="resource-loader">
+      <div class="loader-text">Cargando recurso AR...</div>
+      <div class="loader-bar-container">
+        <div id="resource-loader-bar" class="loader-bar"></div>
+      </div>
     </div>
   </div>
 
-  <div id="ar-loader" style="
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(10,30,50,0.8) 0%, rgba(0,0,20,0.9) 100%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  z-index: 9999;
-  color: white;
-  font-family: 'Arial';
-  transition: opacity 0.5s;
-">
-    <div style="text-align: center; max-width: 80%;">
-      <h2 style="margin-bottom: 20px;">Preparando experiencia de Realidad Aumentada</h2>
+  <!-- Loader inicial -->
+  <div id="ar-loader">
+    <div class="loader-content">
+      <h2>Preparando experiencia de Realidad Aumentada</h2>
       <p>Por favor espera mientras se cargan los recursos esenciales...</p>
-      <div style="width: 200px; height: 4px; background: rgba(255,255,255,0.2); margin: 30px auto; border-radius: 2px;">
-        <div id="loader-bar" style="width: 0%; height: 100%; background: #4CAF50; border-radius: 2px;"></div>
+      <div class="loader-bar-container">
+        <div id="loader-bar" class="loader-bar"></div>
       </div>
     </div>
   </div>
@@ -380,13 +130,14 @@
       },
       3: {
         type: "3d",
-        modelUrl: "media/shiba/scene.gltf",
+        modelPath: "media/shiba/scene.gltf",
+        imagePath: "tarjetas/t2.png",
         loaded: false
       },
       4: {
         type: "podcast",
         container: "podcast",
-        audioUrl: "sound/canto.mp3",
+        audioPath: "sound/canto.mp3",
         loaded: false
       }
     };
@@ -410,105 +161,248 @@
       document.getElementById('podcast-pause-btn').addEventListener('click', pausePodcast);
       document.getElementById('podcast-stop-btn').addEventListener('click', stopPodcast);
 
-      // Simular progreso de carga inicial
-      const loader = document.getElementById('ar-loader');
-      const loaderBar = document.getElementById('loader-bar');
-      let progress = 0;
-
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 10;
-        loaderBar.style.width = `${Math.min(progress, 90)}%`;
-      }, 300);
-
-      // Escuchar cuando la escena esté lista para mostrar la cámara
+      // Ocultar loader inicial cuando la cámara esté lista
       const scene = document.querySelector('a-scene');
-      scene.addEventListener('loaded', () => {
-        clearInterval(progressInterval);
-        loaderBar.style.width = '100%';
-        
-        // Ocultar loader después de un breve retraso
-        setTimeout(() => {
-          loader.style.opacity = '0';
-          setTimeout(() => {
-            loader.style.display = 'none';
-          }, 500);
-        }, 500);
-        
-        // Iniciar carga de recursos en segundo plano
-        loadResourcesInBackground();
-      });
+      scene.addEventListener('loaded', onSceneLoaded);
+      
+      // Cargar recursos secundarios en segundo plano
+      setTimeout(loadSecondaryResources, 100);
     });
 
-    // Carga de recursos en segundo plano
-    function loadResourcesInBackground() {
-      // Cargar modelo 3D
-      load3DModel();
+    function onSceneLoaded() {
+      // Ocultar loader inicial rápidamente
+      const loader = document.getElementById('ar-loader');
+      loader.style.opacity = '0';
+      setTimeout(() => {
+        loader.style.display = 'none';
+      }, 500);
       
-      // Cargar audio del podcast
-      loadPodcastAudio();
-      
-      // Precargar iframes (no se pueden precargar realmente, pero los prepararemos)
-      prepareIframes();
-    }
-    
-    function load3DModel() {
-      const modelConfig = CONTENT_CONFIG[3];
-      if (modelConfig.loaded) return;
-      
+      // Configurar eventos de MindAR
       const scene = document.querySelector('a-scene');
-      const assets = document.querySelector('a-assets');
-      
-      // Crear elemento de asset para el modelo
-      const modelAsset = document.createElement('a-asset-item');
-      modelAsset.setAttribute('id', 'avatarModel');
-      modelAsset.setAttribute('src', modelConfig.modelUrl);
-      
-      // Escuchar cuando el modelo se cargue
-      modelAsset.addEventListener('loaded', () => {
-        modelConfig.loaded = true;
-        console.log('Modelo 3D cargado');
+      scene.addEventListener('targetFound', onTargetFound);
+      scene.addEventListener('targetLost', onTargetLost);
+    }
+
+    function loadSecondaryResources() {
+      // Cargar recursos para cada target
+      Object.keys(CONTENT_CONFIG).forEach(targetIndex => {
+        const config = CONTENT_CONFIG[targetIndex];
+        
+        switch(config.type) {
+          case "video":
+            // Configurar YouTube (no necesita precarga)
+            const youtubeIframe = document.getElementById('youtube-iframe');
+            youtubeIframe.src = `https://www.youtube.com/embed/${config.youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
+            config.loaded = true;
+            
+            youtubeIframe.onload = function () {
+              document.body.addEventListener('click', function unmuteVideo() {
+                youtubeIframe.contentWindow.postMessage(JSON.stringify({
+                  event: 'command',
+                  func: 'unmute',
+                  args: []
+                }), '*');
+                document.body.removeEventListener('click', unmuteVideo);
+              });
+            };
+            break;
+            
+          case "geogebra":
+            // Configurar GeoGebra (no necesita precarga)
+            const geogebraIframe = document.getElementById('geogebra-iframe');
+            geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${config.appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
+            config.loaded = true;
+            break;
+            
+          case "3d":
+            // Precargar modelo 3D e imagen
+            loadAsset(config.modelPath, 'model', targetIndex);
+            loadAsset(config.imagePath, 'image', targetIndex);
+            break;
+            
+          case "podcast":
+            // Precargar audio
+            loadAsset(config.audioPath, 'audio', targetIndex);
+            break;
+            
+          case "webpage":
+            // No necesita precarga
+            config.loaded = true;
+            break;
+        }
       });
-      
-      // Escuchar errores
-      modelAsset.addEventListener('error', () => {
-        console.error('Error al cargar el modelo 3D');
+    }
+
+    function loadAsset(path, type, targetIndex) {
+      return new Promise((resolve) => {
+        const scene = document.querySelector('a-scene');
+        const assets = document.querySelector('a-assets');
+        
+        let assetElement;
+        
+        switch(type) {
+          case 'model':
+            assetElement = document.createElement('a-asset-item');
+            assetElement.setAttribute('id', `target-${targetIndex}-model`);
+            assetElement.setAttribute('src', path);
+            break;
+            
+          case 'image':
+            assetElement = document.createElement('img');
+            assetElement.setAttribute('id', `target-${targetIndex}-image`);
+            assetElement.setAttribute('src', path);
+            break;
+            
+          case 'audio':
+            assetElement = document.createElement('audio');
+            assetElement.setAttribute('id', 'podcast-audio');
+            assetElement.setAttribute('src', path);
+            assetElement.setAttribute('preload', 'auto');
+            break;
+        }
+        
+        assetElement.addEventListener('loaded', () => {
+          CONTENT_CONFIG[targetIndex].loaded = true;
+          resolve();
+        });
+        
+        assetElement.addEventListener('error', () => {
+          console.error(`Error cargando recurso: ${path}`);
+          resolve(); // Resolvemos igual para no bloquear
+        });
+        
+        assets.appendChild(assetElement);
       });
+    }
+
+    function onTargetFound(event) {
+      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
+      const contentConfig = CONTENT_CONFIG[targetIndex];
       
-      // Agregar a los assets
-      assets.appendChild(modelAsset);
+      if (!contentConfig) return;
+      
+      // Mostrar mensaje si el recurso no está cargado
+      if (!contentConfig.loaded) {
+        showResourceLoader();
+        return;
+      }
+      
+      // Configurar contenido según el tipo
+      switch(contentConfig.type) {
+        case "video":
+          showYoutubePlayer();
+          break;
+          
+        case "geogebra":
+          showGeogebraApplet();
+          break;
+          
+        case "webpage":
+          showWebpageAlert();
+          break;
+          
+        case "3d":
+          show3DModel(targetIndex);
+          break;
+          
+        case "podcast":
+          showPodcastPlayer();
+          break;
+      }
     }
     
-    function loadPodcastAudio() {
-      const podcastConfig = CONTENT_CONFIG[4];
-      if (podcastConfig.loaded) return;
+    function onTargetLost(event) {
+      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
+      const contentConfig = CONTENT_CONFIG[targetIndex];
       
-      const audio = document.getElementById('podcast-audio');
-      audio.src = podcastConfig.audioUrl;
+      if (!contentConfig) return;
       
-      audio.addEventListener('loadeddata', () => {
-        podcastConfig.loaded = true;
-        console.log('Audio del podcast cargado');
+      // Ocultar cualquier contenido visible
+      hideAllContent();
+    }
+    
+    function showResourceLoader() {
+      const loader = document.getElementById('ar-resource-loader');
+      loader.style.display = 'block';
+      
+      // Simular progreso (en una implementación real usaríamos eventos de progreso)
+      const bar = document.getElementById('resource-loader-bar');
+      let width = 0;
+      const interval = setInterval(() => {
+        width += 5;
+        bar.style.width = `${width}%`;
+        
+        if (width >= 100) {
+          clearInterval(interval);
+        }
+      }, 100);
+    }
+    
+    function hideResourceLoader() {
+      const loader = document.getElementById('ar-resource-loader');
+      loader.style.display = 'none';
+    }
+    
+    function showYoutubePlayer() {
+      const container = document.getElementById('youtube-container');
+      container.style.display = 'block';
+      container.style.pointerEvents = 'auto';
+    }
+    
+    function showGeogebraApplet() {
+      const container = document.getElementById('geogebra-container');
+      container.style.display = 'block';
+      container.style.pointerEvents = 'auto';
+    }
+    
+    function showWebpageAlert() {
+      const container = document.getElementById('webpage-container');
+      container.style.display = 'block';
+      container.style.pointerEvents = 'auto';
+      document.getElementById('webpage-alert').style.display = 'block';
+    }
+    
+    function show3DModel(targetIndex) {
+      const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
+      
+      // Limpiar cualquier contenido previo
+      targetEntity.innerHTML = '';
+      
+      // Crear y agregar el modelo 3D
+      const plane = document.createElement('a-plane');
+      plane.setAttribute('src', `#target-${targetIndex}-image`);
+      plane.setAttribute('position', '0 0 0');
+      plane.setAttribute('height', '0.552');
+      plane.setAttribute('width', '1');
+      plane.setAttribute('rotation', '0 0 0');
+      
+      const model = document.createElement('a-gltf-model');
+      model.setAttribute('rotation', '0 0 0');
+      model.setAttribute('position', '0 0 0');
+      model.setAttribute('scale', '0.5 0.5 0.5');
+      model.setAttribute('src', `#target-${targetIndex}-model`);
+      model.setAttribute('animation', 'property: position; to: 0 0.1 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate');
+      
+      targetEntity.appendChild(plane);
+      targetEntity.appendChild(model);
+    }
+    
+    function showPodcastPlayer() {
+      const container = document.getElementById('podcast-container');
+      container.style.display = 'block';
+      container.style.pointerEvents = 'auto';
+      
+      // Configurar el reproductor de podcast si no está configurado
+      if (!window.podcastSetup) {
         setupPodcastPlayer();
-      });
-      
-      audio.addEventListener('error', () => {
-        console.error('Error al cargar el audio del podcast');
-      });
+        window.podcastSetup = true;
+      }
     }
     
-    function prepareIframes() {
-      // Configurar YouTube
-      const youtubeIframe = document.getElementById('youtube-iframe');
-      youtubeIframe.src = `https://www.youtube.com/embed/${CONTENT_CONFIG[0].youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
-      CONTENT_CONFIG[0].loaded = true;
-      
-      // Configurar GeoGebra
-      const geogebraIframe = document.getElementById('geogebra-iframe');
-      geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${CONTENT_CONFIG[1].appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
-      CONTENT_CONFIG[1].loaded = true;
-      
-      // La página web no necesita precarga
-      CONTENT_CONFIG[2].loaded = true;
+    function hideAllContent() {
+      document.querySelectorAll('.content-container').forEach(container => {
+        container.style.display = 'none';
+      });
     }
 
     // Configuración del reproductor de podcast
@@ -558,96 +452,6 @@
       audio.currentTime = 0;
     }
 
-    // Eventos de MindAR
-    const scene = document.querySelector('a-scene');
-    scene.addEventListener('targetFound', event => {
-      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-      const contentConfig = CONTENT_CONFIG[targetIndex];
-
-      if (contentConfig && contentConfig.container) {
-        if (!contentConfig.loaded) {
-          showResourceLoader(`Cargando ${contentConfig.type}...`);
-          return;
-        }
-        
-        const container = document.getElementById(`${contentConfig.container}-container`);
-        if (container) {
-          container.style.display = 'block';
-          container.style.pointerEvents = 'auto';
-
-          if (targetIndex === 2) {
-            document.getElementById('webpage-alert').style.display = 'block';
-          }
-        }
-      }
-    });
-    
-    scene.addEventListener('targetLost', event => {
-      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-      const contentConfig = CONTENT_CONFIG[targetIndex];
-      
-      if (contentConfig && contentConfig.container) {
-        const container = document.getElementById(`${contentConfig.container}-container`);
-        if (container) {
-          container.style.display = 'none';
-        }
-      }
-      
-      hideResourceLoader();
-    });
-
-    // Mostrar loader para recursos pendientes
-    function showResourceLoader(message) {
-      const loader = document.getElementById('resource-loader');
-      const messageEl = document.getElementById('resource-message');
-      const progressBar = document.getElementById('resource-progress-bar');
-      
-      messageEl.textContent = message;
-      progressBar.style.width = '0%';
-      loader.style.display = 'block';
-      
-      // Simular progreso (en una implementación real, usarías eventos de progreso reales)
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 10;
-        progressBar.style.width = `${Math.min(progress, 100)}%`;
-        
-        if (progress >= 100) {
-          clearInterval(interval);
-          const targetConfig = getCurrentTargetConfig();
-          if (targetConfig) {
-            targetConfig.loaded = true;
-            hideResourceLoader();
-            
-            // Mostrar el contenido ahora que está cargado
-            const container = document.getElementById(`${targetConfig.container}-container`);
-            if (container) {
-              container.style.display = 'block';
-              container.style.pointerEvents = 'auto';
-            }
-          }
-        }
-      }, 300);
-    }
-    
-    function hideResourceLoader() {
-      const loader = document.getElementById('resource-loader');
-      loader.style.display = 'none';
-    }
-    
-    function getCurrentTargetConfig() {
-      // Esta función debería determinar qué marcador está actualmente activo
-      // En una implementación real, necesitarías rastrear el estado actual
-      // Aquí es un ejemplo simplificado
-      for (let i = 0; i < 5; i++) {
-        const entity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`);
-        if (entity && entity.getAttribute('visible')) {
-          return CONTENT_CONFIG[i];
-        }
-      }
-      return null;
-    }
-
     // Funciones de control
     function closeContent(type) {
       const container = document.getElementById(`${type}-container`);
@@ -689,19 +493,6 @@
 
       // Cerrar el contenedor de la página web
       closeContent('webpage');
-    }
-  </script>
-
-  <!-- Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then(registration => {
-          console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        }).catch(err => {
-          console.log('ServiceWorker registration failed: ', err);
-        });
-      });
     }
   </script>
 
