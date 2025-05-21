@@ -10,6 +10,54 @@
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="config-sensores.css">
   <link rel="stylesheet" href="UI-personalizado.css">
+  
+  <style>
+    /* Estilos mejorados para el loader de recursos */
+    #ar-resource-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 10000;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    
+    .resource-loader {
+      background: rgba(30,30,30,0.9);
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 80%;
+    }
+    
+    .loader-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+    
+    .loader-bar {
+      height: 100%;
+      background: #4CAF50;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    /* Asegurar que el canvas de A-Frame esté detrás del loader */
+    .a-canvas {
+      z-index: 1 !important;
+    }
+  </style>
 </head>
 
 <body>
@@ -18,28 +66,20 @@
     device-orientation-permission-ui="enabled: false">
 
     <a-assets>
-      <!-- Los recursos se cargarán dinámicamente después -->
+      <!-- Los recursos se cargarán dinámicamente -->
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Target 0: Video de YouTube -->
+    <!-- Targets de MindAR -->
     <a-entity mindar-image-target="targetIndex: 0"></a-entity>
-
-    <!-- Target 1: GeoGebra -->
     <a-entity mindar-image-target="targetIndex: 1"></a-entity>
-
-    <!-- Target 2: Página web -->
     <a-entity mindar-image-target="targetIndex: 2"></a-entity>
-
-    <!-- Target 3: Modelo 3D -->
     <a-entity mindar-image-target="targetIndex: 3"></a-entity>
-
-    <!-- Target 4: Podcast -->
     <a-entity mindar-image-target="targetIndex: 4"></a-entity>
   </a-scene>
 
-  <!-- Contenedor para YouTube -->
+  <!-- Contenedores de contenido -->
   <div id="youtube-container" class="content-container">
     <div class="youtube-player">
       <button class="close-btn" id="youtube-close-btn">X</button>
@@ -47,7 +87,6 @@
     </div>
   </div>
 
-  <!-- Contenedor para GeoGebra -->
   <div id="geogebra-container" class="content-container">
     <div class="geogebra-player">
       <button class="close-btn" id="geogebra-close-btn">X</button>
@@ -55,12 +94,10 @@
     </div>
   </div>
 
-  <!-- Contenedor para Página Web -->
   <div id="webpage-container" class="content-container">
     <div class="webpage-alert" id="webpage-alert">
       <button class="close-btn" id="webpage-close-btn">X</button>
-      <p>El sitio web no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?
-      </p>
+      <p>El sitio web no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?</p>
       <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
         <button class="alert-btn open-browser-btn" id="open-browser-btn">Abrir en navegador</button>
         <button class="alert-btn cancel-btn" id="cancel-webpage-btn">Cancelar</button>
@@ -68,7 +105,6 @@
     </div>
   </div>
 
-  <!-- Contenedor para Podcast -->
   <div id="podcast-container" class="content-container">
     <div class="audio-player">
       <button class="close-btn" id="podcast-close-btn">X</button>
@@ -86,8 +122,8 @@
     </div>
   </div>
 
-  <!-- Mensaje de carga de recurso AR -->
-  <div id="ar-resource-loader" class="content-container" style="display: none;">
+  <!-- Loader de recursos AR -->
+  <div id="ar-resource-loader">
     <div class="resource-loader">
       <div class="loader-text">Cargando recurso AR...</div>
       <div class="loader-bar-container">
@@ -108,274 +144,212 @@
   </div>
 
   <script>
-    // Configuración
+    // Configuración de contenido
     const CONTENT_CONFIG = {
-      0: {
-        type: "video",
-        container: "youtube",
-        youtubeId: "dayfz0ff1Mc",
-        loaded: false,
-        visible: false
-      },
-      1: {
-        type: "geogebra",
-        container: "geogebra",
-        appletId: "qzjfkvpm",
-        loaded: false,
-        visible: false
-      },
-      2: {
-        type: "webpage",
-        container: "webpage",
-        url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos",
-        loaded: false,
-        visible: false
-      },
-      3: {
-        type: "3d",
-        modelPath: "media/shiba/scene.gltf",
-        imagePath: "tarjetas/t2.png",
-        loaded: false,
-        visible: false
-      },
-      4: {
-        type: "podcast",
-        container: "podcast",
-        audioPath: "sound/canto.mp3",
-        loaded: false,
-        visible: false
-      }
+      0: { type: "video", container: "youtube", youtubeId: "dayfz0ff1Mc", loaded: false, visible: false },
+      1: { type: "geogebra", container: "geogebra", appletId: "qzjfkvpm", loaded: false, visible: false },
+      2: { type: "webpage", container: "webpage", url: "https://wordwall.net/es/resource/12994896/n%C3%BAmeros-negativos-y-positivos", loaded: false, visible: false },
+      3: { type: "3d", modelPath: "media/shiba/scene.gltf", imagePath: "tarjetas/t2.png", loaded: false, visible: false },
+      4: { type: "podcast", container: "podcast", audioPath: "sound/canto.mp3", loaded: false, visible: false }
     };
 
     // Inicialización
-    document.addEventListener('DOMContentLoaded', function () {
-      // Configurar listeners para YouTube
+    document.addEventListener('DOMContentLoaded', function() {
+      setupEventListeners();
+      const scene = document.querySelector('a-scene');
+      scene.addEventListener('loaded', initializeARExperience);
+    });
+
+    function setupEventListeners() {
+      // Controles de YouTube
       document.getElementById('youtube-close-btn').addEventListener('click', () => closeContent('youtube'));
-
-      // Configurar listeners para GeoGebra
+      
+      // Controles de GeoGebra
       document.getElementById('geogebra-close-btn').addEventListener('click', () => closeContent('geogebra'));
-
-      // Configurar listeners para la página web
+      
+      // Controles de página web
       document.getElementById('webpage-close-btn').addEventListener('click', handleWebpageClose);
       document.getElementById('cancel-webpage-btn').addEventListener('click', handleWebpageClose);
       document.getElementById('open-browser-btn').addEventListener('click', openExternalBrowser);
-
-      // Configurar listeners para el podcast
+      
+      // Controles de podcast
       document.getElementById('podcast-close-btn').addEventListener('click', () => closeContent('podcast'));
       document.getElementById('podcast-play-btn').addEventListener('click', playPodcast);
       document.getElementById('podcast-pause-btn').addEventListener('click', pausePodcast);
       document.getElementById('podcast-stop-btn').addEventListener('click', stopPodcast);
+    }
 
-      // Ocultar loader inicial cuando la cámara esté lista
-      const scene = document.querySelector('a-scene');
-      scene.addEventListener('loaded', onSceneLoaded);
-      
-      // Cargar recursos secundarios en segundo plano
-      setTimeout(loadSecondaryResources, 100);
-    });
-
-    function onSceneLoaded() {
-      // Ocultar loader inicial rápidamente
+    function initializeARExperience() {
+      // Ocultar loader inicial
       const loader = document.getElementById('ar-loader');
       loader.style.opacity = '0';
-      setTimeout(() => {
-        loader.style.display = 'none';
-      }, 500);
+      setTimeout(() => loader.style.display = 'none', 500);
       
       // Configurar eventos de MindAR
       const scene = document.querySelector('a-scene');
-      scene.addEventListener('targetFound', onTargetFound);
-      scene.addEventListener('targetLost', onTargetLost);
+      scene.addEventListener('targetFound', handleTargetFound);
+      scene.addEventListener('targetLost', handleTargetLost);
+      
+      // Cargar recursos en segundo plano
+      loadSecondaryResources();
     }
 
     function loadSecondaryResources() {
-      // Cargar recursos para cada target
       Object.keys(CONTENT_CONFIG).forEach(targetIndex => {
         const config = CONTENT_CONFIG[targetIndex];
         
         switch(config.type) {
           case "video":
-            // Configurar YouTube (no necesita precarga)
-            const youtubeIframe = document.getElementById('youtube-iframe');
-            youtubeIframe.src = `https://www.youtube.com/embed/${config.youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
-            config.loaded = true;
-            
-            youtubeIframe.onload = function () {
-              document.body.addEventListener('click', function unmuteVideo() {
-                youtubeIframe.contentWindow.postMessage(JSON.stringify({
-                  event: 'command',
-                  func: 'unmute',
-                  args: []
-                }), '*');
-                document.body.removeEventListener('click', unmuteVideo);
-              });
-            };
+            setupYouTubePlayer(config);
             break;
             
           case "geogebra":
-            // Configurar GeoGebra (no necesita precarga)
-            const geogebraIframe = document.getElementById('geogebra-iframe');
-            geogebraIframe.src = `https://www.geogebra.org/material/iframe/id/${config.appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
-            config.loaded = true;
+            setupGeoGebraApplet(config);
             break;
             
           case "3d":
-            // Precargar modelo 3D e imagen
-            Promise.all([
-              loadAsset(config.modelPath, 'model', targetIndex),
-              loadAsset(config.imagePath, 'image', targetIndex)
-            ]).then(() => {
-              config.loaded = true;
-              console.log('Recursos 3D cargados:', targetIndex);
-              if (config.visible) show3DModel(targetIndex);
-            });
+            load3DModelAssets(config, targetIndex);
             break;
             
           case "podcast":
-            // Precargar audio
-            loadAsset(config.audioPath, 'audio', targetIndex).then(() => {
-              config.loaded = true;
-              console.log('Audio cargado:', targetIndex);
-              if (config.visible) showPodcastPlayer();
-            });
+            loadAudioAsset(config, targetIndex);
             break;
             
           case "webpage":
-            // No necesita precarga
             config.loaded = true;
-            if (config.visible) showWebpageAlert();
             break;
         }
       });
     }
 
-    function loadAsset(path, type, targetIndex) {
-      return new Promise((resolve) => {
-        const assets = document.querySelector('a-assets');
-        let assetElement;
-        
-        switch(type) {
-          case 'model':
-            assetElement = document.createElement('a-asset-item');
-            assetElement.setAttribute('id', `target-${targetIndex}-model`);
-            assetElement.setAttribute('src', path);
-            
-            assetElement.addEventListener('loaded', () => {
-              console.log(`Modelo 3D cargado: ${path}`);
-              resolve();
-            });
-            
-            assetElement.addEventListener('error', () => {
-              console.error(`Error cargando modelo: ${path}`);
-              resolve();
-            });
-            break;
-            
-          case 'image':
-            assetElement = document.createElement('img');
-            assetElement.setAttribute('id', `target-${targetIndex}-image`);
-            assetElement.setAttribute('src', path);
-            
-            assetElement.addEventListener('load', () => {
-              console.log(`Imagen cargada: ${path}`);
-              resolve();
-            });
-            
-            assetElement.addEventListener('error', () => {
-              console.error(`Error cargando imagen: ${path}`);
-              resolve();
-            });
-            break;
-            
-          case 'audio':
-            assetElement = document.createElement('audio');
-            assetElement.setAttribute('id', 'podcast-audio');
-            assetElement.setAttribute('src', path);
-            assetElement.setAttribute('preload', 'auto');
-            
-            assetElement.addEventListener('canplaythrough', () => {
-              console.log(`Audio cargado: ${path}`);
-              resolve();
-            });
-            
-            assetElement.addEventListener('error', () => {
-              console.error(`Error cargando audio: ${path}`);
-              resolve();
-            });
-            break;
-        }
-        
-        assets.appendChild(assetElement);
-      });
+    function setupYouTubePlayer(config) {
+      const iframe = document.getElementById('youtube-iframe');
+      iframe.src = `https://www.youtube.com/embed/${config.youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
+      
+      iframe.onload = function() {
+        document.body.addEventListener('click', function unmuteVideo() {
+          iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'unmute',
+            args: []
+          }), '*');
+          document.body.removeEventListener('click', unmuteVideo);
+        });
+      };
+      
+      config.loaded = true;
     }
 
-    function onTargetFound(event) {
+    function setupGeoGebraApplet(config) {
+      const iframe = document.getElementById('geogebra-iframe');
+      iframe.src = `https://www.geogebra.org/material/iframe/id/${config.appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
+      config.loaded = true;
+    }
+
+    function load3DModelAssets(config, targetIndex) {
+      const assets = document.querySelector('a-assets');
+      let loadedCount = 0;
+      
+      // Cargar modelo 3D
+      const modelEl = document.createElement('a-asset-item');
+      modelEl.setAttribute('id', `target-${targetIndex}-model`);
+      modelEl.setAttribute('src', config.modelPath);
+      
+      modelEl.addEventListener('model-loaded', () => {
+        console.log('Modelo 3D cargado');
+        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+      });
+      
+      modelEl.addEventListener('error', () => {
+        console.error('Error cargando modelo 3D');
+        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+      });
+      
+      // Cargar imagen
+      const imgEl = document.createElement('img');
+      imgEl.setAttribute('id', `target-${targetIndex}-image`);
+      imgEl.setAttribute('src', config.imagePath);
+      
+      imgEl.addEventListener('load', () => {
+        console.log('Imagen cargada');
+        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+      });
+      
+      imgEl.addEventListener('error', () => {
+        console.error('Error cargando imagen');
+        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+      });
+      
+      assets.appendChild(modelEl);
+      assets.appendChild(imgEl);
+    }
+
+    function loadAudioAsset(config, targetIndex) {
+      const audioEl = document.createElement('audio');
+      audioEl.setAttribute('id', 'podcast-audio');
+      audioEl.setAttribute('src', config.audioPath);
+      audioEl.setAttribute('preload', 'auto');
+      
+      audioEl.addEventListener('canplaythrough', () => {
+        console.log('Audio completamente cargado');
+        config.loaded = true;
+        if (config.visible) showPodcastPlayer();
+      });
+      
+      audioEl.addEventListener('error', () => {
+        console.error('Error cargando audio');
+        config.loaded = true; // Marcar como cargado para evitar bloqueos
+      });
+      
+      document.querySelector('a-assets').appendChild(audioEl);
+    }
+
+    function markAsLoaded(config, targetIndex) {
+      config.loaded = true;
+      if (config.visible) show3DModel(targetIndex);
+    }
+
+    function handleTargetFound(event) {
       const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-      const contentConfig = CONTENT_CONFIG[targetIndex];
+      const config = CONTENT_CONFIG[targetIndex];
       
-      if (!contentConfig) return;
+      if (!config) return;
       
-      // Marcar como visible
-      contentConfig.visible = true;
+      config.visible = true;
       
-      // Mostrar mensaje si el recurso no está cargado
-      if (!contentConfig.loaded) {
+      if (!config.loaded) {
         showResourceLoader(targetIndex);
         return;
       }
       
-      // Configurar contenido según el tipo
-      switch(contentConfig.type) {
-        case "video":
-          showYoutubePlayer();
-          break;
-          
-        case "geogebra":
-          showGeogebraApplet();
-          break;
-          
-        case "webpage":
-          showWebpageAlert();
-          break;
-          
-        case "3d":
-          show3DModel(targetIndex);
-          break;
-          
-        case "podcast":
-          showPodcastPlayer();
-          break;
+      showContent(targetIndex);
+    }
+
+    function handleTargetLost(event) {
+      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
+      const config = CONTENT_CONFIG[targetIndex];
+      
+      if (config) {
+        config.visible = false;
+        hideResourceLoader();
       }
     }
-    
-    function onTargetLost(event) {
-      const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-      const contentConfig = CONTENT_CONFIG[targetIndex];
-      
-      if (!contentConfig) return;
-      
-      // Solo marcar como no visible, no ocultar el contenido
-      contentConfig.visible = false;
-      
-      // Ocultar el loader de recursos si estaba visible
-      hideResourceLoader();
-    }
-    
+
     function showResourceLoader(targetIndex) {
       const loader = document.getElementById('ar-resource-loader');
       const bar = document.getElementById('resource-loader-bar');
       
-      loader.style.display = 'block';
+      loader.style.display = 'flex';
       bar.style.width = '0%';
       
-      // Simular progreso mientras se carga
+      // Animación de progreso
+      let progress = 0;
       const progressInterval = setInterval(() => {
-        const currentWidth = parseInt(bar.style.width) || 0;
-        const newWidth = Math.min(currentWidth + 10, 90);
-        bar.style.width = `${newWidth}%`;
+        progress = Math.min(progress + 5, 90);
+        bar.style.width = `${progress}%`;
       }, 300);
       
-      // Verificar cuando el recurso esté realmente cargado
+      // Verificar carga
       const checkInterval = setInterval(() => {
         if (CONTENT_CONFIG[targetIndex].loaded) {
           clearInterval(progressInterval);
@@ -383,18 +357,33 @@
           bar.style.width = '100%';
           
           setTimeout(() => {
-            hideResourceLoader();
-            showContentWhenReady(targetIndex);
+            loader.style.display = 'none';
+            if (CONTENT_CONFIG[targetIndex].visible) {
+              showContent(targetIndex);
+            }
           }, 500);
         }
       }, 100);
     }
-    
-    function showContentWhenReady(targetIndex) {
+
+    function hideResourceLoader() {
+      document.getElementById('ar-resource-loader').style.display = 'none';
+    }
+
+    function showContent(targetIndex) {
       const config = CONTENT_CONFIG[targetIndex];
-      if (!config.visible || !config.loaded) return;
+      if (!config || !config.visible || !config.loaded) return;
       
       switch(config.type) {
+        case "video":
+          showYoutubePlayer();
+          break;
+        case "geogebra":
+          showGeogebraApplet();
+          break;
+        case "webpage":
+          showWebpageAlert();
+          break;
         case "3d":
           show3DModel(targetIndex);
           break;
@@ -423,97 +412,54 @@
       model.setAttribute('scale', '0.5 0.5 0.5');
       model.setAttribute('animation', 'property: position; to: 0 0.2 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate');
       
+      model.addEventListener('model-loaded', () => {
+        console.log('Modelo 3D completamente cargado y mostrado');
+      });
+      
       targetEntity.appendChild(plane);
       targetEntity.appendChild(model);
-      
-      console.log('Modelo 3D mostrado');
     }
-    
+
     function showPodcastPlayer() {
       const container = document.getElementById('podcast-container');
       container.style.display = 'block';
-      container.style.pointerEvents = 'auto';
       
       if (!window.podcastSetup) {
-        setupPodcastPlayer();
+        setupPodcastControls();
         window.podcastSetup = true;
       }
       
-      // Reproducir automáticamente con manejo de errores
+      // Reproducir automáticamente
       const audio = document.getElementById('podcast-audio');
-      const playPromise = audio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.log('Reproducción automática fallida, mostrando controles manuales');
-          document.getElementById('podcast-play-btn').style.display = 'block';
-        });
-      }
+      audio.play().catch(e => console.log('Reproducción automática fallida:', e));
     }
 
-    function hideResourceLoader() {
-      const loader = document.getElementById('ar-resource-loader');
-      loader.style.display = 'none';
-    }
-    
-    function showYoutubePlayer() {
-      const container = document.getElementById('youtube-container');
-      container.style.display = 'block';
-      container.style.pointerEvents = 'auto';
-    }
-    
-    function showGeogebraApplet() {
-      const container = document.getElementById('geogebra-container');
-      container.style.display = 'block';
-      container.style.pointerEvents = 'auto';
-    }
-    
-    function showWebpageAlert() {
-      const container = document.getElementById('webpage-container');
-      container.style.display = 'block';
-      container.style.pointerEvents = 'auto';
-      document.getElementById('webpage-alert').style.display = 'block';
-    }
-
-    // Configuración del reproductor de podcast
-    function setupPodcastPlayer() {
+    function setupPodcastControls() {
       const audio = document.getElementById('podcast-audio');
       const progress = document.getElementById('podcast-progress');
       const currentTime = document.getElementById('podcast-current-time');
       const duration = document.getElementById('podcast-duration');
 
-      // Actualizar duración cuando esté disponible
       audio.addEventListener('loadedmetadata', () => {
         duration.textContent = formatTime(audio.duration);
       });
 
-      // Actualizar progreso durante la reproducción
       audio.addEventListener('timeupdate', () => {
         progress.value = (audio.currentTime / audio.duration) * 100;
         currentTime.textContent = formatTime(audio.currentTime);
       });
 
-      // Permitir saltar a diferentes partes del audio
       progress.addEventListener('input', () => {
-        const seekTime = (progress.value / 100) * audio.duration;
-        audio.currentTime = seekTime;
+        audio.currentTime = (progress.value / 100) * audio.duration;
       });
     }
 
-    function formatTime(seconds) {
-      const minutes = Math.floor(seconds / 60);
-      const secs = Math.floor(seconds % 60);
-      return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
     function playPodcast() {
-      const audio = document.getElementById('podcast-audio');
-      audio.play().catch(e => console.log('Error al reproducir:', e));
+      document.getElementById('podcast-audio').play();
     }
 
     function pausePodcast() {
-      const audio = document.getElementById('podcast-audio');
-      audio.pause();
+      document.getElementById('podcast-audio').pause();
     }
 
     function stopPodcast() {
@@ -522,12 +468,25 @@
       audio.currentTime = 0;
     }
 
-    // Funciones de control
+    function showYoutubePlayer() {
+      document.getElementById('youtube-container').style.display = 'block';
+    }
+
+    function showGeogebraApplet() {
+      document.getElementById('geogebra-container').style.display = 'block';
+    }
+
+    function showWebpageAlert() {
+      const container = document.getElementById('webpage-container');
+      container.style.display = 'block';
+      document.getElementById('webpage-alert').style.display = 'block';
+    }
+
     function closeContent(type) {
       const container = document.getElementById(`${type}-container`);
       if (container) {
         container.style.display = 'none';
-
+        
         if (type === 'youtube') {
           const iframe = document.getElementById('youtube-iframe');
           if (iframe.contentWindow) {
@@ -556,20 +515,17 @@
 
     function openExternalBrowser() {
       try {
-        // Intenta abrir en nueva pestaña
-        const newWindow = window.open(CONTENT_CONFIG[2].url, '_blank');
-
-        // Fallback si el navegador bloquea la ventana emergente
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-          window.location.href = CONTENT_CONFIG[2].url;
-        }
+        window.open(CONTENT_CONFIG[2].url, '_blank') || (window.location.href = CONTENT_CONFIG[2].url);
       } catch (e) {
-        console.error('Error al abrir el navegador:', e);
         window.location.href = CONTENT_CONFIG[2].url;
       }
-
-      // Cerrar el contenedor de la página web
       closeContent('webpage');
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${mins}:${secs}`;
     }
   </script>
 
