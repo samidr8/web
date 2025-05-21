@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="UI-personalizado.css">
   
   <style>
-    /* Estilos mejorados para el loader de recursos AR */
+    /* Estilos para el loader de recursos AR */
     #ar-resource-loader {
       position: fixed;
       top: 0;
@@ -155,7 +155,7 @@
         imagePath: "tarjetas/t2.png", 
         loaded: false, 
         visible: false,
-        assetsLoaded: 0
+        assets: { model: false, image: false }
       },
       4: { type: "podcast", container: "podcast", audioPath: "sound/canto.mp3", loaded: false, visible: false }
     };
@@ -237,18 +237,6 @@
     function setupYouTubePlayer(config) {
       const iframe = document.getElementById('youtube-iframe');
       iframe.src = `https://www.youtube.com/embed/${config.youtubeId}?autoplay=1&enablejsapi=1&controls=1`;
-      
-      iframe.onload = function() {
-        document.body.addEventListener('click', function unmuteVideo() {
-          iframe.contentWindow.postMessage(JSON.stringify({
-            event: 'command',
-            func: 'unmute',
-            args: []
-          }), '*');
-          document.body.removeEventListener('click', unmuteVideo);
-        });
-      };
-      
       config.loaded = true;
     }
 
@@ -266,15 +254,15 @@
       modelEl.setAttribute('id', `target-${targetIndex}-model`);
       modelEl.setAttribute('src', config.modelPath);
       
-      modelEl.addEventListener('loaded', () => {
+      modelEl.addEventListener('model-loaded', () => {
         console.log('Modelo 3D cargado');
-        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        CONTENT_CONFIG[targetIndex].assets.model = true;
         check3DModelLoaded(config, targetIndex);
       });
       
       modelEl.addEventListener('error', (e) => {
         console.error('Error cargando modelo 3D:', e);
-        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        CONTENT_CONFIG[targetIndex].assets.model = true;
         check3DModelLoaded(config, targetIndex);
       });
       
@@ -285,13 +273,13 @@
       
       imgEl.addEventListener('load', () => {
         console.log('Imagen cargada');
-        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        CONTENT_CONFIG[targetIndex].assets.image = true;
         check3DModelLoaded(config, targetIndex);
       });
       
       imgEl.addEventListener('error', (e) => {
         console.error('Error cargando imagen:', e);
-        CONTENT_CONFIG[targetIndex].assetsLoaded++;
+        CONTENT_CONFIG[targetIndex].assets.image = true;
         check3DModelLoaded(config, targetIndex);
       });
       
@@ -300,7 +288,8 @@
     }
 
     function check3DModelLoaded(config, targetIndex) {
-      if (CONTENT_CONFIG[targetIndex].assetsLoaded === 2) {
+      const assets = CONTENT_CONFIG[targetIndex].assets;
+      if (assets.model && assets.image) {
         config.loaded = true;
         if (config.visible) {
           show3DModel(targetIndex);
@@ -370,7 +359,6 @@
       
       if (config) {
         config.visible = false;
-        hideResourceLoader();
       }
     }
 
