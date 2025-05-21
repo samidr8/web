@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="UI-personalizado.css">
   
   <style>
-    /* Estilos mejorados para el loader de recursos */
+    /* Estilos para el loader de recursos AR */
     #ar-resource-loader {
       position: fixed;
       top: 0;
@@ -153,6 +153,11 @@
       4: { type: "podcast", container: "podcast", audioPath: "sound/canto.mp3", loaded: false, visible: false }
     };
 
+    // Variables de estado
+    let currentLoadingTarget = null;
+    let resourceLoadInterval = null;
+    let progressInterval = null;
+
     // Inicialización
     document.addEventListener('DOMContentLoaded', function() {
       setupEventListeners();
@@ -248,7 +253,7 @@
 
     function load3DModelAssets(config, targetIndex) {
       const assets = document.querySelector('a-assets');
-      let loadedCount = 0;
+      let assetsLoaded = 0;
       
       // Cargar modelo 3D
       const modelEl = document.createElement('a-asset-item');
@@ -257,12 +262,12 @@
       
       modelEl.addEventListener('model-loaded', () => {
         console.log('Modelo 3D cargado');
-        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
       });
       
       modelEl.addEventListener('error', () => {
         console.error('Error cargando modelo 3D');
-        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
       });
       
       // Cargar imagen
@@ -272,12 +277,12 @@
       
       imgEl.addEventListener('load', () => {
         console.log('Imagen cargada');
-        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
       });
       
       imgEl.addEventListener('error', () => {
         console.error('Error cargando imagen');
-        if (++loadedCount === 2) markAsLoaded(config, targetIndex);
+        if (++assetsLoaded === 2) markAsLoaded(config, targetIndex);
       });
       
       assets.appendChild(modelEl);
@@ -290,15 +295,21 @@
       audioEl.setAttribute('src', config.audioPath);
       audioEl.setAttribute('preload', 'auto');
       
+      // Mostrar loader cuando comienza la carga
+      audioEl.addEventListener('loadstart', () => {
+        if (currentLoadingTarget === targetIndex) {
+          showResourceLoader(targetIndex);
+        }
+      });
+      
       audioEl.addEventListener('canplaythrough', () => {
         console.log('Audio completamente cargado');
-        config.loaded = true;
-        if (config.visible) showPodcastPlayer();
+        markAsLoaded(config, targetIndex);
       });
       
       audioEl.addEventListener('error', () => {
         console.error('Error cargando audio');
-        config.loaded = true; // Marcar como cargado para evitar bloqueos
+        markAsLoaded(config, targetIndex);
       });
       
       document.querySelector('a-assets').appendChild(audioEl);
@@ -306,7 +317,9 @@
 
     function markAsLoaded(config, targetIndex) {
       config.loaded = true;
-      if (config.visible) show3DModel(targetIndex);
+      if (config.visible) {
+        showContent(targetIndex);
+      }
     }
 
     function handleTargetFound(event) {
@@ -315,14 +328,24 @@
       
       if (!config) return;
       
+      currentLoadingTarget = targetIndex;
       config.visible = true;
       
+      // Mostrar loader para todos los tipos de contenido
       if (!config.loaded) {
         showResourceLoader(targetIndex);
-        return;
+        
+        // Verificar periódicamente si el recurso está cargado
+        resourceLoadInterval = setInterval(() => {
+          if (config.loaded) {
+            clearInterval(resourceLoadInterval);
+            hideResourceLoader();
+            showContent(targetIndex);
+          }
+        }, 100);
+      } else {
+        showContent(targetIndex);
       }
-      
-      showContent(targetIndex);
     }
 
     function handleTargetLost(event) {
@@ -344,30 +367,19 @@
       
       // Animación de progreso
       let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress = Math.min(progress + 5, 90);
+      progressInterval = setInterval(() => {
+        progress = Math.min(progress + 2, 90);
         bar.style.width = `${progress}%`;
-      }, 300);
-      
-      // Verificar carga
-      const checkInterval = setInterval(() => {
-        if (CONTENT_CONFIG[targetIndex].loaded) {
-          clearInterval(progressInterval);
-          clearInterval(checkInterval);
-          bar.style.width = '100%';
-          
-          setTimeout(() => {
-            loader.style.display = 'none';
-            if (CONTENT_CONFIG[targetIndex].visible) {
-              showContent(targetIndex);
-            }
-          }, 500);
-        }
       }, 100);
     }
 
     function hideResourceLoader() {
-      document.getElementById('ar-resource-loader').style.display = 'none';
+      const loader = document.getElementById('ar-resource-loader');
+      loader.style.display = 'none';
+      
+      // Limpiar intervalos
+      if (progressInterval) clearInterval(progressInterval);
+      if (resourceLoadInterval) clearInterval(resourceLoadInterval);
     }
 
     function showContent(targetIndex) {
@@ -397,6 +409,15 @@
       const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
       targetEntity.innerHTML = '';
       
+      // Verificar si los recursos existen
+      const model = document.querySelector(`#target-${targetIndex}-model`);
+      const image = document.querySelector(`#target-${targetIndex}-image`);
+      
+      if (!model || !image) {
+        console.error('Recursos no encontrados');
+        return;
+      }
+      
       // Crear plano con imagen
       const plane = document.createElement('a-plane');
       plane.setAttribute('src', `#target-${targetIndex}-image`);
@@ -406,18 +427,19 @@
       plane.setAttribute('rotation', '0 0 0');
       
       // Crear modelo 3D
-      const model = document.createElement('a-gltf-model');
-      model.setAttribute('src', `#target-${targetIndex}-model`);
-      model.setAttribute('position', '0 0.1 0');
-      model.setAttribute('scale', '0.5 0.5 0.5');
-      model.setAttribute('animation', 'property: position; to: 0 0.2 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate');
+      const gltfModel = document.createElement('a-gltf-model');
+      gltfModel.setAttribute('src', `#target-${targetIndex}-model`);
+      gltfModel.setAttribute('position', '0 0.1 0');
+      gltfModel.setAttribute('scale', '0.5 0.5 0.5');
+      gltfModel.setAttribute('animation', 'property: position; to: 0 0.2 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate');
       
-      model.addEventListener('model-loaded', () => {
-        console.log('Modelo 3D completamente cargado y mostrado');
+      // Verificar carga del modelo en escena
+      gltfModel.addEventListener('model-loaded', () => {
+        console.log('Modelo 3D mostrado correctamente');
       });
       
       targetEntity.appendChild(plane);
-      targetEntity.appendChild(model);
+      targetEntity.appendChild(gltfModel);
     }
 
     function showPodcastPlayer() {
