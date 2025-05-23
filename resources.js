@@ -24,12 +24,10 @@ const CONTENT_CONFIG = {
   3: {
     type: "3d",
     modelPath: "media/shiba/scene.gltf",
-    imagePath: "tarjetas/t2.png",
     loaded: false,
     loading: false,
     visible: false,
-    modelLoaded: false,
-    imageLoaded: false
+    modelLoaded: false
   },
   4: {
     type: "podcast",
@@ -38,8 +36,16 @@ const CONTENT_CONFIG = {
     loaded: false,
     loading: false,
     visible: false
+  },
+  5: {
+    type: "imagen",
+    container: "imagen",
+    imagePath: "tarjetas/t2.png",
+    loaded: false,
+    loading: false,
+    visible: false
   }
 };
 
 // Variables globales
-let podcastSetup = false;
+let podcastAudio = null;

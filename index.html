@@ -3,11 +3,10 @@
 
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.0.1/dist/aframe-extras.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.164.1/examples/js/loaders/GLTFLoader.min.js"></script>
 
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="config-sensores.css">
@@ -25,13 +24,26 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Targets -->
+    <!-- Target 0: Video de YouTube -->
     <a-entity mindar-image-target="targetIndex: 0"></a-entity>
+
+    <!-- Target 1: GeoGebra -->
     <a-entity mindar-image-target="targetIndex: 1"></a-entity>
+
+    <!-- Target 2: Página web -->
     <a-entity mindar-image-target="targetIndex: 2"></a-entity>
+
+    <!-- Target 3: Modelo 3D -->
     <a-entity mindar-image-target="targetIndex: 3"></a-entity>
+
+    <!-- Target 4: Podcast -->
     <a-entity mindar-image-target="targetIndex: 4"></a-entity>
+
+    <!-- Target 5: Imagen -->
+    <a-entity mindar-image-target="targetIndex: 5"></a-entity>
   </a-scene>
+
+    <!-- ***********************************Agregar más recursos aquí y modificar tarjetas/targets.mind***************************************************** -->
 
   <!-- Contenedores de contenido -->
   <div id="youtube-container" class="content-container">
@@ -76,6 +88,13 @@
     </div>
   </div>
 
+  <div id="imagen-container" class="content-container">
+    <div class="image-viewer">
+      <button class="close-btn" id="imagen-close-btn">X</button>
+      <img id="imagen-view" src="" alt="Imagen">
+    </div>
+  </div>
+
   <!-- Mensaje de carga de recurso AR -->
   <div id="ar-resource-loader" class="content-container" style="display: none;">
     <div class="resource-loader">
@@ -98,8 +117,15 @@
   </div>
 
   <script src="resources.js"></script>
+  <script src="performance-monitor.js"></script>
   <script src="functions.js"></script>
-  <script src="event-handlers.js"></script>
+  <script src="video.js"></script>
+  <script src="sound.js"></script>
+  <script src="imagen.js"></script>
+  <script src="applets.js"></script>
+  <script src="paginaweb.js"></script>
+  <script src="objeto3d.js"></script>
+
   <script src="config-sensores.js"></script>
   <script src="UI-personalizado.js"></script>
 </body>
