@@ -46,21 +46,35 @@ function onCameraQuickStart() {
     PerformanceMonitor.mark('Cámara Lista');
   }
   
-  // Ocultar loader inicial MUY RÁPIDO (2-3 segundos máximo)
-  setTimeout(() => {
-    const loader = document.getElementById('ar-loader');
-    if (loader) {
-      loader.style.opacity = '0';
-      setTimeout(() => {
-        loader.style.display = 'none';
-        cameraReady = true;
-        console.log('✅ Cámara lista en segundo plano');
-        
-        // AHORA empezar carga en segundo plano
-        startBackgroundLoading();
-      }, 500);
-    }
-  }, 1500); // 1.5 segundos máximo
+  // Animar la barra de progreso del loader inicial
+  const loaderBar = document.getElementById('loader-bar');
+  if (loaderBar) {
+    // Simular progreso de carga
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 20;
+      loaderBar.style.width = progress + '%';
+      
+      if (progress >= 100) {
+        clearInterval(interval);
+        // Ocultar loader inicial después de completar la animación
+        setTimeout(() => {
+          const loader = document.getElementById('ar-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+              loader.style.display = 'none';
+              cameraReady = true;
+              console.log('✅ Cámara lista en segundo plano');
+              
+              // AHORA empezar carga en segundo plano
+              startBackgroundLoading();
+            }, 500);
+          }
+        }, 300);
+      }
+    }, 300);
+  }
 }
 
 function onSceneFullyLoaded() {
@@ -84,13 +98,11 @@ function startBackgroundLoading() {
     PerformanceMonitor.mark('Inicio Carga en Segundo Plano');
   }
   
-  // Cargar recursos de forma asíncrona y NO bloqueante
+// No precargar audio e imágenes para evitar problemas
   loadingQueue = [
     { type: 'iframe', target: 'youtube', priority: 1 },
     { type: 'iframe', target: 'geogebra', priority: 2 },
-    { type: 'resource', target: 3, priority: 3 }, // Modelo 3D
-    { type: 'resource', target: 4, priority: 4 }, // Audio
-    { type: 'resource', target: 5, priority: 5 }  // Imagen
+    { type: 'resource', target: 3, priority: 3 } // Solo modelo 3D
   ];
   
   // Procesar cola de carga con intervalos para no bloquear
@@ -267,6 +279,10 @@ function onTargetFound(event) {
   contentConfig.visible = true;
   console.log(`🎯 Marcador ${targetIndex} detectado - Tipo: ${contentConfig.type}`);
   
+  // Debug adicional para el marcador
+  console.log('📍 Target Entity:', event.target);
+  console.log('📐 Target Matrix:', event.detail);
+  
   // Marcar rendimiento si está disponible
   if (typeof PerformanceMonitor !== 'undefined') {
     PerformanceMonitor.mark(`Marcador ${targetIndex} Detectado`);
@@ -275,11 +291,31 @@ function onTargetFound(event) {
   // Mostrar contenido INMEDIATAMENTE (ya precargado)
   switch(contentConfig.type) {
     case "video":
-      showYoutubePlayer();
+      if (!contentConfig.loaded) {
+        showResourceLoader(targetIndex);
+        // Simular carga del iframe de YouTube
+        simulateIframeLoading(targetIndex, () => {
+          hideResourceLoader();
+          showYoutubePlayer();
+          contentConfig.loaded = true;
+        });
+      } else {
+        showYoutubePlayer();
+      }
       break;
       
     case "geogebra":
-      showGeogebraApplet();
+      if (!contentConfig.loaded) {
+        showResourceLoader(targetIndex);
+        // Simular carga del iframe de GeoGebra
+        simulateIframeLoading(targetIndex, () => {
+          hideResourceLoader();
+          showGeogebraApplet();
+          contentConfig.loaded = true;
+        });
+      } else {
+        showGeogebraApplet();
+      }
       break;
       
     case "webpage":
@@ -287,40 +323,29 @@ function onTargetFound(event) {
       break;
       
     case "3d":
-      if (contentConfig.loaded) {
-        show3DModel(targetIndex);
-      } else {
-        console.log('⏳ Modelo 3D aún cargando...');
-        showResourceLoader(targetIndex);
-        // Empezar carga si no se ha iniciado
-        if (!contentConfig.loading) {
-          load3DResource(targetIndex);
-        }
+      // NUEVO: No hacer nada aquí porque el contenido ya está en el HTML
+      console.log('✅ Contenido 3D ya está en el DOM');
+      // Opcional: puedes agregar lógica para animar o modificar el contenido existente
+      const targetEntity = event.target;
+      const box = targetEntity.querySelector('a-box');
+      if (box) {
+        // Reiniciar animación o hacer algo cuando se detecta
+        box.emit('startanimation');
       }
       break;
       
     case "podcast":
-      if (contentConfig.loaded) {
-        showPodcastPlayer(targetIndex);
-      } else {
-        console.log('⏳ Audio aún cargando...');
-        showResourceLoader(targetIndex);
-        if (!contentConfig.loading) {
-          loadAudioResource(targetIndex);
-        }
-      }
+      // No usar precarga para el podcast, cargar directamente
+      console.log('⏳ Cargando podcast...');
+      showResourceLoader(targetIndex);
+      loadAudioResource(targetIndex);
       break;
       
     case "imagen":
-      if (contentConfig.loaded) {
-        showImage(targetIndex);
-      } else {
-        console.log('⏳ Imagen aún cargando...');
-        showResourceLoader(targetIndex);
-        if (!contentConfig.loading) {
-          loadImageResource(targetIndex);
-        }
-      }
+      // No usar precarga, cargar directamente
+      console.log('⏳ Cargando imagen...');
+      showResourceLoader(targetIndex);
+      loadImageResource(targetIndex);
       break;
   }
 }
@@ -333,30 +358,91 @@ function onTargetLost(event) {
   
   contentConfig.visible = false;
   hideResourceLoader();
+  
+  // Para contenido 3D, opcional: pausar animaciones
+  if (contentConfig.type === "3d") {
+    const targetEntity = event.target;
+    const box = targetEntity.querySelector('a-box');
+    if (box) {
+      // Opcional: pausar animación cuando se pierde el marcador
+      // box.emit('pauseanimation');
+    }
+  }
 }
 
-// ===== FUNCIONES DE SOPORTE (sin cambios) =====
+// ===== FUNCIONES DE SOPORTE =====
 function showResourceLoader(targetIndex) {
   const loader = document.getElementById('ar-resource-loader');
   const bar = document.getElementById('resource-loader-bar');
+  const loaderText = document.querySelector('.loader-text');
+  
   if (loader && bar) {
     loader.style.display = 'block';
     bar.style.width = '0%';
+    
+    // Personalizar texto según el tipo de recurso
+    const config = CONTENT_CONFIG[targetIndex];
+    const resourceNames = {
+      'video': 'video de YouTube',
+      'geogebra': 'applet de GeoGebra',
+      '3d': 'modelo 3D',
+      'podcast': 'podcast',
+      'imagen': 'imagen',
+      'webpage': 'página web'
+    };
+    
+    if (loaderText) {
+      loaderText.textContent = `Cargando ${resourceNames[config.type] || 'recurso AR'}...`;
+    }
+    
+    // Animar la barra de progreso
+    setTimeout(() => {
+      bar.style.transition = 'width 0.3s ease';
+      bar.style.width = '10%';
+    }, 100);
   }
 }
 
 function hideResourceLoader() {
   const loader = document.getElementById('ar-resource-loader');
+  const bar = document.getElementById('resource-loader-bar');
+  
   if (loader) {
-    loader.style.display = 'none';
+    // Completar la barra antes de ocultar
+    if (bar) {
+      bar.style.width = '100%';
+    }
+    
+    setTimeout(() => {
+      loader.style.display = 'none';
+      if (bar) {
+        bar.style.transition = 'none';
+        bar.style.width = '0%';
+      }
+    }, 300);
   }
 }
 
 function updateResourceLoaderProgress(targetIndex, percent) {
   const bar = document.getElementById('resource-loader-bar');
   if (bar) {
+    bar.style.transition = 'width 0.3s ease';
     bar.style.width = `${Math.min(percent, 100)}%`;
   }
+}
+
+// Función para simular carga de iframes
+function simulateIframeLoading(targetIndex, callback) {
+  let progress = 10;
+  const interval = setInterval(() => {
+    progress += 20;
+    updateResourceLoaderProgress(targetIndex, progress);
+    
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(callback, 300);
+    }
+  }, 300);
 }
 
 function closeContent(type) {

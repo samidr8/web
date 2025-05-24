@@ -1,5 +1,9 @@
 function showGeogebraApplet() {
   const container = document.getElementById('geogebra-container');
-  container.style.display = 'block';
-  container.style.pointerEvents = 'auto';
+  if (container) {
+    container.style.display = 'block';
+    container.style.pointerEvents = 'auto';
+    
+    console.log('🧮 GeoGebra applet mostrado');
+  }
 }

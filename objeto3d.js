@@ -1,273 +1,271 @@
-// ===== OBJETO3D.JS OPTIMIZADO PARA CARGA RÁPIDA =====
+// ===== OBJETO3D.JS - VERSIÓN SIMPLIFICADA =====
 
+// Variable global para controlar el tipo de contenido 3D
+let use3DModel = false; // false para usar primitivas primero (más confiable)
+
+// Función principal para cargar recursos 3D
 function load3DResource(targetIndex) {
   const config = CONTENT_CONFIG[targetIndex];
   
-  // Si ya está precargado, mostrar inmediatamente
-  if (config.loaded && config.modelLoaded) {
-    console.log('🎨 Usando modelo 3D precargado');
-    hideResourceLoader();
-    if (config.visible) {
-      requestAnimationFrame(() => {
-        show3DModel(targetIndex);
-      });
-    }
-    return;
-  }
+  console.log('🎨 Iniciando carga de recurso 3D para target:', targetIndex);
   
-  // Si no está precargado, cargar con indicador de progreso
-  config.loading = true;
+  // Mostrar loader
   showResourceLoader(targetIndex);
   
-  // Verificar si THREE.GLTFLoader está disponible
-  if (typeof THREE === 'undefined' || !THREE.GLTFLoader) {
-    console.error('❌ THREE.GLTFLoader no está disponible');
-    config.loading = false;
-    hideResourceLoader();
-    show3DError(targetIndex);
-    return;
-  }
-  
-  // Cargar modelo 3D usando THREE.GLTFLoader
-  const loader = new THREE.GLTFLoader();
-  loader.load(
-    config.modelPath,
-    (gltf) => {
-      console.log('🎨 Modelo 3D cargado exitosamente');
-      config.modelLoaded = true;
-      config.loaded = true;
-      config.loading = false;
+  // Simular progreso de carga
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress += 20;
+    updateResourceLoaderProgress(targetIndex, progress);
+    
+    if (progress >= 100) {
+      clearInterval(progressInterval);
       
-      // Agregar modelo al DOM de A-Frame si no existe
-      const assets = document.querySelector('a-assets');
-      const existingModel = document.getElementById(`target-${targetIndex}-model`);
-      
-      if (!existingModel) {
-        const modelElement = document.createElement('a-asset-item');
-        modelElement.setAttribute('id', `target-${targetIndex}-model`);
-        modelElement.setAttribute('src', config.modelPath);
-        assets.appendChild(modelElement);
-      }
-      
-      hideResourceLoader();
-      
-      if (config.visible) {
-        requestAnimationFrame(() => {
+      // Ocultar loader y mostrar contenido
+      setTimeout(() => {
+        hideResourceLoader();
+        
+        if (use3DModel) {
           show3DModel(targetIndex);
-        });
-      }
-    },
-    (xhr) => {
-      // Actualizar progreso de carga
-      if (xhr.lengthComputable) {
-        const percent = (xhr.loaded / xhr.total) * 100;
-        updateResourceLoaderProgress(targetIndex, percent);
-      }
-    },
-    (error) => {
-      console.error('❌ Error cargando modelo 3D:', error);
-      config.loading = false;
-      hideResourceLoader();
-      show3DError(targetIndex);
+        } else {
+          show3DPrimitives(targetIndex);
+        }
+      }, 300);
     }
-  );
+  }, 200);
 }
 
+// Función para mostrar el modelo 3D GLTF
 function show3DModel(targetIndex) {
+  const config = CONTENT_CONFIG[targetIndex];
   const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
   
   if (!targetEntity) {
-    console.warn('Target entity no encontrada para modelo 3D');
+    console.error('❌ No se encontró la entidad target para el índice:', targetIndex);
     return;
   }
+  
+  console.log('🎨 Mostrando modelo 3D en target:', targetIndex);
   
   // Limpiar contenido previo
   while (targetEntity.firstChild) {
     targetEntity.removeChild(targetEntity.firstChild);
   }
   
-  // Verificar que el asset existe
-  const assetExists = document.getElementById(`target-${targetIndex}-model`);
-  if (!assetExists) {
-    console.warn('Asset del modelo 3D no encontrado');
-    show3DError(targetIndex);
-    return;
+  // Verificar si el asset ya existe en a-assets
+  let assetId = `model-${targetIndex}`;
+  let asset = document.getElementById(assetId);
+  
+  if (!asset) {
+    // Crear el asset si no existe
+    const assets = document.querySelector('a-assets');
+    if (assets) {
+      asset = document.createElement('a-asset-item');
+      asset.setAttribute('id', assetId);
+      asset.setAttribute('src', config.modelPath);
+      assets.appendChild(asset);
+      
+      console.log('📦 Asset creado:', assetId);
+      
+      // Esperar a que se cargue el asset
+      asset.addEventListener('loaded', () => {
+        console.log('✅ Asset cargado, creando modelo');
+        createGLTFModel(targetIndex, targetEntity, assetId);
+      });
+      
+      asset.addEventListener('error', (e) => {
+        console.error('❌ Error cargando asset:', e);
+        // Mostrar primitivas como fallback
+        show3DPrimitives(targetIndex);
+      });
+    }
+  } else {
+    // Si el asset ya existe, crear el modelo directamente
+    createGLTFModel(targetIndex, targetEntity, assetId);
   }
-  
-  // Crear modelo 3D
+}
+
+// Función auxiliar para crear el modelo GLTF
+function createGLTFModel(targetIndex, targetEntity, assetId) {
+  // Crear el modelo GLTF
   const model = document.createElement('a-gltf-model');
-  model.setAttribute('src', `#target-${targetIndex}-model`);
-  model.setAttribute('position', '0 0.1 0');
-  model.setAttribute('scale', '0.5 0.5 0.5');
-  model.setAttribute('animation', 'property: position; to: 0 0.2 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate');
+  model.setAttribute('src', `#${assetId}`);
+  model.setAttribute('position', '0 0 0');
+  model.setAttribute('rotation', '0 0 0');
+  model.setAttribute('scale', '0.005 0.005 0.005'); // Escala muy pequeña para el Shiba
   
-  // Manejar errores del modelo
-  model.addEventListener('model-error', () => {
-    console.error('Error mostrando modelo 3D');
-    show3DError(targetIndex);
+  // Agregar animación
+  model.setAttribute('animation', 
+    'property: rotation; ' +
+    'to: 0 360 0; ' +
+    'dur: 10000; ' +
+    'easing: linear; ' +
+    'loop: true'
+  );
+  
+  // Eventos del modelo
+  model.addEventListener('model-loaded', () => {
+    console.log('✅ Modelo GLTF cargado y visible');
   });
   
-  // Añadir elemento a la entidad
+  model.addEventListener('model-error', (e) => {
+    console.error('❌ Error con el modelo GLTF:', e);
+    // Mostrar primitivas como fallback
+    show3DPrimitives(targetIndex);
+  });
+  
+  // Agregar el modelo al target
   targetEntity.appendChild(model);
   
-  console.log('✅ Modelo 3D mostrado exitosamente');
+  console.log('✅ Modelo GLTF agregado al DOM');
 }
 
-function show3DError(targetIndex) {
+// Función para mostrar primitivas 3D (cubos, esferas, etc.)
+function show3DPrimitives(targetIndex) {
   const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
   
-  if (targetEntity) {
-    // Limpiar contenido previo
-    while (targetEntity.firstChild) {
-      targetEntity.removeChild(targetEntity.firstChild);
-    }
-    
-    // Crear mensaje de error
-    const errorText = document.createElement('a-text');
-    errorText.setAttribute('value', 'Error cargando modelo 3D');
-    errorText.setAttribute('position', '0 0 0');
-    errorText.setAttribute('align', 'center');
-    errorText.setAttribute('color', 'red');
-    errorText.setAttribute('scale', '0.3 0.3 0.3');
-    
-    targetEntity.appendChild(errorText);
-    
-    console.warn('⚠️ Modelo 3D no pudo cargarse, mostrando mensaje de error');
-  }
-}
-
-// ===== FUNCIONES DE PRECARGA (llamadas desde functions.js) =====
-function preload3DModel(targetIndex) {
-  const config = CONTENT_CONFIG[targetIndex];
-  
-  // Evitar doble carga
-  if (config.loading || config.loaded) {
-    console.log('🎨 Modelo 3D ya está cargando o cargado');
+  if (!targetEntity) {
+    console.error('❌ No se encontró la entidad target para el índice:', targetIndex);
     return;
   }
   
-  config.loading = true;
+  console.log('🎯 Mostrando primitivas 3D en target:', targetIndex);
   
-  // Verificar disponibilidad de THREE.js
-  if (typeof THREE === 'undefined' || !THREE.GLTFLoader) {
-    console.warn('⚠️ THREE.GLTFLoader no disponible para precarga');
-    config.loading = false;
-    return;
+  // Limpiar contenido previo
+  while (targetEntity.firstChild) {
+    targetEntity.removeChild(targetEntity.firstChild);
   }
   
-  console.log(`🎨 Iniciando precarga de modelo 3D: ${config.modelPath}`);
-  
-  const loader = new THREE.GLTFLoader();
-  loader.load(
-    config.modelPath,
-    (gltf) => {
-      console.log('✅ Modelo 3D precargado exitosamente');
-      config.modelLoaded = true;
-      config.loaded = true;
-      config.loading = false;
-      
-      // Preparar el asset en A-Frame
-      const assets = document.querySelector('a-assets');
-      const existingModel = document.getElementById(`target-${targetIndex}-model`);
-      
-      if (!existingModel && assets) {
-        const modelElement = document.createElement('a-asset-item');
-        modelElement.setAttribute('id', `target-${targetIndex}-model`);
-        modelElement.setAttribute('src', config.modelPath);
-        assets.appendChild(modelElement);
-        console.log(`🎨 Asset del modelo 3D agregado: target-${targetIndex}-model`);
-      }
-    },
-    (xhr) => {
-      // Progreso de precarga (opcional, sin mostrar en UI)
-      if (xhr.lengthComputable) {
-        const percent = (xhr.loaded / xhr.total) * 100;
-        console.log(`📈 Progreso precarga modelo 3D: ${percent.toFixed(0)}%`);
-      }
-    },
-    (error) => {
-      console.error('❌ Error precargando modelo 3D:', error);
-      config.loading = false;
-      config.loaded = false;
-    }
+  // Crear un cubo simple
+  const cube = document.createElement('a-box');
+  cube.setAttribute('position', '0 0 0');
+  cube.setAttribute('scale', '0.1 0.1 0.1');
+  cube.setAttribute('color', '#4CC3D9');
+  cube.setAttribute('material', 'shader: flat');
+  cube.setAttribute('animation', 
+    'property: rotation; ' +
+    'to: 0 360 0; ' +
+    'dur: 3000; ' +
+    'easing: linear; ' +
+    'loop: true'
   );
-}
-
-// ===== FUNCIÓN DE DIAGNÓSTICO =====
-function diagnose3DCapabilities() {
-  console.log('🔍 Diagnosticando capacidades 3D...');
   
-  const diagnostics = {
-    threeJS: typeof THREE !== 'undefined',
-    gltfLoader: typeof THREE !== 'undefined' && !!THREE.GLTFLoader,
-    webGL: !!window.WebGLRenderingContext,
-    assets: !!document.querySelector('a-assets')
-  };
+  // Crear una esfera
+  const sphere = document.createElement('a-sphere');
+  sphere.setAttribute('position', '0.15 0 0');
+  sphere.setAttribute('radius', '0.05');
+  sphere.setAttribute('color', '#EF2D5E');
+  sphere.setAttribute('material', 'shader: flat');
+  sphere.setAttribute('animation',
+    'property: position; ' +
+    'to: 0.15 0.1 0; ' +
+    'dur: 1000; ' +
+    'easing: easeInOutQuad; ' +
+    'loop: true; ' +
+    'dir: alternate'
+  );
   
-  console.log('📊 Diagnóstico 3D:', diagnostics);
+  // Crear un cilindro
+  const cylinder = document.createElement('a-cylinder');
+  cylinder.setAttribute('position', '-0.15 0 0');
+  cylinder.setAttribute('radius', '0.05');
+  cylinder.setAttribute('height', '0.1');
+  cylinder.setAttribute('color', '#FFC65D');
+  cylinder.setAttribute('material', 'shader: flat');
+  cylinder.setAttribute('animation',
+    'property: rotation; ' +
+    'to: 360 0 0; ' +
+    'dur: 4000; ' +
+    'loop: true'
+  );
   
-  if (!diagnostics.threeJS) {
-    console.warn('⚠️ THREE.js no está cargado');
-  }
+  // Agregar texto
+  const text = document.createElement('a-text');
+  text.setAttribute('value', '3D TEST');
+  text.setAttribute('position', '0 0.15 0');
+  text.setAttribute('align', 'center');
+  text.setAttribute('color', '#FFFFFF');
+  text.setAttribute('scale', '0.2 0.2 0.2');
   
-  if (!diagnostics.gltfLoader) {
-    console.warn('⚠️ GLTFLoader no está disponible');
-  }
+  // Agregar todos los elementos
+  targetEntity.appendChild(cube);
+  targetEntity.appendChild(sphere);
+  targetEntity.appendChild(cylinder);
+  targetEntity.appendChild(text);
   
-  if (!diagnostics.webGL) {
-    console.error('❌ WebGL no está soportado');
-  }
+  console.log('✅ Primitivas 3D agregadas');
   
-  if (!diagnostics.assets) {
-    console.warn('⚠️ Contenedor de assets de A-Frame no encontrado');
-  }
-  
-  return diagnostics;
-}
-
-// ===== FUNCIONES DE UTILIDAD =====
-function get3DModelStatus(targetIndex) {
-  const config = CONTENT_CONFIG[targetIndex];
-  
-  return {
-    loading: config.loading || false,
-    loaded: config.loaded || false,
-    modelLoaded: config.modelLoaded || false,
-    visible: config.visible || false,
-    hasAsset: !!document.getElementById(`target-${targetIndex}-model`)
-  };
-}
-
-function reset3DModel(targetIndex) {
-  const config = CONTENT_CONFIG[targetIndex];
-  
-  // Resetear estado
-  config.loading = false;
-  config.loaded = false;
-  config.modelLoaded = false;
-  config.visible = false;
-  
-  // Limpiar asset si existe
-  const asset = document.getElementById(`target-${targetIndex}-model`);
-  if (asset) {
-    asset.remove();
-  }
-  
-  // Limpiar entidad
-  const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
-  if (targetEntity) {
-    while (targetEntity.firstChild) {
-      targetEntity.removeChild(targetEntity.firstChild);
-    }
-  }
-  
-  console.log(`🔄 Modelo 3D reiniciado: target-${targetIndex}`);
-}
-
-// ===== INICIALIZACIÓN AUTOMÁTICA =====
-document.addEventListener('DOMContentLoaded', function() {
-  // Ejecutar diagnóstico al cargar
+  // Verificar después de un momento
   setTimeout(() => {
-    diagnose3DCapabilities();
-  }, 1000);
+    const elements = targetEntity.children;
+    console.log(`📊 Elementos agregados: ${elements.length}`);
+    
+    // Verificar visibilidad
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (el.object3D) {
+        console.log(`Elemento ${i} (${el.tagName}):`, {
+          visible: el.object3D.visible,
+          position: el.getAttribute('position'),
+          hasParent: !!el.object3D.parent
+        });
+      }
+    }
+  }, 500);
+}
+
+// Función para cambiar entre modelo y primitivas
+function toggle3DMode() {
+  use3DModel = !use3DModel;
+  console.log(`🔄 Modo 3D cambiado a: ${use3DModel ? 'Modelo GLTF' : 'Primitivas'}`);
+}
+
+// Función de diagnóstico
+function test3DCapabilities() {
+  console.log('🔍 === TEST DE CAPACIDADES 3D ===');
+  
+  // Verificar A-Frame
+  console.log('A-Frame:', typeof AFRAME !== 'undefined' ? '✅' : '❌');
+  
+  // Verificar Three.js
+  console.log('Three.js:', typeof THREE !== 'undefined' ? '✅' : '❌');
+  
+  // Verificar WebGL
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  console.log('WebGL:', gl ? '✅' : '❌');
+  
+  // Verificar escena
+  const scene = document.querySelector('a-scene');
+  console.log('A-Scene:', scene ? '✅' : '❌');
+  
+  // Verificar assets
+  const assets = document.querySelector('a-assets');
+  console.log('A-Assets:', assets ? '✅' : '❌');
+  
+  // Verificar targets
+  const targets = document.querySelectorAll('[mindar-image-target]');
+  console.log(`Targets encontrados: ${targets.length}`);
+  
+  targets.forEach((target, index) => {
+    const idx = target.getAttribute('mindar-image-target').targetIndex;
+    console.log(`  - Target ${idx}: ${target.children.length} hijos`);
+  });
+  
+  console.log('🔍 === FIN DEL TEST ===');
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🎨 objeto3d.js cargado');
+  
+  // Ejecutar test de capacidades después de 2 segundos
+  setTimeout(test3DCapabilities, 2000);
 });
+
+// Hacer funciones disponibles globalmente
+window.load3DResource = load3DResource;
+window.show3DModel = show3DModel;
+window.show3DPrimitives = show3DPrimitives;
+window.toggle3DMode = toggle3DMode;
+window.test3DCapabilities = test3DCapabilities;

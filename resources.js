@@ -40,7 +40,7 @@ const CONTENT_CONFIG = {
   5: {
     type: "imagen",
     container: "imagen",
-    imagePath: "tarjetas/t2.png",
+    imagePath: "tarjetas/t6.web",
     loaded: false,
     loading: false,
     visible: false
