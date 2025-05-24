@@ -113,66 +113,280 @@ document.addEventListener('DOMContentLoaded', function () {
         checkDeviceMotion();
     }
 
-    // Detección mejorada de dispositivos
-    function getDeviceInfo() {
-        const userAgent = navigator.userAgent;
+    // Función mejorada para detección de dispositivos
+function getDeviceInfo() {
+    const userAgent = navigator.userAgent;
+    const platform = navigator.platform || '';
+    const vendor = navigator.vendor || '';
+    
+    console.log('UserAgent completo:', userAgent); // Para debugging
+    console.log('Platform:', platform);
+    console.log('Vendor:', vendor);
+    
+    // Detección mejorada de SO
+    let os = 'Desconocido';
+    let osVersion = '';
+    
+    // Android - Múltiples patrones de detección
+    if (/Android/i.test(userAgent)) {
+        // Patrones más específicos para Android
+        const androidPatterns = [
+            /Android\s+([\d\.]+)/i,           // Patrón estándar
+            /Android\/([\d\.]+)/i,           // Formato alternativo
+            /Android\s+([0-9]+)/i,           // Solo número mayor
+            /\bAndroid\b.*?(\d+(?:\.\d+)*)/i // Patrón más amplio
+        ];
         
-        // Detección de SO
-        let os = 'Desconocido';
-        if (/Android/i.test(userAgent)) {
-            const androidMatch = userAgent.match(/Android\s([\d\.]+)/);
-            os = androidMatch ? `Android ${androidMatch[1]}` : 'Android';
-        } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
-            const iosMatch = userAgent.match(/OS\s([\d_]+)/);
-            os = iosMatch ? `iOS ${iosMatch[1].replace(/_/g, '.')}` : 'iOS';
-        } else if (/Windows/i.test(userAgent)) {
-            os = 'Windows';
-        } else if (/Mac/i.test(userAgent)) {
-            os = 'macOS';
-        } else if (/Linux/i.test(userAgent)) {
-            os = 'Linux';
-        }
-
-        // Detección de navegador
-        let browser = 'Desconocido';
-        if (/Chrome/i.test(userAgent) && !/Edg/i.test(userAgent)) {
-            browser = 'Chrome';
-        } else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) {
-            browser = 'Safari';
-        } else if (/Firefox/i.test(userAgent)) {
-            browser = 'Firefox';
-        } else if (/Edg/i.test(userAgent)) {
-            browser = 'Edge';
-        } else if (/Samsung/i.test(userAgent)) {
-            browser = 'Samsung Internet';
-        }
-
-        // Detección de tipo de dispositivo
-        let deviceType = 'Escritorio';
-        if (/iPhone/i.test(userAgent)) {
-            deviceType = 'iPhone';
-        } else if (/iPad/i.test(userAgent)) {
-            deviceType = 'iPad';
-        } else if (/Android/i.test(userAgent)) {
-            // Detección mejorada para Android
-            if (/Mobile/i.test(userAgent)) {
-                deviceType = 'Android Móvil';
-            } else {
-                deviceType = 'Android Tablet';
+        let versionFound = false;
+        for (const pattern of androidPatterns) {
+            const match = userAgent.match(pattern);
+            if (match && match[1]) {
+                osVersion = match[1];
+                versionFound = true;
+                break;
             }
-        } else if (/Mobile|Tablet/i.test(userAgent)) {
-            deviceType = 'Dispositivo móvil';
         }
-
-        return { os, browser, deviceType };
+        
+        // Si no encontramos versión con patrones, usar métodos alternativos
+        if (!versionFound) {
+            // Intentar extraer de diferentes partes del userAgent
+            const alternativePatterns = [
+                /wv\).*?Chrome\/[\d\.]+.*?Version\/([\d\.]+)/i,
+                /Mobile.*?Chrome\/[\d\.]+.*?Version\/([\d\.]+)/i,
+                /;\s*([0-9]+(?:\.[0-9]+)*)\s*[;\)]/i
+            ];
+            
+            for (const pattern of alternativePatterns) {
+                const match = userAgent.match(pattern);
+                if (match && match[1] && parseFloat(match[1]) >= 4) {
+                    osVersion = match[1];
+                    versionFound = true;
+                    break;
+                }
+            }
+        }
+        
+        // Últimos recursos: usar navigator.userAgentData si está disponible
+        if (!versionFound && 'userAgentData' in navigator && navigator.userAgentData) {
+            try {
+                navigator.userAgentData.getHighEntropyValues(['platformVersion'])
+                    .then(ua => {
+                        if (ua.platformVersion) {
+                            osVersion = ua.platformVersion;
+                            updateOSDisplay(`Android ${osVersion}`);
+                        }
+                    })
+                    .catch(() => {
+                        console.log('No se pudo obtener platformVersion');
+                    });
+            } catch (e) {
+                console.log('userAgentData no disponible completamente');
+            }
+        }
+        
+        os = osVersion ? `Android ${osVersion}` : 'Android (versión no detectada)';
+        
+    } 
+    // iOS - Detección mejorada
+    else if (/iPhone|iPad|iPod/i.test(userAgent) || /Mac.*Mobile/i.test(userAgent)) {
+        const iosPatterns = [
+            /OS\s+([\d_]+)/i,                    // Patrón estándar iOS
+            /iPhone\s+OS\s+([\d_]+)/i,          // iPhone específico
+            /iPad.*OS\s+([\d_]+)/i,             // iPad específico
+            /Version\/([\d\.]+).*Mobile/i,       // Safari móvil
+            /Mobile\/([\w\d]+)/i                // Build number como fallback
+        ];
+        
+        let versionFound = false;
+        for (const pattern of iosPatterns) {
+            const match = userAgent.match(pattern);
+            if (match && match[1]) {
+                osVersion = match[1].replace(/_/g, '.');
+                // Filtrar builds numbers que no son versiones
+                if (/^\d+\.\d/.test(osVersion)) {
+                    versionFound = true;
+                    break;
+                }
+            }
+        }
+        
+        os = versionFound ? `iOS ${osVersion}` : 'iOS (versión no detectada)';
+        
+    }
+    // Windows
+    else if (/Windows/i.test(userAgent)) {
+        const winMatch = userAgent.match(/Windows NT ([\d\.]+)/);
+        const windowsVersions = {
+            '10.0': 'Windows 10/11',
+            '6.3': 'Windows 8.1',
+            '6.2': 'Windows 8',
+            '6.1': 'Windows 7',
+            '6.0': 'Windows Vista'
+        };
+        osVersion = winMatch ? windowsVersions[winMatch[1]] || `Windows NT ${winMatch[1]}` : '';
+        os = osVersion || 'Windows';
+        
+    }
+    // macOS
+    else if (/Mac/i.test(userAgent) && !/Mobile/i.test(userAgent)) {
+        const macMatch = userAgent.match(/Mac OS X ([\d_]+)/);
+        osVersion = macMatch ? macMatch[1].replace(/_/g, '.') : '';
+        os = osVersion ? `macOS ${osVersion}` : 'macOS';
+        
+    }
+    // Linux
+    else if (/Linux/i.test(userAgent)) {
+        os = 'Linux';
     }
 
-    function showDeviceInfo() {
-        const info = getDeviceInfo();
-        document.getElementById('browser-info').textContent = info.browser;
-        document.getElementById('os-info').textContent = info.os;
-        document.getElementById('device-type').textContent = info.deviceType;
+    // Detección mejorada de navegador
+    let browser = 'Desconocido';
+    let browserVersion = '';
+    
+    // Orden importante: más específicos primero
+    if (/EdgA?/i.test(userAgent)) {
+        const edgeMatch = userAgent.match(/EdgA?\/([\d\.]+)/);
+        browserVersion = edgeMatch ? edgeMatch[1] : '';
+        browser = browserVersion ? `Edge ${browserVersion}` : 'Edge';
+        
+    } else if (/SamsungBrowser/i.test(userAgent)) {
+        const samsungMatch = userAgent.match(/SamsungBrowser\/([\d\.]+)/);
+        browserVersion = samsungMatch ? samsungMatch[1] : '';
+        browser = browserVersion ? `Samsung Internet ${browserVersion}` : 'Samsung Internet';
+        
+    } else if (/Chrome/i.test(userAgent) && !/Edg/i.test(userAgent)) {
+        const chromeMatch = userAgent.match(/Chrome\/([\d\.]+)/);
+        browserVersion = chromeMatch ? chromeMatch[1] : '';
+        browser = browserVersion ? `Chrome ${browserVersion}` : 'Chrome';
+        
+    } else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) {
+        const safariMatch = userAgent.match(/Version\/([\d\.]+)/);
+        browserVersion = safariMatch ? safariMatch[1] : '';
+        browser = browserVersion ? `Safari ${browserVersion}` : 'Safari';
+        
+    } else if (/Firefox/i.test(userAgent)) {
+        const firefoxMatch = userAgent.match(/Firefox\/([\d\.]+)/);
+        browserVersion = firefoxMatch ? firefoxMatch[1] : '';
+        browser = browserVersion ? `Firefox ${browserVersion}` : 'Firefox';
+        
+    } else if (/Opera|OPR/i.test(userAgent)) {
+        const operaMatch = userAgent.match(/(?:Opera|OPR)\/([\d\.]+)/);
+        browserVersion = operaMatch ? operaMatch[1] : '';
+        browser = browserVersion ? `Opera ${browserVersion}` : 'Opera';
     }
+
+    // Detección mejorada de tipo de dispositivo
+    let deviceType = 'Escritorio';
+    let deviceModel = '';
+    
+    if (/iPhone/i.test(userAgent)) {
+        deviceType = 'iPhone';
+        // Intentar detectar modelo específico
+        const modelPatterns = [
+            /iPhone(\d+,\d+)/,
+            /iPhone\s*(\w+)/i
+        ];
+        for (const pattern of modelPatterns) {
+            const match = userAgent.match(pattern);
+            if (match && match[1]) {
+                deviceModel = match[1];
+                break;
+            }
+        }
+        
+    } else if (/iPad/i.test(userAgent)) {
+        deviceType = 'iPad';
+        const ipadMatch = userAgent.match(/iPad(\d+,\d+)/);
+        deviceModel = ipadMatch ? ipadMatch[1] : '';
+        
+    } else if (/Android/i.test(userAgent)) {
+        // Detectar si es tablet o móvil Android
+        if (/Mobile/i.test(userAgent)) {
+            deviceType = 'Android Móvil';
+        } else {
+            deviceType = 'Android Tablet';
+        }
+        
+        // Intentar detectar marca y modelo
+        const brandPatterns = [
+            /;\s*([^;]+\s+[^;]+)\s+Build/i,     // Patrón general marca modelo
+            /;\s*(SM-[^\s;]+)/i,                // Samsung
+            /;\s*(Redmi[^;]+)/i,                // Xiaomi Redmi
+            /;\s*(Mi\s+[^;]+)/i,                // Xiaomi Mi
+            /;\s*(POCO[^;]+)/i,                 // POCO
+            /;\s*(OnePlus[^;]+)/i,              // OnePlus
+            /;\s*(Pixel[^;]+)/i,                // Google Pixel
+            /;\s*([^;]*Huawei[^;]*)/i,          // Huawei
+            /;\s*([^;]*LG[^;]*)/i,              // LG
+            /;\s*([^;]*Sony[^;]*)/i             // Sony
+        ];
+        
+        for (const pattern of brandPatterns) {
+            const match = userAgent.match(pattern);
+            if (match && match[1]) {
+                deviceModel = match[1].trim();
+                break;
+            }
+        }
+        
+    } else if (/Mobile|Tablet/i.test(userAgent)) {
+        deviceType = 'Dispositivo móvil';
+    }
+    
+    // Información adicional del dispositivo
+    const deviceInfo = {
+        os,
+        browser,
+        deviceType,
+        deviceModel,
+        screenResolution: `${screen.width}x${screen.height}`,
+        pixelRatio: window.devicePixelRatio || 1,
+        touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+        fullUserAgent: userAgent // Para debugging
+    };
+    
+    return deviceInfo;
+}
+
+// Función auxiliar para actualizar la pantalla del SO cuando se obtiene información adicional
+function updateOSDisplay(osString) {
+    const osElement = document.getElementById('os-info');
+    if (osElement) {
+        osElement.textContent = osString;
+    }
+}
+
+// Función mejorada para mostrar información del dispositivo
+function showDeviceInfo() {
+    const info = getDeviceInfo();
+    
+    // Mostrar información básica
+    document.getElementById('browser-info').textContent = info.browser;
+    document.getElementById('os-info').textContent = info.os;
+    
+    // Mostrar tipo de dispositivo con modelo si está disponible
+    let deviceDisplay = info.deviceType;
+    if (info.deviceModel) {
+        deviceDisplay += ` (${info.deviceModel})`;
+    }
+    document.getElementById('device-type').textContent = deviceDisplay;
+    
+    // Log para debugging
+    console.log('Información completa del dispositivo:', info);
+    
+    // Agregar información adicional si existe el contenedor
+    const deviceInfoContainer = document.getElementById('device-info');
+    if (deviceInfoContainer && !deviceInfoContainer.querySelector('.additional-info')) {
+        const additionalInfo = document.createElement('div');
+        additionalInfo.className = 'additional-info';
+        additionalInfo.innerHTML = `
+            <div><strong>Resolución:</strong> <span>${info.screenResolution}</span></div>
+            <div><strong>Pixel Ratio:</strong> <span>${info.pixelRatio}</span></div>
+            <div><strong>Touch:</strong> <span>${info.touchSupport ? 'Soportado' : 'No soportado'}</span></div>
+        `;
+        deviceInfoContainer.appendChild(additionalInfo);
+    }
+}
 
     function checkFlashSupport() {
         const flashStatus = document.getElementById('flash-status');
