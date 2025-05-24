@@ -15,7 +15,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // 2. Inicializar cámara INMEDIATAMENTE
   initializeCamera();
   
-  // 3. Empezar carga en segundo plano DESPUÉS de que la cámara esté lista
+  // 3. Aplicar CSS de optimización para loaders
+  applyLoaderOptimizations();
+  
+  // 4. Empezar carga en segundo plano DESPUÉS de que la cámara esté lista
   // (no bloquear la inicialización)
 });
 
@@ -240,11 +243,14 @@ function onTargetFound(event) {
     return; // SALIR TEMPRANO - no hacer nada más
   }
   
-  // Mostrar contenido SOLO para targets que NO son 3D
+  // 🚀 CRÍTICO: Mostrar loader INMEDIATAMENTE para todos los recursos
+  // (excepto modelo 3D que ya se maneja arriba)
+  showResourceLoader(targetIndex);
+  
+  // Procesar según el tipo de contenido
   switch(contentConfig.type) {
     case "video":
       if (!contentConfig.loaded) {
-        showResourceLoader(targetIndex);
         // Simular carga del iframe de YouTube
         simulateIframeLoading(targetIndex, () => {
           hideResourceLoader();
@@ -252,13 +258,16 @@ function onTargetFound(event) {
           contentConfig.loaded = true;
         });
       } else {
-        showYoutubePlayer();
+        // Si ya está cargado, ocultar loader rápidamente y mostrar
+        setTimeout(() => {
+          hideResourceLoader();
+          showYoutubePlayer();
+        }, 100);
       }
       break;
       
     case "geogebra":
       if (!contentConfig.loaded) {
-        showResourceLoader(targetIndex);
         // Simular carga del iframe de GeoGebra
         simulateIframeLoading(targetIndex, () => {
           hideResourceLoader();
@@ -266,25 +275,32 @@ function onTargetFound(event) {
           contentConfig.loaded = true;
         });
       } else {
-        showGeogebraApplet();
+        // Si ya está cargado, ocultar loader rápidamente y mostrar
+        setTimeout(() => {
+          hideResourceLoader();
+          showGeogebraApplet();
+        }, 100);
       }
       break;
       
     case "webpage":
-      showWebpageAlert();
+      // Para páginas web, mostrar progreso simulado más rápido
+      simulateWebpageCheck(targetIndex, () => {
+        hideResourceLoader();
+        showWebpageAlert();
+        contentConfig.loaded = true;
+      });
       break;
       
     case "podcast":
-      // Cargar directamente cuando se detecta
+      // Audio - carga directa cuando se detecta
       console.log('⏳ Cargando podcast...');
-      showResourceLoader(targetIndex);
       loadAudioResource(targetIndex);
       break;
       
     case "imagen":
-      // Cargar directamente cuando se detecta
+      // Imagen - carga directa cuando se detecta
       console.log('⏳ Cargando imagen...');
-      showResourceLoader(targetIndex);
       loadImageResource(targetIndex);
       break;
   }
@@ -306,14 +322,19 @@ function onTargetLost(event) {
   }
 }
 
-// ===== FUNCIONES DE SOPORTE =====
+// ===== FUNCIONES DE SOPORTE OPTIMIZADAS =====
 function showResourceLoader(targetIndex) {
   const loader = document.getElementById('ar-resource-loader');
   const bar = document.getElementById('resource-loader-bar');
   const loaderText = document.querySelector('.loader-text');
   
   if (loader && bar) {
+    // 🚀 CAMBIO CRÍTICO: Mostrar loader INMEDIATAMENTE sin delays
     loader.style.display = 'block';
+    loader.style.opacity = '1'; // Asegurar visibilidad inmediata
+    
+    // Resetear barra inmediatamente
+    bar.style.transition = 'none'; // Sin transición inicial
     bar.style.width = '0%';
     
     // Personalizar texto según el tipo de recurso
@@ -331,11 +352,12 @@ function showResourceLoader(targetIndex) {
       loaderText.textContent = `Cargando ${resourceNames[config.type] || 'recurso AR'}...`;
     }
     
-    // Animar la barra de progreso
-    setTimeout(() => {
+    // 🎯 OPTIMIZACIÓN: Animar la barra inmediatamente después de mostrar
+    // Usar requestAnimationFrame para asegurar que el DOM se actualice primero
+    requestAnimationFrame(() => {
       bar.style.transition = 'width 0.3s ease';
-      bar.style.width = '10%';
-    }, 100);
+      bar.style.width = '15%'; // Empezar con 15% para dar sensación de progreso inmediato
+    });
   }
 }
 
@@ -346,39 +368,85 @@ function hideResourceLoader() {
   if (loader) {
     // Completar la barra antes de ocultar
     if (bar) {
+      bar.style.transition = 'width 0.2s ease'; // Transición más rápida
       bar.style.width = '100%';
     }
     
+    // 🚀 OPTIMIZACIÓN: Reducir tiempo de espera antes de ocultar
     setTimeout(() => {
       loader.style.display = 'none';
+      loader.style.opacity = '0'; // Asegurar que esté oculto
       if (bar) {
         bar.style.transition = 'none';
         bar.style.width = '0%';
       }
-    }, 300);
+    }, 200); // Reducido de 300ms a 200ms
   }
 }
 
 function updateResourceLoaderProgress(targetIndex, percent) {
   const bar = document.getElementById('resource-loader-bar');
   if (bar) {
-    bar.style.transition = 'width 0.3s ease';
+    bar.style.transition = 'width 0.2s ease'; // Transición más fluida
     bar.style.width = `${Math.min(percent, 100)}%`;
   }
 }
 
-// Función para simular carga de iframes
+// ===== NUEVAS FUNCIONES DE SIMULACIÓN OPTIMIZADAS =====
+
+// Función optimizada para simular carga de iframes más rápida
 function simulateIframeLoading(targetIndex, callback) {
-  let progress = 10;
+  let progress = 15; // Empezar desde donde el loader inicial dejó
   const interval = setInterval(() => {
-    progress += 20;
+    progress += 25; // Incrementos más grandes
     updateResourceLoaderProgress(targetIndex, progress);
     
     if (progress >= 100) {
       clearInterval(interval);
-      setTimeout(callback, 300);
+      setTimeout(callback, 100); // Delay mínimo
     }
-  }, 300);
+  }, 200); // Intervalos más frecuentes (200ms vs 300ms)
+}
+
+// Nueva función para páginas web más rápida
+function simulateWebpageCheck(targetIndex, callback) {
+  let progress = 15;
+  const interval = setInterval(() => {
+    progress += 30; // Incrementos más grandes para páginas web
+    updateResourceLoaderProgress(targetIndex, progress);
+    
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(callback, 100); // Delay mínimo
+    }
+  }, 150); // Muy rápido para páginas web
+}
+
+// ===== OPTIMIZACIÓN CSS PARA LOADERS =====
+function applyLoaderOptimizations() {
+  // CSS adicional para asegurar aparición instantánea
+  const loaderOptimizationCSS = `
+    #ar-resource-loader {
+      opacity: 0;
+      transition: opacity 0.1s ease !important;
+    }
+    
+    #ar-resource-loader[style*="display: block"] {
+      opacity: 1 !important;
+    }
+    
+    .loader-bar {
+      transition: width 0.2s ease !important;
+    }
+  `;
+
+  // Aplicar CSS de optimización
+  if (!document.getElementById('loader-optimization-styles')) {
+    const style = document.createElement('style');
+    style.id = 'loader-optimization-styles';
+    style.textContent = loaderOptimizationCSS;
+    document.head.appendChild(style);
+  }
 }
 
 function closeContent(type) {
