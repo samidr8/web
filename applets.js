@@ -53,11 +53,10 @@ function showOrientationInstructionMessage() {
   // Contenido del mensaje
   messageContainer.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-      <span style="font-size: 24px; margin-right: 10px;">📱</span>
-      <span style="font-size: 18px; font-weight: bold;">Activar la Orientación de la Pantalla</span>
+      <span style="font-size: 18px; font-weight: bold;">Activar la Orientación de la Pantalla.</span>
     </div>
     <div style="font-size: 14px; opacity: 0.9; line-height: 1.4;">
-      Luego presione el botón de pantalla completa
+      Luego presione el botón de pantalla completa.
     </div>
   `;
   
