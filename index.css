@@ -374,3 +374,242 @@
     font-size: 13px;
   }
 }
+
+/* ===== ESTILOS PARA BOTÓN DE PANTALLA COMPLETA ===== */
+
+/* Botón de pantalla completa */
+.fullscreen-btn {
+  position: absolute;
+  top: 45px;
+  right: 50px;
+  background: linear-gradient(135deg, #2196F3, #42A5F5);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10000;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 12px rgba(33, 150, 243, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 130px;
+  justify-content: center;
+  /* Mejorar tap en móviles */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fullscreen-btn:hover {
+  background: linear-gradient(135deg, #1976D2, #2196F3);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 16px rgba(33, 150, 243, 0.6);
+}
+
+.fullscreen-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
+}
+
+/* Icono del botón */
+.fullscreen-icon {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Texto del botón */
+.fullscreen-text {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Estilos específicos para pantalla completa */
+.fullscreen-mode {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.95) !important;
+  z-index: 99999 !important;
+}
+
+.fullscreen-mode .geogebra-player {
+  width: 95vw !important;
+  height: 90vh !important;
+  max-width: none !important;
+  aspect-ratio: auto !important;
+}
+
+.fullscreen-mode .fullscreen-btn {
+  position: absolute !important;
+  bottom: 15px !important;
+  right: 20px !important;
+  background: linear-gradient(135deg, #FF5722, #FF7043) !important;
+  box-shadow: 0 3px 12px rgba(255, 87, 34, 0.5) !important;
+}
+
+.fullscreen-mode .fullscreen-btn:hover {
+  background: linear-gradient(135deg, #E64A19, #FF5722) !important;
+  box-shadow: 0 5px 16px rgba(255, 87, 34, 0.7) !important;
+}
+
+/* Responsive para móviles */
+@media screen and (max-width: 768px) {
+  .fullscreen-btn {
+    top: 35px;
+    right: 15px;
+    padding: 6px 12px;
+    font-size: 11px;
+    min-width: 110px;
+    gap: 4px;
+  }
+  
+  .fullscreen-icon {
+    font-size: 12px;
+  }
+  
+  .fullscreen-text {
+    font-size: 10px;
+  }
+  
+  /* En pantalla completa móvil */
+  .fullscreen-mode .fullscreen-btn {
+    bottom: 10px !important;
+    right: 15px !important;
+    padding: 8px 15px !important;
+    font-size: 12px !important;
+    min-width: 100px !important;
+  }
+}
+
+/* Tablets */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .fullscreen-btn {
+    top: 40px;
+    right: 35px;
+    padding: 7px 14px;
+    font-size: 12px;
+    min-width: 120px;
+  }
+}
+
+/* Orientación landscape en móviles */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  .fullscreen-btn {
+    top: 8px;
+    right: 15px;
+    padding: 5px 10px;
+    font-size: 10px;
+    min-width: 90px;
+    gap: 3px;
+  }
+  
+  .fullscreen-icon {
+    font-size: 11px;
+  }
+  
+  .fullscreen-text {
+    font-size: 9px;
+  }
+}
+
+/* Animaciones de entrada */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fullscreen-btn {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Efectos de pulso para llamar la atención */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.fullscreen-btn.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Estados de carga */
+.fullscreen-btn:disabled {
+  background: linear-gradient(135deg, #9E9E9E, #BDBDBD);
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.fullscreen-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Para pantallas muy pequeñas */
+@media screen and (max-width: 320px) {
+  .fullscreen-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-width: 80px;
+    gap: 2px;
+    top: 30px;
+    right: 10px;
+  }
+  
+  .fullscreen-icon {
+    font-size: 10px;
+  }
+  
+  .fullscreen-text {
+    font-size: 8px;
+  }
+}
+
+/* Asegurar que el botón esté siempre visible */
+.geogebra-player {
+  position: relative;
+}
+
+/* Prevenir selección de texto en el botón */
+.fullscreen-btn * {
+  pointer-events: none;
+}
+
+/* Efectos de enfoque para accesibilidad */
+.fullscreen-btn:focus {
+  outline: 3px solid rgba(33, 150, 243, 0.5);
+  outline-offset: 2px;
+}
+
+.fullscreen-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Soporte para modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .fullscreen-mode {
+    background: rgba(0, 0, 0, 0.98) !important;
+  }
+}
