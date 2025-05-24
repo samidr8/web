@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.0.1/dist/aframe-extras.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.164.1/examples/js/loaders/GLTFLoader.min.js"></script>
 
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="config-sensores.css">
@@ -19,7 +17,8 @@
     device-orientation-permission-ui="enabled: false">
 
     <a-assets>
-      <!-- Los recursos se cargarán dinámicamente -->
+      <!-- Modelo 3D cargado directamente -->
+      <a-asset-item id="shibaModel" src="media/shiba/scene.gltf"></a-asset-item>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -33,8 +32,16 @@
     <!-- Target 2: Página web -->
     <a-entity mindar-image-target="targetIndex: 2"></a-entity>
 
-    <!-- Target 3: Modelo 3D -->
-    <a-entity mindar-image-target="targetIndex: 3"></a-entity>
+    <!-- Target 3: Modelo 3D (ajustando escala como en tu ejemplo funcional) -->
+    <a-entity mindar-image-target="targetIndex: 3">
+      <a-gltf-model 
+        rotation="0 0 0" 
+        position="0 0 0.1" 
+        scale="1 1 1" 
+        src="#shibaModel"
+        animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
+      </a-gltf-model>
+    </a-entity>
 
     <!-- Target 4: Podcast -->
     <a-entity mindar-image-target="targetIndex: 4"></a-entity>
@@ -42,8 +49,6 @@
     <!-- Target 5: Imagen -->
     <a-entity mindar-image-target="targetIndex: 5"></a-entity>
   </a-scene>
-
-    <!-- ***********************************Agregar más recursos aquí y modificar tarjetas/targets.mind***************************************************** -->
 
   <!-- Contenedores de contenido -->
   <div id="youtube-container" class="content-container">
@@ -123,7 +128,6 @@
   <script src="imagen.js"></script>
   <script src="applets.js"></script>
   <script src="paginaweb.js"></script>
-  <script src="objeto3d.js"></script>
   <script src="functions.js"></script>
   <script src="config-sensores.js"></script>
   <script src="UI-personalizado.js"></script>

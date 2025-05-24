@@ -80,7 +80,7 @@ function onCameraQuickStart() {
 function onSceneFullyLoaded() {
   console.log('🎯 Configurando eventos de marcadores...');
   
-  // Configurar eventos de MindAR
+  // Configurar eventos de MindAR SOLO para targets que NO son 3D
   const scene = document.querySelector('a-scene');
   scene.addEventListener('targetFound', onTargetFound);
   scene.addEventListener('targetLost', onTargetLost);
@@ -98,11 +98,11 @@ function startBackgroundLoading() {
     PerformanceMonitor.mark('Inicio Carga en Segundo Plano');
   }
   
-// No precargar audio e imágenes para evitar problemas
+  // ELIMINADO: No precargar modelo 3D - ya está en el HTML
+  // Solo precargar iframes (audio e imágenes se cargan cuando se detectan)
   loadingQueue = [
     { type: 'iframe', target: 'youtube', priority: 1 },
-    { type: 'iframe', target: 'geogebra', priority: 2 },
-    { type: 'resource', target: 3, priority: 3 } // Solo modelo 3D
+    { type: 'iframe', target: 'geogebra', priority: 2 }
   ];
   
   // Procesar cola de carga con intervalos para no bloquear
@@ -137,9 +137,8 @@ function loadResourceInBackground(item) {
   try {
     if (item.type === 'iframe') {
       loadIframeInBackground(item.target);
-    } else if (item.type === 'resource') {
-      preloadResourceInBackground(item.target);
     }
+    // ELIMINADO: No hay más carga de recursos 3D en segundo plano
   } catch (error) {
     console.warn(`⚠️ Error cargando ${item.target} en segundo plano:`, error);
   }
@@ -168,58 +167,8 @@ function loadIframeInBackground(target) {
   }
 }
 
-function preloadResourceInBackground(targetIndex) {
-  const config = CONTENT_CONFIG[targetIndex];
-  
-  if (config.loading || config.loaded) return; // Ya se está cargando o ya está cargado
-  
-  switch(config.type) {
-    case "3d":
-      preload3DModel(targetIndex);
-      break;
-    case "podcast":
-      preloadAudio(targetIndex);
-      break;
-    case "imagen":
-      preloadImage(targetIndex);
-      break;
-  }
-}
-
-// ===== FUNCIONES DE PRECARGA =====
-function preload3DModel(targetIndex) {
-  const config = CONTENT_CONFIG[targetIndex];
-  config.loading = true;
-  
-  if (typeof THREE === 'undefined' || !THREE.GLTFLoader) {
-    console.warn('THREE.GLTFLoader no disponible para precarga');
-    config.loading = false;
-    return;
-  }
-  
-  const loader = new THREE.GLTFLoader();
-  loader.load(
-    config.modelPath,
-    (gltf) => {
-      console.log('🎨 Modelo 3D precargado exitosamente');
-      config.modelLoaded = true;
-      config.loaded = true;
-      config.loading = false;
-      
-      // Preparar el asset
-      const assets = document.querySelector('a-assets');
-      const modelElement = document.createElement('a-asset-item');
-      modelElement.setAttribute('id', `target-${targetIndex}-model`);
-      modelElement.setAttribute('src', config.modelPath);
-      assets.appendChild(modelElement);
-    },
-    undefined, // Sin progreso durante precarga
-    (error) => {
-      console.warn('Error precargando modelo 3D:', error);
-      config.loading = false;
-    }
-  );
-}
+// ELIMINADAS: Funciones de precarga de modelo 3D
+// preload3DModel(), preloadAudio(), preloadImage() se mantienen solo para audio e imagen
 
 function preloadAudio(targetIndex) {
   const config = CONTENT_CONFIG[targetIndex];
@@ -279,16 +228,19 @@ function onTargetFound(event) {
   contentConfig.visible = true;
   console.log(`🎯 Marcador ${targetIndex} detectado - Tipo: ${contentConfig.type}`);
   
-  // Debug adicional para el marcador
-  console.log('📍 Target Entity:', event.target);
-  console.log('📐 Target Matrix:', event.detail);
-  
   // Marcar rendimiento si está disponible
   if (typeof PerformanceMonitor !== 'undefined') {
     PerformanceMonitor.mark(`Marcador ${targetIndex} Detectado`);
   }
   
-  // Mostrar contenido INMEDIATAMENTE (ya precargado)
+  // CLAVE: NO interferir con el modelo 3D (target 3)
+  if (targetIndex == 3) {
+    console.log('🎨 Modelo 3D detectado - dejando que A-Frame lo maneje nativamente');
+    contentConfig.loaded = true;
+    return; // SALIR TEMPRANO - no hacer nada más
+  }
+  
+  // Mostrar contenido SOLO para targets que NO son 3D
   switch(contentConfig.type) {
     case "video":
       if (!contentConfig.loaded) {
@@ -322,27 +274,15 @@ function onTargetFound(event) {
       showWebpageAlert();
       break;
       
-    case "3d":
-      // NUEVO: No hacer nada aquí porque el contenido ya está en el HTML
-      console.log('✅ Contenido 3D ya está en el DOM');
-      // Opcional: puedes agregar lógica para animar o modificar el contenido existente
-      const targetEntity = event.target;
-      const box = targetEntity.querySelector('a-box');
-      if (box) {
-        // Reiniciar animación o hacer algo cuando se detecta
-        box.emit('startanimation');
-      }
-      break;
-      
     case "podcast":
-      // No usar precarga para el podcast, cargar directamente
+      // Cargar directamente cuando se detecta
       console.log('⏳ Cargando podcast...');
       showResourceLoader(targetIndex);
       loadAudioResource(targetIndex);
       break;
       
     case "imagen":
-      // No usar precarga, cargar directamente
+      // Cargar directamente cuando se detecta
       console.log('⏳ Cargando imagen...');
       showResourceLoader(targetIndex);
       loadImageResource(targetIndex);
@@ -359,14 +299,10 @@ function onTargetLost(event) {
   contentConfig.visible = false;
   hideResourceLoader();
   
-  // Para contenido 3D, opcional: pausar animaciones
-  if (contentConfig.type === "3d") {
-    const targetEntity = event.target;
-    const box = targetEntity.querySelector('a-box');
-    if (box) {
-      // Opcional: pausar animación cuando se pierde el marcador
-      // box.emit('pauseanimation');
-    }
+  // CLAVE: NO interferir con el modelo 3D (target 3)
+  if (targetIndex == 3) {
+    console.log('🎨 Modelo 3D perdido - A-Frame lo oculta automáticamente');
+    return; // SALIR TEMPRANO - no hacer nada más
   }
 }
 

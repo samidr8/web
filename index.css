@@ -1,4 +1,4 @@
-/* ===== INDEX.CSS OPTIMIZADO PARA CARGA RÁPIDA ===== */
+/* ===== INDEX.CSS OPTIMIZADO SIN ROMPER MODELO 3D ===== */
 
 /* LOADER INICIAL ULTRA RÁPIDO */
 #ar-loader {
@@ -15,13 +15,13 @@
   z-index: 9999;
   color: white;
   font-family: 'Arial', sans-serif;
-  transition: opacity 0.3s ease; /* Transición más rápida */
+  transition: opacity 0.3s ease;
 }
 
 .loader-content {
   text-align: center;
   max-width: 80%;
-  animation: fadeInUp 0.5s ease-out; /* Animación de entrada rápida */
+  animation: fadeInUp 0.5s ease-out;
 }
 
 @keyframes fadeInUp {
@@ -81,7 +81,7 @@
   pointer-events: none;
   display: none;
   z-index: 9999;
-  animation: slideIn 0.3s ease-out; /* Aparición más rápida */
+  animation: slideIn 0.3s ease-out;
 }
 
 @keyframes slideIn {
@@ -335,18 +335,10 @@
   font-weight: 500;
 }
 
-/* OPTIMIZACIONES PARA A-FRAME */
-.a-canvas {
-  background: transparent !important;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
+/* OPTIMIZACIONES PARA A-FRAME - CORREGIDAS PARA NO ROMPER EL MODELO 3D */
+/* ELIMINADO: .a-canvas { opacity: 0; } que estaba ocultando el modelo 3D */
 
-.a-canvas.ready {
-  opacity: 1;
-}
-
-/* OCULTAR ELEMENTOS INNECESARIOS DE A-FRAME */
+/* Solo ocultar elementos innecesarios de A-Frame sin afectar el canvas principal */
 .a-loader-title,
 .a-enter-ar-button,
 .a-enter-vr-button,

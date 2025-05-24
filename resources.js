@@ -23,11 +23,9 @@ const CONTENT_CONFIG = {
   },
   3: {
     type: "3d",
-    modelPath: "media/shiba/scene.gltf",
-    loaded: false,
-    loading: false,
-    visible: false,
-    modelLoaded: false
+    // SIMPLIFICADO: Solo necesitamos el tipo, el modelo ya está en el HTML
+    loaded: true, // Ya está cargado en el HTML
+    visible: false
   },
   4: {
     type: "podcast",
@@ -40,7 +38,7 @@ const CONTENT_CONFIG = {
   5: {
     type: "imagen",
     container: "imagen",
-    imagePath: "tarjetas/t6.web",
+    imagePath: "tarjetas/t6.webp",
     loaded: false,
     loading: false,
     visible: false
