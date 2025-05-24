@@ -1,4 +1,4 @@
-// ===== APPLETS.JS MEJORADO CON ICONOS MÁS GRANDES =====
+// ===== APPLETS.JS CORREGIDO SIN ERRORES DE SINTAXIS =====
 
 function showGeogebraApplet() {
   const container = document.getElementById('geogebra-container');
@@ -130,234 +130,249 @@ function addCustomFullscreenButton() {
   }
 }
 
-// Función para entrar en pantalla completa con orientación horizontal forzada
+// Función para entrar en pantalla completa con detección automática de orientación
 function enterGeogebraFullscreen(iframe) {
   if (!iframe) return;
   
   try {
-    console.log('📺 Iniciando pantalla completa con orientación horizontal...');
+    console.log('📺 Iniciando pantalla completa con adaptación automática de orientación...');
     
-    // PASO 1: Intentar forzar orientación horizontal ANTES de pantalla completa
-    forceHorizontalOrientation().then(() => {
-      console.log('✅ Orientación horizontal aplicada');
-      
-      // PASO 2: Entrar en pantalla completa después de orientar
-      setTimeout(() => {
-        // Método 1: Usar la API de Fullscreen del navegador
-        if (iframe.requestFullscreen) {
-          iframe.requestFullscreen({ navigationUI: "hide" });
-        } else if (iframe.webkitRequestFullscreen) {
-          iframe.webkitRequestFullscreen({ navigationUI: "hide" });
-        } else if (iframe.mozRequestFullScreen) {
-          iframe.mozRequestFullScreen({ navigationUI: "hide" });
-        } else if (iframe.msRequestFullscreen) {
-          iframe.msRequestFullscreen({ navigationUI: "hide" });
-        } else {
-          // Método 2: Crear overlay de pantalla completa personalizado
-          createCustomFullscreenOverlay(iframe);
-        }
-      }, 300); // Pequeño delay para que la orientación se aplique
-      
-    }).catch((error) => {
-      console.warn('⚠️ No se pudo cambiar la orientación, continuando con pantalla completa:', error);
-      
-      // Continuar con pantalla completa aunque no se pueda cambiar orientación
-      if (iframe.requestFullscreen) {
-        iframe.requestFullscreen();
-      } else {
+    // Entrar directamente en pantalla completa SIN forzar orientación
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen({ navigationUI: "hide" }).then(() => {
+        setupOrientationAutoDetection();
+      }).catch(() => {
         createCustomFullscreenOverlay(iframe);
-      }
-    });
+      });
+    } else if (iframe.webkitRequestFullscreen) {
+      iframe.webkitRequestFullscreen({ navigationUI: "hide" });
+      setupOrientationAutoDetection();
+    } else if (iframe.mozRequestFullScreen) {
+      iframe.mozRequestFullScreen({ navigationUI: "hide" });
+      setupOrientationAutoDetection();
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen({ navigationUI: "hide" });
+      setupOrientationAutoDetection();
+    } else {
+      // Crear overlay personalizado con detección automática
+      createCustomFullscreenOverlay(iframe);
+    }
     
   } catch (error) {
     console.warn('⚠️ Error en pantalla completa:', error);
-    // Fallback: crear overlay personalizado
     createCustomFullscreenOverlay(iframe);
   }
 }
 
-// Función para forzar orientación horizontal
-async function forceHorizontalOrientation() {
-  try {
-    // Método 1: Screen Orientation API (más moderno y efectivo)
-    if ('screen' in window && 'orientation' in window.screen) {
-      console.log('🔄 Usando Screen Orientation API...');
-      
-      // Opciones de orientación horizontal
-      const orientationOptions = [
-        'landscape-primary',   // Horizontal principal
-        'landscape-secondary', // Horizontal secundario  
-        'landscape'           // Cualquier horizontal
-      ];
-      
-      for (const orientation of orientationOptions) {
-        try {
-          await window.screen.orientation.lock(orientation);
-          console.log(`✅ Orientación bloqueada en: ${orientation}`);
-          return; // Éxito, salir del loop
-        } catch (lockError) {
-          console.log(`⚠️ No se pudo bloquear en ${orientation}:`, lockError.message);
-          continue; // Intentar siguiente opción
-        }
-      }
-      
-      throw new Error('No se pudo bloquear en ninguna orientación horizontal');
-    }
-    
-    // Método 2: Método legacy para navegadores más antiguos
-    else if ('screen' in window && 'lockOrientation' in window.screen) {
-      console.log('🔄 Usando método legacy lockOrientation...');
-      
-      const success = window.screen.lockOrientation('landscape') ||
-                     window.screen.lockOrientation('landscape-primary') ||
-                     window.screen.lockOrientation('landscape-secondary');
-      
-      if (success) {
-        console.log('✅ Orientación bloqueada (método legacy)');
-        return;
-      } else {
-        throw new Error('lockOrientation falló');
-      }
-    }
-    
-    // Método 3: Webkit específico para Safari/Chrome más antiguos
-    else if ('screen' in window && 'webkitLockOrientation' in window.screen) {
-      console.log('🔄 Usando webkitLockOrientation...');
-      
-      const success = window.screen.webkitLockOrientation('landscape-primary') ||
-                     window.screen.webkitLockOrientation('landscape');
-      
-      if (success) {
-        console.log('✅ Orientación bloqueada (webkit)');
-        return;
-      } else {
-        throw new Error('webkitLockOrientation falló');
-      }
-    }
-    
-    // Método 4: Mozilla específico
-    else if ('screen' in window && 'mozLockOrientation' in window.screen) {
-      console.log('🔄 Usando mozLockOrientation...');
-      
-      const success = window.screen.mozLockOrientation('landscape-primary') ||
-                     window.screen.mozLockOrientation('landscape');
-      
-      if (success) {
-        console.log('✅ Orientación bloqueada (mozilla)');
-        return;
-      } else {
-        throw new Error('mozLockOrientation falló');
-      }
-    }
-    
-    // Si no hay APIs disponibles
-    else {
-      console.log('❌ No hay APIs de orientación disponibles en este navegador');
-      throw new Error('APIs de orientación no soportadas');
-    }
-    
-  } catch (error) {
-    console.warn('⚠️ Error al forzar orientación horizontal:', error);
-    
-    // Método fallback: CSS y viewport
-    applyHorizontalCSSTricks();
-    throw error; // Re-lanzar para que el caller sepa que falló
-  }
-}
-
-// Función fallback: aplicar trucos CSS para simular orientación horizontal
-function applyHorizontalCSSTricks() {
-  console.log('🎨 Aplicando trucos CSS para orientación horizontal...');
+// Función para configurar detección automática de orientación
+function setupOrientationAutoDetection() {
+  console.log('🔄 Configurando detección automática de orientación...');
   
-  // Crear meta viewport dinámico para forzar orientación
-  let viewportMeta = document.querySelector('meta[name="viewport"]');
-  if (!viewportMeta) {
-    viewportMeta = document.createElement('meta');
-    viewportMeta.name = 'viewport';
-    document.head.appendChild(viewportMeta);
+  // Variables para rastrear orientación
+  let currentOrientation = getDeviceOrientation();
+  let orientationChangeTimer = null;
+  
+  // Función para obtener orientación actual
+  function getDeviceOrientation() {
+    if (screen.orientation) {
+      return screen.orientation.angle;
+    } else if (window.orientation !== undefined) {
+      return window.orientation;
+    } else {
+      // Fallback: detectar por dimensiones
+      return window.innerWidth > window.innerHeight ? 90 : 0;
+    }
   }
   
-  // Configurar viewport para orientación horizontal
-  viewportMeta.content = 'width=device-width, initial-scale=1.0, orientation=landscape, user-scalable=no';
+  // Función para obtener tipo de orientación
+  function getOrientationType() {
+    const angle = getDeviceOrientation();
+    if (angle === 0) return 'portrait';
+    if (angle === 90 || angle === -90 || angle === 270) return 'landscape';
+    return window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+  }
   
-  // CSS para forzar layout horizontal
-  const horizontalCSS = document.createElement('style');
-  horizontalCSS.id = 'horizontal-orientation-css';
-  horizontalCSS.textContent = `
-    @media screen and (orientation: portrait) {
-      body.force-landscape {
-        transform: rotate(90deg);
-        transform-origin: left top;
-        width: 100vh;
-        height: 100vw;
-        overflow-x: hidden;
-        position: absolute;
-        top: 100%;
-        left: 0;
+  // Función para adaptar el applet a la orientación
+  function adaptAppletToOrientation() {
+    const orientationType = getOrientationType();
+    const angle = getDeviceOrientation();
+    
+    console.log(`📱 Orientación detectada: ${orientationType} (${angle}°)`);
+    
+    // Buscar el iframe en pantalla completa
+    const fullscreenIframe = document.fullscreenElement || 
+                            document.webkitFullscreenElement || 
+                            document.mozFullScreenElement ||
+                            document.querySelector('#geogebra-fullscreen-iframe');
+    
+    if (fullscreenIframe) {
+      if (orientationType === 'landscape') {
+        // Optimizar para horizontal
+        fullscreenIframe.style.cssText = `
+          width: 98vw !important;
+          height: 92vh !important;
+          border: none;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+        `;
+        console.log('🔄 Applet optimizado para orientación horizontal');
+        showOrientationMessage('📱 Modo horizontal activado - Experiencia optimizada', 'success');
+      } else {
+        // Optimizar para vertical
+        fullscreenIframe.style.cssText = `
+          width: 95vw !important;
+          height: 85vh !important;
+          border: none;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+        `;
+        console.log('📱 Applet optimizado para orientación vertical');
+        showOrientationMessage('📱 Modo vertical - Rota el dispositivo para mejor experiencia', 'info');
+      }
+    }
+  }
+  
+  // Función para mostrar mensajes de orientación
+  function showOrientationMessage(message, type = 'info') {
+    // Remover mensaje anterior si existe
+    const existingMessage = document.getElementById('orientation-message');
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'orientation-message';
+    messageDiv.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${type === 'success' ? 'rgba(76, 175, 80, 0.9)' : 'rgba(255, 152, 0, 0.9)'};
+      color: white;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10002;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(5px);
+      transition: all 0.3s ease;
+      animation: slideInFromTop 0.3s ease;
+    `;
+    
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    
+    // Auto-ocultar después de 3 segundos
+    setTimeout(() => {
+      if (messageDiv.parentNode) {
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translateX(-50%) translateY(-100%)';
+        setTimeout(() => {
+          if (messageDiv.parentNode) {
+            messageDiv.remove();
+          }
+        }, 300);
+      }
+    }, 3000);
+  }
+  
+  // Agregar CSS para animación
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    @keyframes slideInFromTop {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
       }
     }
   `;
+  document.head.appendChild(styleElement);
   
-  if (!document.getElementById('horizontal-orientation-css')) {
-    document.head.appendChild(horizontalCSS);
-  }
-}
-
-// Función para desbloquear orientación al salir de pantalla completa
-function unlockOrientation() {
-  try {
-    // Método moderno
-    if ('screen' in window && 'orientation' in window.screen && 'unlock' in window.screen.orientation) {
-      window.screen.orientation.unlock();
-      console.log('🔓 Orientación desbloqueada (moderno)');
+  // Event listeners para cambios de orientación
+  const handleOrientationChange = () => {
+    console.log('🔄 Cambio de orientación detectado...');
+    
+    // Limpiar timer anterior
+    if (orientationChangeTimer) {
+      clearTimeout(orientationChangeTimer);
     }
-    // Métodos legacy
-    else if ('screen' in window) {
-      if ('unlockOrientation' in window.screen) {
-        window.screen.unlockOrientation();
-        console.log('🔓 Orientación desbloqueada (legacy)');
-      } else if ('webkitUnlockOrientation' in window.screen) {
-        window.screen.webkitUnlockOrientation();
-        console.log('🔓 Orientación desbloqueada (webkit)');
-      } else if ('mozUnlockOrientation' in window.screen) {
-        window.screen.mozUnlockOrientation();
-        console.log('🔓 Orientación desbloqueada (mozilla)');
+    
+    // Esperar un poco para que la orientación se estabilice
+    orientationChangeTimer = setTimeout(() => {
+      const newOrientation = getDeviceOrientation();
+      if (newOrientation !== currentOrientation) {
+        console.log(`📱 Orientación cambió de ${currentOrientation}° a ${newOrientation}°`);
+        currentOrientation = newOrientation;
+        adaptAppletToOrientation();
       }
-    }
-    
-    // Limpiar CSS tricks si se aplicaron
-    const horizontalCSS = document.getElementById('horizontal-orientation-css');
-    if (horizontalCSS) {
-      horizontalCSS.remove();
-    }
-    
-    // Remover clase force-landscape del body
-    document.body.classList.remove('force-landscape');
-    
-    // Restaurar viewport original
-    const viewportMeta = document.querySelector('meta[name="viewport"]');
-    if (viewportMeta) {
-      viewportMeta.content = 'width=device-width, initial-scale=1';
-    }
-    
-  } catch (error) {
-    console.warn('⚠️ Error al desbloquear orientación:', error);
+    }, 200);
+  };
+  
+  // Múltiples event listeners para máxima compatibilidad
+  window.addEventListener('orientationchange', handleOrientationChange);
+  window.addEventListener('resize', handleOrientationChange);
+  if (screen.orientation) {
+    screen.orientation.addEventListener('change', handleOrientationChange);
   }
+  
+  // Adaptación inicial
+  setTimeout(adaptAppletToOrientation, 500);
+  
+  // Cleanup function para remover listeners al salir de pantalla completa
+  const cleanupOrientationDetection = () => {
+    console.log('🧹 Limpiando detección de orientación...');
+    window.removeEventListener('orientationchange', handleOrientationChange);
+    window.removeEventListener('resize', handleOrientationChange);
+    if (screen.orientation) {
+      screen.orientation.removeEventListener('change', handleOrientationChange);
+    }
+    
+    if (orientationChangeTimer) {
+      clearTimeout(orientationChangeTimer);
+    }
+    
+    // Remover mensaje si existe
+    const existingMessage = document.getElementById('orientation-message');
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+  };
+  
+  // Listener para cuando se sale de pantalla completa
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && 
+        !document.mozFullScreenElement && !document.msFullscreenElement) {
+      console.log('📺 Saliendo de pantalla completa...');
+      cleanupOrientationDetection();
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    }
+  };
+  
+  // Listeners para detectar salida de pantalla completa
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+  document.addEventListener('msfullscreenchange', handleFullscreenChange);
+  
+  console.log('✅ Detección automática de orientación configurada');
 }
 
-// Función para crear un overlay de pantalla completa personalizado con orientación horizontal
+// Función para crear un overlay de pantalla completa con adaptación automática de orientación
 function createCustomFullscreenOverlay(iframe) {
   // Verificar si ya existe un overlay
   if (document.getElementById('geogebra-fullscreen-overlay')) {
     return;
   }
   
-  console.log('📺 Creando overlay de pantalla completa con orientación horizontal...');
-  
-  // Intentar forzar orientación antes de crear overlay
-  forceHorizontalOrientation().catch(() => {
-    console.log('⚠️ No se pudo forzar orientación, continuando con overlay...');
-  });
+  console.log('📺 Creando overlay de pantalla completa con adaptación automática...');
   
   // Crear overlay de pantalla completa
   const overlay = document.createElement('div');
@@ -376,33 +391,41 @@ function createCustomFullscreenOverlay(iframe) {
     transform-origin: center center;
   `;
   
-  // Crear iframe clonado para pantalla completa con orientación optimizada
+  // Crear iframe clonado para pantalla completa
   const fullscreenIframe = iframe.cloneNode(true);
   fullscreenIframe.id = 'geogebra-fullscreen-iframe';
   
-  // Configurar iframe para orientación horizontal
-  if (window.innerWidth < window.innerHeight) {
-    // Si estamos en vertical, optimizar para horizontal
-    fullscreenIframe.style.cssText = `
-      width: 100vh;
-      height: 80vw;
-      max-width: 95vw;
-      max-height: 90vh;
-      border: none;
-      border-radius: 8px;
-      transform: rotate(0deg);
-    `;
-  } else {
-    // Ya estamos en horizontal
-    fullscreenIframe.style.cssText = `
-      width: 95vw;
-      height: 90vh;
-      border: none;
-      border-radius: 8px;
-    `;
+  // Función para adaptar iframe a orientación actual
+  function adaptIframeToOrientation() {
+    const isLandscape = window.innerWidth > window.innerHeight;
+    
+    if (isLandscape) {
+      // Optimizar para horizontal
+      fullscreenIframe.style.cssText = `
+        width: 98vw;
+        height: 92vh;
+        border: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      `;
+      console.log('🔄 Overlay optimizado para orientación horizontal');
+    } else {
+      // Optimizar para vertical
+      fullscreenIframe.style.cssText = `
+        width: 95vw;
+        height: 85vh;
+        border: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      `;
+      console.log('📱 Overlay optimizado para orientación vertical');
+    }
   }
   
-  // Botón para salir de pantalla completa (más grande para fácil acceso)
+  // Configuración inicial del iframe
+  adaptIframeToOrientation();
+  
+  // Botón para salir de pantalla completa
   const exitBtn = document.createElement('button');
   exitBtn.innerHTML = '✕';
   exitBtn.style.cssText = `
@@ -425,11 +448,17 @@ function createCustomFullscreenOverlay(iframe) {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   `;
   
-  // Función para cerrar overlay y restaurar orientación
+  // Función para cerrar overlay
   const closeOverlay = () => {
-    console.log('🔚 Cerrando overlay y restaurando orientación...');
-    unlockOrientation();
+    console.log('🔚 Cerrando overlay y limpiando event listeners...');
     document.body.removeChild(overlay);
+    
+    // Limpiar listeners de orientación
+    window.removeEventListener('orientationchange', handleOverlayOrientationChange);
+    window.removeEventListener('resize', handleOverlayOrientationChange);
+    if (screen.orientation) {
+      screen.orientation.removeEventListener('change', handleOverlayOrientationChange);
+    }
   };
   
   exitBtn.addEventListener('click', closeOverlay);
@@ -444,53 +473,129 @@ function createCustomFullscreenOverlay(iframe) {
     exitBtn.style.transform = 'scale(1)';
   });
   
-  // Instrucciones para el usuario (especialmente útil en móviles)
-  const instructions = document.createElement('div');
-  instructions.style.cssText = `
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px 25px;
-    border-radius: 8px;
-    font-size: 14px;
-    text-align: center;
-    z-index: 9999;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity 0.5s ease;
-  `;
-  instructions.innerHTML = `
-    <div>📱 Gira tu dispositivo para mejor experiencia</div>
-    <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">Esta ventana se cerrará automáticamente en 3 segundos</div>
-  `;
-  
-  // Agregar elementos al overlay
-  overlay.appendChild(fullscreenIframe);
-  overlay.appendChild(exitBtn);
-  
-  // Solo mostrar instrucciones en dispositivos móviles
+  // Mensaje de orientación inicial (solo en móviles)
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   if (isMobile) {
-    overlay.appendChild(instructions);
+    const initialMessage = document.createElement('div');
+    initialMessage.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(76, 175, 80, 0.9);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    `;
+    initialMessage.innerHTML = `
+      <div>📱 Rota tu dispositivo libremente</div>
+      <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">El applet se adaptará automáticamente</div>
+    `;
     
-    // Ocultar instrucciones después de 3 segundos
+    overlay.appendChild(initialMessage);
+    
+    // Ocultar mensaje inicial después de 3 segundos
     setTimeout(() => {
-      if (instructions.parentNode) {
-        instructions.style.opacity = '0';
+      if (initialMessage.parentNode) {
+        initialMessage.style.opacity = '0';
         setTimeout(() => {
-          if (instructions.parentNode) {
-            instructions.parentNode.removeChild(instructions);
+          if (initialMessage.parentNode) {
+            initialMessage.parentNode.removeChild(initialMessage);
           }
         }, 500);
       }
     }, 3000);
   }
   
+  // Función para manejar cambios de orientación en el overlay
+  let overlayOrientationTimer = null;
+  const handleOverlayOrientationChange = () => {
+    console.log('🔄 Cambio de orientación detectado en overlay...');
+    
+    // Limpiar timer anterior
+    if (overlayOrientationTimer) {
+      clearTimeout(overlayOrientationTimer);
+    }
+    
+    // Esperar para que la orientación se estabilice
+    overlayOrientationTimer = setTimeout(() => {
+      adaptIframeToOrientation();
+      
+      // Mostrar mensaje de confirmación
+      const isLandscape = window.innerWidth > window.innerHeight;
+      showOrientationMessage(
+        isLandscape 
+          ? '📱 Modo horizontal - Experiencia optimizada' 
+          : '📱 Modo vertical - Applet adaptado',
+        isLandscape ? 'success' : 'info'
+      );
+    }, 200);
+  };
+  
+  // Función para mostrar mensajes de orientación en overlay
+  function showOrientationMessage(message, type = 'info') {
+    // Remover mensaje anterior si existe
+    const existingMessage = document.getElementById('overlay-orientation-message');
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'overlay-orientation-message';
+    messageDiv.style.cssText = `
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${type === 'success' ? 'rgba(76, 175, 80, 0.9)' : 'rgba(255, 152, 0, 0.9)'};
+      color: white;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10002;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(5px);
+      transition: all 0.3s ease;
+      animation: slideInFromTop 0.3s ease;
+    `;
+    
+    messageDiv.textContent = message;
+    overlay.appendChild(messageDiv);
+    
+    // Auto-ocultar después de 2.5 segundos
+    setTimeout(() => {
+      if (messageDiv.parentNode) {
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translateX(-50%) translateY(-50px)';
+        setTimeout(() => {
+          if (messageDiv.parentNode) {
+            messageDiv.remove();
+          }
+        }, 300);
+      }
+    }, 2500);
+  }
+  
+  // Agregar elementos al overlay
+  overlay.appendChild(fullscreenIframe);
+  overlay.appendChild(exitBtn);
+  
   // Agregar overlay al documento
   document.body.appendChild(overlay);
+  
+  // Event listeners para orientación del overlay
+  window.addEventListener('orientationchange', handleOverlayOrientationChange);
+  window.addEventListener('resize', handleOverlayOrientationChange);
+  if (screen.orientation) {
+    screen.orientation.addEventListener('change', handleOverlayOrientationChange);
+  }
   
   // Cerrar con tecla Escape
   const handleEscape = (e) => {
@@ -501,33 +606,7 @@ function createCustomFullscreenOverlay(iframe) {
   };
   document.addEventListener('keydown', handleEscape);
   
-  // Manejar cambios de orientación
-  const handleOrientationChange = () => {
-    console.log('🔄 Cambio de orientación detectado');
-    // Reajustar el iframe cuando cambie la orientación
-    setTimeout(() => {
-      if (window.innerWidth > window.innerHeight) {
-        // Ahora estamos en horizontal
-        fullscreenIframe.style.width = '95vw';
-        fullscreenIframe.style.height = '90vh';
-        fullscreenIframe.style.transform = 'rotate(0deg)';
-      }
-    }, 100);
-  };
-  
-  // Escuchar cambios de orientación
-  window.addEventListener('orientationchange', handleOrientationChange);
-  window.addEventListener('resize', handleOrientationChange);
-  
-  // Limpiar event listeners al cerrar
-  const originalClose = closeOverlay;
-  closeOverlay = () => {
-    window.removeEventListener('orientationchange', handleOrientationChange);
-    window.removeEventListener('resize', handleOrientationChange);
-    originalClose();
-  };
-  
-  console.log('📺 Overlay de pantalla completa con orientación horizontal creado');
+  console.log('📺 Overlay con adaptación automática de orientación creado');
 }
 
 // Función para actualizar la URL del iframe de GeoGebra con parámetros que mejoren la interfaz
@@ -566,5 +645,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // Actualizar iframe después de un breve delay
   setTimeout(updateGeogebraIframeForLargerIcons, 2000);
   
-  console.log('🚀 Applets.js mejorado cargado con iconos más grandes');
+  console.log('🚀 Applets.js mejorado cargado con adaptación automática de orientación');
 });
