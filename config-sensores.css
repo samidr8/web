@@ -64,19 +64,19 @@
   width: 90%;
   max-width: 420px;
   max-height: 85vh;
-  /* CAMBIO PRINCIPAL: Reducir opacidad del fondo */
-  background: rgba(0, 0, 0, 0.6);  /* Era 0.92, ahora 0.6 para más transparencia */
+  background: rgba(0, 0, 0, 0.92);
   border-radius: 15px;
   padding: 25px;
   color: white;
   z-index: 10001;
   display: none;
-  backdrop-filter: blur(8px);  /* Aumentar blur para compensar transparencia */
-  -webkit-backdrop-filter: blur(8px);
-  border: 2px solid rgba(255, 255, 255, 0.25);  /* Borde más visible */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   box-sizing: border-box;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);  /* Sombra más suave */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  /* Animación de entrada */
   animation: slideInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
