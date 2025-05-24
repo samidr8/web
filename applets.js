@@ -1,7 +1,4 @@
-// ===== APPLETS.JS CON FUNCIONALIDAD DE PANTALLA COMPLETA =====
-
-let isFullscreen = false;
-let fullscreenContainer = null;
+// ===== APPLETS.JS MEJORADO CON ICONOS MÁS GRANDES =====
 
 function showGeogebraApplet() {
   const container = document.getElementById('geogebra-container');
@@ -9,307 +6,280 @@ function showGeogebraApplet() {
     container.style.display = 'block';
     container.style.pointerEvents = 'auto';
     
-    // Agregar botón de pantalla completa si no existe
-    addFullscreenButton(container);
+    // Verificar si el iframe ya tiene los parámetros correctos
+    const iframe = document.getElementById('geogebra-iframe');
+    if (iframe && iframe.src) {
+      // Si el iframe ya está cargado, aplicar estilos CSS para agrandar el icono
+      applyFullscreenIconStyles();
+    }
     
-    console.log('🧮 GeoGebra applet mostrado');
+    console.log('🧮 GeoGebra applet mostrado con icono de pantalla completa agrandado');
   }
 }
 
-function addFullscreenButton(container) {
-  // Verificar si el botón ya existe
-  if (container.querySelector('.fullscreen-btn')) {
+// Función para aplicar estilos CSS que agranden el icono de pantalla completa
+function applyFullscreenIconStyles() {
+  // Crear estilos CSS personalizados para el iframe de GeoGebra
+  const style = document.createElement('style');
+  style.id = 'geogebra-fullscreen-styles';
+  
+  // CSS para agrandar el icono de pantalla completa
+  style.textContent = `
+    /* Estilos para agrandar el icono de pantalla completa de GeoGebra */
+    #geogebra-iframe {
+      position: relative;
+    }
+    
+    /* Intentar agrandar el icono usando CSS injection si es posible */
+    #geogebra-iframe::after {
+      content: "";
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 6px;
+      z-index: 1000;
+      pointer-events: none;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>');
+      background-size: 24px 24px;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.8;
+    }
+    
+    /* Estilos para el contenedor del applet */
+    .geogebra-player {
+      position: relative;
+    }
+    
+    /* Botón de pantalla completa personalizado más grande */
+    .custom-fullscreen-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 50px;
+      height: 50px;
+      background: rgba(54, 94, 255, 0.76);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 10px rgba(52, 69, 255, 0.3);
+    }
+    
+    .custom-fullscreen-btn:hover {
+      background: rgba(50, 82, 244, 0.9);
+      transform: scale(1.1);
+      box-shadow: 0 4px 15px rgba(0, 85, 255, 0.4);
+    }
+    
+    .custom-fullscreen-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: white;
+    }
+    
+    /* Ocultar el icono original de GeoGebra cuando sea posible */
+    .custom-fullscreen-btn.active ~ #geogebra-iframe::after {
+      display: none;
+    }
+  `;
+  
+  // Agregar los estilos al documento si no existen
+  if (!document.getElementById('geogebra-fullscreen-styles')) {
+    document.head.appendChild(style);
+  }
+  
+  // Agregar botón de pantalla completa personalizado
+  setTimeout(addCustomFullscreenButton, 1000);
+}
+
+// Función para agregar un botón de pantalla completa personalizado más grande
+function addCustomFullscreenButton() {
+  const geogebraPlayer = document.querySelector('.geogebra-player');
+  const iframe = document.getElementById('geogebra-iframe');
+  
+  if (geogebraPlayer && iframe && !geogebraPlayer.querySelector('.custom-fullscreen-btn')) {
+    // Crear botón personalizado más grande
+    const fullscreenBtn = document.createElement('button');
+    fullscreenBtn.className = 'custom-fullscreen-btn';
+    fullscreenBtn.title = 'Pantalla completa';
+    
+    // Icono SVG más grande
+    fullscreenBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+    `;
+    
+    // Evento para pantalla completa
+    fullscreenBtn.addEventListener('click', () => {
+      enterGeogebraFullscreen(iframe);
+    });
+    
+    // Agregar el botón al contenedor
+    geogebraPlayer.appendChild(fullscreenBtn);
+    
+    console.log('✅ Botón de pantalla completa personalizado agregado');
+  }
+}
+
+// Función para entrar en pantalla completa
+function enterGeogebraFullscreen(iframe) {
+  if (!iframe) return;
+  
+  try {
+    // Método 1: Usar la API de Fullscreen del navegador
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen();
+    } else if (iframe.webkitRequestFullscreen) {
+      iframe.webkitRequestFullscreen();
+    } else if (iframe.mozRequestFullScreen) {
+      iframe.mozRequestFullScreen();
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen();
+    } else {
+      // Método 2: Crear overlay de pantalla completa personalizado
+      createCustomFullscreenOverlay(iframe);
+    }
+    
+    console.log('📺 Entrando en pantalla completa de GeoGebra');
+  } catch (error) {
+    console.warn('⚠️ No se pudo activar pantalla completa:', error);
+    // Fallback: crear overlay personalizado
+    createCustomFullscreenOverlay(iframe);
+  }
+}
+
+// Función para crear un overlay de pantalla completa personalizado
+function createCustomFullscreenOverlay(iframe) {
+  // Verificar si ya existe un overlay
+  if (document.getElementById('geogebra-fullscreen-overlay')) {
     return;
   }
   
-  // Crear el botón de pantalla completa
-  const fullscreenBtn = document.createElement('button');
-  fullscreenBtn.className = 'fullscreen-btn';
-  fullscreenBtn.innerHTML = `
-    <span class="fullscreen-icon">⛶</span>
-    <span class="fullscreen-text">Pantalla Completa</span>
-  `;
-  
-  // Agregar el botón al contenedor
-  const geogebraPlayer = container.querySelector('.geogebra-player');
-  if (geogebraPlayer) {
-    geogebraPlayer.appendChild(fullscreenBtn);
-  }
-  
-  // Event listener para el botón
-  fullscreenBtn.addEventListener('click', toggleFullscreen);
-}
-
-function toggleFullscreen() {
-  const container = document.getElementById('geogebra-container');
-  const geogebraPlayer = container.querySelector('.geogebra-player');
-  const iframe = document.getElementById('geogebra-iframe');
-  const fullscreenBtn = container.querySelector('.fullscreen-btn');
-  
-  if (!isFullscreen) {
-    // Entrar en pantalla completa
-    enterFullscreen(container, geogebraPlayer, iframe, fullscreenBtn);
-  } else {
-    // Salir de pantalla completa
-    exitFullscreen(container, geogebraPlayer, iframe, fullscreenBtn);
-  }
-}
-
-function enterFullscreen(container, geogebraPlayer, iframe, fullscreenBtn) {
-  console.log('📱 Entrando en modo pantalla completa');
-  
-  // Marcar como pantalla completa
-  isFullscreen = true;
-  fullscreenContainer = container;
-  
-  // Aplicar estilos de pantalla completa al contenedor
-  container.style.cssText = `
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: rgba(0, 0, 0, 0.95) !important;
-    z-index: 99999 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  `;
-  
-  // Aplicar estilos al player
-  geogebraPlayer.style.cssText = `
-    width: 95vw !important;
-    height: 90vh !important;
-    max-width: none !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    background: #fff !important;
-    border-radius: 8px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;
-    position: relative !important;
-  `;
-  
-  // Aplicar estilos al iframe
-  if (iframe) {
-    iframe.style.cssText = `
-      width: 100% !important;
-      height: calc(100% - 60px) !important;
-      border: none !important;
-      border-radius: 8px 8px 0 0 !important;
-    `;
-  }
-  
-  // Actualizar el botón
-  fullscreenBtn.innerHTML = `
-    <span class="fullscreen-icon">⛷</span>
-    <span class="fullscreen-text">Salir</span>
-  `;
-  fullscreenBtn.style.cssText = `
-    position: absolute !important;
-    bottom: 10px !important;
-    right: 15px !important;
-    background: linear-gradient(135deg, #FF5722, #FF7043) !important;
-    color: white !important;
-    z-index: 100000 !important;
-  `;
-  
-  // Forzar orientación horizontal en móviles
-  requestLandscapeOrientation();
-  
-  // Ocultar otros elementos de la página
-  hidePageElements();
-  
-  // Listener para ESC
-  document.addEventListener('keydown', handleEscapeKey);
-  
-  // Prevent scroll
-  document.body.style.overflow = 'hidden';
-}
-
-function exitFullscreen(container, geogebraPlayer, iframe, fullscreenBtn) {
-  console.log('📱 Saliendo del modo pantalla completa');
-  
-  // Marcar como NO pantalla completa
-  isFullscreen = false;
-  fullscreenContainer = null;
-  
-  // Restaurar estilos originales del contenedor
-  container.style.cssText = `
+  // Crear overlay de pantalla completa
+  const overlay = document.createElement('div');
+  overlay.id = 'geogebra-fullscreen-overlay';
+  overlay.style.cssText = `
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    display: block;
-    z-index: 9999;
-  `;
-  
-  // Restaurar estilos del player
-  geogebraPlayer.style.cssText = `
-    width: 90vw;
-    max-width: 600px;
-    aspect-ratio: 4/3;
-    height: auto;
-    margin: 0 auto;
-    background: #fff;
-    border: 2px solid #ddd;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-    pointer-events: auto;
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-  `;
-  
-  // Restaurar estilos del iframe
-  if (iframe) {
-    iframe.style.cssText = `
-      width: 100%;
-      height: 100%;
-      border: none;
-    `;
-  }
-  
-  // Actualizar el botón
-  fullscreenBtn.innerHTML = `
-    <span class="fullscreen-icon">⛶</span>
-    <span class="fullscreen-text">Pantalla Completa</span>
-  `;
-  fullscreenBtn.style.cssText = `
-    position: absolute;
-    top: 45px;
-    right: 50px;
-    background: linear-gradient(135deg, #2196F3, #42A5F5);
-    color: white;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
     z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   `;
   
-  // Restaurar elementos de la página
-  showPageElements();
+  // Crear iframe clonado para pantalla completa
+  const fullscreenIframe = iframe.cloneNode(true);
+  fullscreenIframe.id = 'geogebra-fullscreen-iframe';
+  fullscreenIframe.style.cssText = `
+    width: 95vw;
+    height: 90vh;
+    border: none;
+    border-radius: 8px;
+  `;
   
-  // Remove ESC listener
-  document.removeEventListener('keydown', handleEscapeKey);
+  // Botón para salir de pantalla completa
+  const exitBtn = document.createElement('button');
+  exitBtn.innerHTML = '✕';
+  exitBtn.style.cssText = `
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  `;
   
-  // Restore scroll
-  document.body.style.overflow = '';
-  
-  // Restaurar orientación
-  exitLandscapeOrientation();
-}
-
-function requestLandscapeOrientation() {
-  try {
-    // Intentar forzar orientación horizontal
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(err => {
-        console.log('⚠️ No se pudo forzar orientación landscape:', err);
-      });
-    }
-    
-    // Alternativa para navegadores que no soportan screen.orientation
-    if ('orientation' in window) {
-      console.log('📱 Solicitando orientación horizontal');
-    }
-  } catch (error) {
-    console.log('⚠️ Error al solicitar orientación:', error);
-  }
-}
-
-function exitLandscapeOrientation() {
-  try {
-    // Liberar bloqueo de orientación
-    if (screen.orientation && screen.orientation.unlock) {
-      screen.orientation.unlock();
-    }
-  } catch (error) {
-    console.log('⚠️ Error al liberar orientación:', error);
-  }
-}
-
-function hidePageElements() {
-  // Ocultar elementos que no sean el applet
-  const elementsToHide = [
-    'a-scene',
-    '.ar-config-icon',
-    '#youtube-container',
-    '#podcast-container',
-    '#imagen-container',
-    '#webpage-container'
-  ];
-  
-  elementsToHide.forEach(selector => {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach(el => {
-      if (el && !el.closest('#geogebra-container')) {
-        el.style.display = 'none';
-      }
-    });
+  exitBtn.addEventListener('click', () => {
+    document.body.removeChild(overlay);
   });
-}
-
-function showPageElements() {
-  // Mostrar elementos ocultos
-  const elementsToShow = [
-    'a-scene',
-    '.ar-config-icon'
-  ];
   
-  elementsToShow.forEach(selector => {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach(el => {
-      if (el) {
-        el.style.display = '';
-      }
-    });
+  exitBtn.addEventListener('mouseenter', () => {
+    exitBtn.style.background = 'rgba(255, 255, 255, 1)';
+    exitBtn.style.transform = 'scale(1.1)';
   });
-}
-
-function handleEscapeKey(event) {
-  if (event.key === 'Escape' && isFullscreen) {
-    toggleFullscreen();
-  }
-}
-
-// Listener para cambios de orientación
-window.addEventListener('orientationchange', () => {
-  if (isFullscreen) {
-    // Pequeño delay para que la orientación se complete
-    setTimeout(() => {
-      const container = document.getElementById('geogebra-container');
-      const geogebraPlayer = container?.querySelector('.geogebra-player');
-      
-      if (geogebraPlayer) {
-        // Reajustar tamaños después del cambio de orientación
-        geogebraPlayer.style.width = '95vw';
-        geogebraPlayer.style.height = '90vh';
-      }
-    }, 100);
-  }
-});
-
-// Listener para detectar salida de pantalla completa por otros medios
-document.addEventListener('fullscreenchange', () => {
-  if (!document.fullscreenElement && isFullscreen) {
-    // Si se salió de pantalla completa por F11 o ESC del navegador
-    const container = document.getElementById('geogebra-container');
-    if (container) {
-      const geogebraPlayer = container.querySelector('.geogebra-player');
-      const iframe = document.getElementById('geogebra-iframe');
-      const fullscreenBtn = container.querySelector('.fullscreen-btn');
-      
-      if (geogebraPlayer && iframe && fullscreenBtn) {
-        exitFullscreen(container, geogebraPlayer, iframe, fullscreenBtn);
-      }
+  
+  exitBtn.addEventListener('mouseleave', () => {
+    exitBtn.style.background = 'rgba(255, 255, 255, 0.9)';
+    exitBtn.style.transform = 'scale(1)';
+  });
+  
+  // Agregar elementos al overlay
+  overlay.appendChild(fullscreenIframe);
+  overlay.appendChild(exitBtn);
+  
+  // Agregar overlay al documento
+  document.body.appendChild(overlay);
+  
+  // Cerrar con tecla Escape
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      document.body.removeChild(overlay);
+      document.removeEventListener('keydown', handleEscape);
     }
-  }
-});
-
-// Función auxiliar para detectar si el dispositivo es móvil
-function isMobileDevice() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+  document.addEventListener('keydown', handleEscape);
+  
+  console.log('📺 Overlay de pantalla completa personalizado creado');
 }
 
-// Exportar funciones si es necesario
-window.showGeogebraApplet = showGeogebraApplet;
-window.toggleFullscreen = toggleFullscreen;
+// Función para actualizar la URL del iframe de GeoGebra con parámetros que mejoren la interfaz
+function updateGeogebraIframeForLargerIcons() {
+  const iframe = document.getElementById('geogebra-iframe');
+  if (!iframe) return;
+  
+  const currentSrc = iframe.src;
+  if (!currentSrc) return;
+  
+  // Agregar parámetros para mejorar la interfaz
+  const separator = currentSrc.includes('?') ? '&' : '?';
+  const additionalParams = [
+    'showToolBar=true',           // Mostrar barra de herramientas
+    'showAlgebraInput=true',      // Mostrar entrada algebraica
+    'showMenuBar=true',           // Mostrar barra de menú
+    'allowStyleBar=true',         // Permitir barra de estilo
+    'allowRescaling=true',        // Permitir reescalado
+    'enableRightClick=true',      // Habilitar clic derecho
+    'showFullscreenButton=true',  // Mostrar botón de pantalla completa
+    'scale=1.2'                   // Escalar la interfaz un 20% más grande
+  ].join('&');
+  
+  // Solo actualizar si no tiene estos parámetros
+  if (!currentSrc.includes('showFullscreenButton=true')) {
+    iframe.src = `${currentSrc}${separator}${additionalParams}`;
+    console.log('🔧 URL de GeoGebra actualizada con parámetros mejorados');
+  }
+}
+
+// Inicializar mejoras cuando se carga el documento
+document.addEventListener('DOMContentLoaded', () => {
+  // Aplicar estilos inmediatamente
+  applyFullscreenIconStyles();
+  
+  // Actualizar iframe después de un breve delay
+  setTimeout(updateGeogebraIframeForLargerIcons, 2000);
+  
+  console.log('🚀 Applets.js mejorado cargado con iconos más grandes');
+});
