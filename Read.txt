@@ -1,0 +1,9 @@
+El sistema ahora puede escalar infinitamente - agregar 100 marcadores más solo requiere:
+
+Editar resources.js (agregar configuración)
+Agregar <a-entity> en HTML
+Actualizar archivo targets.mind
+
+¡El loader aparecerá instantáneamente y todo funcionará dinámicamente! 🚀
+
+https://hiukim.github.io/mind-ar-js-doc/

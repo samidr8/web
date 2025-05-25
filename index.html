@@ -17,22 +17,25 @@
     device-orientation-permission-ui="enabled: false">
 
     <a-assets>
-      <!-- Modelo 3D cargado directamente -->
+      <!-- Modelos 3D - El primero cargado directamente, el segundo dinámicamente -->
       <a-asset-item id="shibaModel" src="media/shiba/scene.gltf"></a-asset-item>
+      <!-- cubeModel se cargará dinámicamente -->
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Target 0: Video de YouTube -->
+    <!-- ===== TARGETS 0-5 (ORIGINALES) ===== -->
+    
+    <!-- Target 0: Video de YouTube #1 -->
     <a-entity mindar-image-target="targetIndex: 0"></a-entity>
 
-    <!-- Target 1: GeoGebra -->
+    <!-- Target 1: GeoGebra #1 -->
     <a-entity mindar-image-target="targetIndex: 1"></a-entity>
 
-    <!-- Target 2: Página web -->
+    <!-- Target 2: Página web #1 -->
     <a-entity mindar-image-target="targetIndex: 2"></a-entity>
 
-    <!-- Target 3: Modelo 3D (ajustando escala como en tu ejemplo funcional) -->
+    <!-- Target 3: Modelo 3D #1 (Shiba) -->
     <a-entity mindar-image-target="targetIndex: 3">
       <a-gltf-model 
         rotation="0 0 0" 
@@ -43,14 +46,36 @@
       </a-gltf-model>
     </a-entity>
 
-    <!-- Target 4: Podcast -->
+    <!-- Target 4: Podcast #1 -->
     <a-entity mindar-image-target="targetIndex: 4"></a-entity>
 
-    <!-- Target 5: Imagen -->
+    <!-- Target 5: Imagen #1 -->
     <a-entity mindar-image-target="targetIndex: 5"></a-entity>
+
+    <!-- ===== TARGETS 6-11 (NUEVOS) ===== -->
+    
+    <!-- Target 6: Video de YouTube #2 -->
+    <a-entity mindar-image-target="targetIndex: 6"></a-entity>
+
+    <!-- Target 7: GeoGebra #2 -->
+    <a-entity mindar-image-target="targetIndex: 7"></a-entity>
+
+    <!-- Target 8: Página web #2 -->
+    <a-entity mindar-image-target="targetIndex: 8"></a-entity>
+
+    <!-- Target 9: Modelo 3D #2 (Cubo) - Se poblará dinámicamente -->
+    <a-entity mindar-image-target="targetIndex: 9"></a-entity>
+
+    <!-- Target 10: Podcast #2 -->
+    <a-entity mindar-image-target="targetIndex: 10"></a-entity>
+
+    <!-- Target 11: Imagen #2 -->
+    <a-entity mindar-image-target="targetIndex: 11"></a-entity>
   </a-scene>
 
-  <!-- Contenedores de contenido -->
+  <!-- ===== CONTENEDORES DE CONTENIDO (COMPARTIDOS DINÁMICAMENTE) ===== -->
+  
+  <!-- Contenedor de YouTube (usado por todos los videos) -->
   <div id="youtube-container" class="content-container">
     <div class="youtube-player">
       <button class="close-btn" id="youtube-close-btn">X</button>
@@ -58,6 +83,7 @@
     </div>
   </div>
 
+  <!-- Contenedor de GeoGebra (usado por todos los applets) -->
   <div id="geogebra-container" class="content-container">
     <div class="geogebra-player">
       <button class="close-btn" id="geogebra-close-btn">X</button>
@@ -65,6 +91,7 @@
     </div>
   </div>
 
+  <!-- Contenedor de páginas web (usado por todas las páginas) -->
   <div id="webpage-container" class="content-container">
     <div class="webpage-alert" id="webpage-alert">
       <button class="close-btn" id="webpage-close-btn">X</button>
@@ -76,10 +103,11 @@
     </div>
   </div>
 
+  <!-- Contenedor de podcast (usado por todos los audios) -->
   <div id="podcast-container" class="content-container">
     <div class="audio-player">
       <button class="close-btn" id="podcast-close-btn">X</button>
-      <div class="audio-title">Podcast</div>
+      <div class="audio-title" id="audio-title">Podcast</div>
       <input type="range" class="audio-progress" id="podcast-progress" min="0" max="100" value="0">
       <div class="audio-time">
         <span id="podcast-current-time">00:00</span>
@@ -93,6 +121,7 @@
     </div>
   </div>
 
+  <!-- Contenedor de imagen (usado por todas las imágenes) -->
   <div id="imagen-container" class="content-container">
     <div class="image-viewer">
       <button class="close-btn" id="imagen-close-btn">X</button>
@@ -114,13 +143,14 @@
   <div id="ar-loader">
     <div class="loader-content">
       <h2>Preparando experiencia de Realidad Aumentada</h2>
-      <p>Por favor espera mientras se cargan los recursos esenciales...</p>
+      <p>Sistema dinámico con 12 marcadores configurados...</p>
       <div class="loader-bar-container">
         <div id="loader-bar" class="loader-bar"></div>
       </div>
     </div>
   </div>
 
+  <!-- ===== SCRIPTS OPTIMIZADOS ===== -->
   <script src="resources.js"></script>
   <script src="performance-monitor.js"></script>
   <script src="video.js"></script>
@@ -131,5 +161,41 @@
   <script src="functions.js"></script>
   <script src="config-sensores.js"></script>
   <script src="UI-personalizado.js"></script>
+
+  <!-- Script de inicialización dinámica -->
+  <script>
+    // Verificar configuración al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 SISTEMA DINÁMICO AR INICIADO');
+      console.log('📊 Targets configurados:', Object.keys(CONTENT_CONFIG).length);
+      
+      // Mostrar resumen por tipo
+      const tipos = {};
+      Object.keys(CONTENT_CONFIG).forEach(key => {
+        const tipo = CONTENT_CONFIG[key].type;
+        tipos[tipo] = (tipos[tipo] || 0) + 1;
+      });
+      
+      console.log('📋 Distribución por tipo:', tipos);
+      
+      // Verificar assets críticos
+      setTimeout(() => {
+        const assets = document.querySelector('a-assets');
+        const shibaModel = document.getElementById('shibaModel');
+        
+        if (shibaModel) {
+          console.log('✅ Modelo Shiba cargado');
+        } else {
+          console.warn('⚠️ Modelo Shiba no encontrado');
+        }
+        
+        // Preparar segundo modelo 3D
+        if (!document.getElementById('cubeModel')) {
+          console.log('📦 Preparando modelo Cubo para carga dinámica...');
+          // Se cargará automáticamente cuando se detecte el target 9
+        }
+      }, 2000);
+    });
+  </script>
 </body>
 </html>

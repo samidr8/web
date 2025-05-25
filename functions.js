@@ -5,32 +5,123 @@ let cameraReady = false;
 let backgroundLoadingInProgress = false;
 let loadingQueue = [];
 
+// Variables dinámicas (declaradas solo aquí para evitar conflictos)
+// currentActiveTarget, currentWebpageUrl, activeAudioElements están en resources.js
+
 // Inicialización RÁPIDA - Solo lo esencial
 document.addEventListener('DOMContentLoaded', function () {
-  console.log('🚀 Iniciando carga rápida...');
+  console.log('🚀 Iniciando sistema dinámico escalable...');
   
-  // 1. SOLO configurar listeners (NO cargar iframes todavía)
-  setupEventListeners();
+  // 1. Configurar listeners dinámicos
+  setupDynamicEventListeners();
   
   // 2. Inicializar cámara INMEDIATAMENTE
   initializeCamera();
   
-  // 3. Aplicar CSS de optimización para loaders
+  // 3. Aplicar optimizaciones CSS
   applyLoaderOptimizations();
   
-  // 4. Empezar carga en segundo plano DESPUÉS de que la cámara esté lista
-  // (no bloquear la inicialización)
+  // 4. Preparar modelos 3D dinámicos
+  prepareDynamic3DModels();
 });
 
-function setupEventListeners() {
-  // Configurar listeners básicos sin cargar contenido
-  document.getElementById('youtube-close-btn').addEventListener('click', () => closeContent('youtube'));
-  document.getElementById('geogebra-close-btn').addEventListener('click', () => closeContent('geogebra'));
-  document.getElementById('webpage-close-btn').addEventListener('click', handleWebpageClose);
-  document.getElementById('cancel-webpage-btn').addEventListener('click', handleWebpageClose);
-  document.getElementById('open-browser-btn').addEventListener('click', openExternalBrowser);
-  document.getElementById('podcast-close-btn').addEventListener('click', () => closeContent('podcast'));
-  document.getElementById('imagen-close-btn').addEventListener('click', () => closeContent('imagen'));
+// ===== CONFIGURACIÓN DINÁMICA DE EVENT LISTENERS =====
+function setupDynamicEventListeners() {
+  console.log('🔧 Configurando listeners dinámicos...');
+  
+  // Configurar listeners para todos los tipos de contenido
+  setupIframeListeners();
+  setupWebpageListeners();
+  setupAudioListeners();
+  setupImageListeners();
+}
+
+function setupIframeListeners() {
+  // YouTube
+  const youtubeCloseBtn = document.getElementById('youtube-close-btn');
+  if (youtubeCloseBtn) {
+    youtubeCloseBtn.addEventListener('click', () => closeDynamicContent('youtube'));
+  }
+  
+  // GeoGebra
+  const geogebraCloseBtn = document.getElementById('geogebra-close-btn');
+  if (geogebraCloseBtn) {
+    geogebraCloseBtn.addEventListener('click', () => closeDynamicContent('geogebra'));
+  }
+}
+
+function setupWebpageListeners() {
+  const webpageCloseBtn = document.getElementById('webpage-close-btn');
+  const cancelBtn = document.getElementById('cancel-webpage-btn');
+  const openBtn = document.getElementById('open-browser-btn');
+  
+  if (webpageCloseBtn) {
+    webpageCloseBtn.addEventListener('click', handleDynamicWebpageClose);
+  }
+  
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', handleDynamicWebpageClose);
+  }
+  
+  if (openBtn) {
+    openBtn.addEventListener('click', openDynamicExternalBrowser);
+  }
+}
+
+function setupAudioListeners() {
+  const podcastCloseBtn = document.getElementById('podcast-close-btn');
+  if (podcastCloseBtn) {
+    podcastCloseBtn.addEventListener('click', () => closeDynamicContent('podcast'));
+  }
+}
+
+function setupImageListeners() {
+  const imageCloseBtn = document.getElementById('imagen-close-btn');
+  if (imageCloseBtn) {
+    imageCloseBtn.addEventListener('click', () => closeDynamicContent('imagen'));
+  }
+}
+
+// ===== PREPARACIÓN DE MODELOS 3D DINÁMICOS =====
+function prepareDynamic3DModels() {
+  console.log('🎨 Preparando modelos 3D dinámicos...');
+  
+  // Obtener todos los targets 3D
+  const targets3D = getTargetsByType('3d');
+  
+  targets3D.forEach(({ targetIndex, config }) => {
+    if (!config.loaded && config.modelPath) {
+      // Preparar asset dinámicamente
+      prepareDynamic3DAsset(targetIndex, config);
+    }
+  });
+}
+
+function prepareDynamic3DAsset(targetIndex, config) {
+  const assets = document.querySelector('a-assets');
+  if (!assets) return;
+  
+  // Verificar si ya existe
+  if (document.getElementById(config.modelId)) {
+    config.loaded = true;
+    return;
+  }
+  
+  // Crear asset dinámicamente
+  const assetItem = document.createElement('a-asset-item');
+  assetItem.setAttribute('id', config.modelId);
+  assetItem.setAttribute('src', config.modelPath);
+  
+  assetItem.addEventListener('loaded', () => {
+    console.log(`✅ Modelo 3D ${config.modelId} cargado dinámicamente`);
+    config.loaded = true;
+  });
+  
+  assetItem.addEventListener('error', () => {
+    console.error(`❌ Error cargando modelo 3D ${config.modelId}`);
+  });
+  
+  assets.appendChild(assetItem);
 }
 
 function initializeCamera() {
@@ -52,7 +143,6 @@ function onCameraQuickStart() {
   // Animar la barra de progreso del loader inicial
   const loaderBar = document.getElementById('loader-bar');
   if (loaderBar) {
-    // Simular progreso de carga
     let progress = 0;
     const interval = setInterval(() => {
       progress += 20;
@@ -60,7 +150,6 @@ function onCameraQuickStart() {
       
       if (progress >= 100) {
         clearInterval(interval);
-        // Ocultar loader inicial después de completar la animación
         setTimeout(() => {
           const loader = document.getElementById('ar-loader');
           if (loader) {
@@ -68,10 +157,8 @@ function onCameraQuickStart() {
             setTimeout(() => {
               loader.style.display = 'none';
               cameraReady = true;
-              console.log('✅ Cámara lista en segundo plano');
-              
-              // AHORA empezar carga en segundo plano
-              startBackgroundLoading();
+              console.log('✅ Cámara lista - iniciando carga dinámica');
+              startDynamicBackgroundLoading();
             }, 500);
           }
         }, 300);
@@ -81,44 +168,68 @@ function onCameraQuickStart() {
 }
 
 function onSceneFullyLoaded() {
-  console.log('🎯 Configurando eventos de marcadores...');
+  console.log('🎯 Configurando eventos dinámicos de marcadores...');
   
-  // Configurar eventos de MindAR SOLO para targets que NO son 3D
   const scene = document.querySelector('a-scene');
-  scene.addEventListener('targetFound', onTargetFound);
-  scene.addEventListener('targetLost', onTargetLost);
+  scene.addEventListener('targetFound', onDynamicTargetFound);
+  scene.addEventListener('targetLost', onDynamicTargetLost);
 }
 
-// ===== CARGA EN SEGUNDO PLANO =====
-function startBackgroundLoading() {
+// ===== CARGA DINÁMICA EN SEGUNDO PLANO =====
+function startDynamicBackgroundLoading() {
   if (backgroundLoadingInProgress) return;
   
   backgroundLoadingInProgress = true;
-  console.log('⚡ Iniciando carga en segundo plano...');
+  console.log('⚡ Iniciando carga dinámica en segundo plano...');
   
-  // Marcar rendimiento si está disponible
   if (typeof PerformanceMonitor !== 'undefined') {
-    PerformanceMonitor.mark('Inicio Carga en Segundo Plano');
+    PerformanceMonitor.mark('Inicio Carga Dinámica');
   }
   
-  // ELIMINADO: No precargar modelo 3D - ya está en el HTML
-  // Solo precargar iframes (audio e imágenes se cargan cuando se detectan)
-  loadingQueue = [
-    { type: 'iframe', target: 'youtube', priority: 1 },
-    { type: 'iframe', target: 'geogebra', priority: 2 }
-  ];
-  
-  // Procesar cola de carga con intervalos para no bloquear
-  processLoadingQueue();
+  // Construir cola dinámicamente basada en la configuración
+  buildDynamicLoadingQueue();
+  processDynamicLoadingQueue();
 }
 
-function processLoadingQueue() {
+function buildDynamicLoadingQueue() {
+  loadingQueue = [];
+  
+  // Obtener todos los targets de video y geogebra para precarga
+  const videoTargets = getTargetsByType('video');
+  const geogebraTargets = getTargetsByType('geogebra');
+  
+  // Agregar videos con prioridad alta
+  videoTargets.forEach(({ targetIndex }) => {
+    loadingQueue.push({ 
+      type: 'iframe', 
+      target: 'youtube', 
+      targetIndex: targetIndex,
+      priority: 1 
+    });
+  });
+  
+  // Agregar GeoGebra con prioridad media
+  geogebraTargets.forEach(({ targetIndex }) => {
+    loadingQueue.push({ 
+      type: 'iframe', 
+      target: 'geogebra', 
+      targetIndex: targetIndex,
+      priority: 2 
+    });
+  });
+  
+  // Ordenar por prioridad
+  loadingQueue.sort((a, b) => a.priority - b.priority);
+  
+  console.log(`📋 Cola de carga dinámica: ${loadingQueue.length} elementos`);
+}
+
+function processDynamicLoadingQueue() {
   if (loadingQueue.length === 0) {
-    console.log('✅ Todos los recursos cargados en segundo plano');
+    console.log('✅ Todos los recursos dinámicos cargados');
     
-    // Marcar rendimiento si está disponible
     if (typeof PerformanceMonitor !== 'undefined') {
-      PerformanceMonitor.mark('Recursos Precargados');
+      PerformanceMonitor.mark('Recursos Dinámicos Precargados');
       PerformanceMonitor.checkPerformanceGoals();
     }
     
@@ -127,218 +238,323 @@ function processLoadingQueue() {
   
   const item = loadingQueue.shift();
   
-  // Cargar con delay para no saturar la red
   setTimeout(() => {
-    loadResourceInBackground(item);
-    processLoadingQueue(); // Continuar con el siguiente
-  }, 300); // 300ms entre cada carga
+    loadDynamicResourceInBackground(item);
+    processDynamicLoadingQueue();
+  }, 300);
 }
 
-function loadResourceInBackground(item) {
-  console.log(`📦 Cargando en segundo plano: ${item.type} - ${item.target}`);
+function loadDynamicResourceInBackground(item) {
+  console.log(`📦 Cargando dinámicamente: ${item.type} - Target ${item.targetIndex}`);
   
   try {
     if (item.type === 'iframe') {
-      loadIframeInBackground(item.target);
+      loadDynamicIframeInBackground(item.target, item.targetIndex);
     }
-    // ELIMINADO: No hay más carga de recursos 3D en segundo plano
   } catch (error) {
-    console.warn(`⚠️ Error cargando ${item.target} en segundo plano:`, error);
+    console.warn(`⚠️ Error cargando target ${item.targetIndex}:`, error);
   }
 }
 
-function loadIframeInBackground(target) {
-  if (target === 'youtube') {
+function loadDynamicIframeInBackground(containerType, targetIndex) {
+  const config = getTargetConfig(targetIndex);
+  if (!config) return;
+  
+  if (containerType === 'youtube' && config.type === 'video') {
     const iframe = document.getElementById('youtube-iframe');
-    // Cargar iframe SIN autoplay para evitar problemas
-    iframe.src = `https://www.youtube.com/embed/${CONTENT_CONFIG[0].youtubeId}?enablejsapi=1&controls=1`;
-    console.log('📺 YouTube iframe cargado en segundo plano');
-    
-  } else if (target === 'geogebra') {
-    const iframe = document.getElementById('geogebra-iframe');
-    const config = CONTENT_CONFIG[1];
-    
-    let geogebraUrl;
-    if (config.appletId === "classic") {
-      geogebraUrl = "https://www.geogebra.org/classic";
-    } else {
-      geogebraUrl = `https://www.geogebra.org/material/iframe/id/${config.appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
+    if (iframe && config.youtubeId) {
+      iframe.src = `https://www.youtube.com/embed/${config.youtubeId}?enablejsapi=1&controls=1`;
+      console.log(`📺 YouTube Target ${targetIndex} cargado en segundo plano`);
     }
-    
-    iframe.src = geogebraUrl;
-    console.log('🧮 GeoGebra iframe cargado en segundo plano');
-  }
-}
-
-// ELIMINADAS: Funciones de precarga de modelo 3D
-// preload3DModel(), preloadAudio(), preloadImage() se mantienen solo para audio e imagen
-
-function preloadAudio(targetIndex) {
-  const config = CONTENT_CONFIG[targetIndex];
-  config.loading = true;
-  
-  const audio = new Audio();
-  audio.src = config.audioPath;
-  audio.preload = "auto";
-  
-  audio.addEventListener('canplaythrough', () => {
-    console.log('🎵 Audio precargado exitosamente');
-    config.loaded = true;
-    config.loading = false;
-    // Guardar referencia para uso posterior
-    config.audioElement = audio;
-  });
-  
-  audio.addEventListener('error', () => {
-    console.warn('Error precargando audio');
-    config.loading = false;
-  });
-}
-
-function preloadImage(targetIndex) {
-  const config = CONTENT_CONFIG[targetIndex];
-  config.loading = true;
-  
-  const img = new Image();
-  img.src = config.imagePath;
-  
-  img.onload = () => {
-    console.log('🖼️ Imagen precargada exitosamente');
-    config.loaded = true;
-    config.loading = false;
-    
-    // Preparar el asset
-    const assets = document.querySelector('a-assets');
-    const imgElement = document.createElement('img');
-    imgElement.setAttribute('id', `target-${targetIndex}-image`);
-    imgElement.setAttribute('src', config.imagePath);
-    assets.appendChild(imgElement);
-  };
-  
-  img.onerror = () => {
-    console.warn('Error precargando imagen');
-    config.loading = false;
-  };
-}
-
-// ===== DETECCIÓN DE MARCADORES (INSTANTÁNEA) =====
-function onTargetFound(event) {
-  const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-  const contentConfig = CONTENT_CONFIG[targetIndex];
-  
-  if (!contentConfig) return;
-  
-  contentConfig.visible = true;
-  console.log(`🎯 Marcador ${targetIndex} detectado - Tipo: ${contentConfig.type}`);
-  
-  // Marcar rendimiento si está disponible
-  if (typeof PerformanceMonitor !== 'undefined') {
-    PerformanceMonitor.mark(`Marcador ${targetIndex} Detectado`);
-  }
-  
-  // CLAVE: NO interferir con el modelo 3D (target 3)
-  if (targetIndex == 3) {
-    console.log('🎨 Modelo 3D detectado - dejando que A-Frame lo maneje nativamente');
-    contentConfig.loaded = true;
-    return; // SALIR TEMPRANO - no hacer nada más
-  }
-  
-  // 🚀 CRÍTICO: Mostrar loader INMEDIATAMENTE para todos los recursos
-  // (excepto modelo 3D que ya se maneja arriba)
-  showResourceLoader(targetIndex);
-  
-  // Procesar según el tipo de contenido
-  switch(contentConfig.type) {
-    case "video":
-      if (!contentConfig.loaded) {
-        // Simular carga del iframe de YouTube
-        simulateIframeLoading(targetIndex, () => {
-          hideResourceLoader();
-          showYoutubePlayer();
-          contentConfig.loaded = true;
-        });
+  } else if (containerType === 'geogebra' && config.type === 'geogebra') {
+    const iframe = document.getElementById('geogebra-iframe');
+    if (iframe && config.appletId) {
+      let geogebraUrl;
+      if (config.appletId === "classic") {
+        geogebraUrl = "https://www.geogebra.org/classic";
       } else {
-        // Si ya está cargado, ocultar loader rápidamente y mostrar
-        setTimeout(() => {
-          hideResourceLoader();
-          showYoutubePlayer();
-        }, 100);
+        geogebraUrl = `https://www.geogebra.org/material/iframe/id/${config.appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
       }
+      iframe.src = geogebraUrl;
+      console.log(`🧮 GeoGebra Target ${targetIndex} cargado en segundo plano`);
+    }
+  }
+}
+
+// ===== DETECCIÓN DINÁMICA DE MARCADORES =====
+function onDynamicTargetFound(event) {
+  const targetIndex = parseInt(event.target.getAttribute('mindar-image-target').targetIndex);
+  const contentConfig = getTargetConfig(targetIndex);
+  
+  if (!contentConfig) {
+    console.warn(`⚠️ Target ${targetIndex} no encontrado en configuración`);
+    return;
+  }
+  
+  // Establecer como target activo
+  currentActiveTarget = targetIndex;
+  contentConfig.visible = true;
+  
+  console.log(`🎯 Target ${targetIndex} detectado - Tipo: ${contentConfig.type} - "${contentConfig.title || 'Sin título'}"`);
+  
+  if (typeof PerformanceMonitor !== 'undefined') {
+    PerformanceMonitor.mark(`Target ${targetIndex} Detectado`);
+  }
+  
+  // Manejar según el tipo
+  handleDynamicTargetByType(targetIndex, contentConfig);
+}
+
+function handleDynamicTargetByType(targetIndex, config) {
+  switch(config.type) {
+    case "video":
+      handleDynamicVideo(targetIndex, config);
       break;
       
     case "geogebra":
-      if (!contentConfig.loaded) {
-        // Simular carga del iframe de GeoGebra
-        simulateIframeLoading(targetIndex, () => {
-          hideResourceLoader();
-          showGeogebraApplet();
-          contentConfig.loaded = true;
-        });
-      } else {
-        // Si ya está cargado, ocultar loader rápidamente y mostrar
-        setTimeout(() => {
-          hideResourceLoader();
-          showGeogebraApplet();
-        }, 100);
-      }
+      handleDynamicGeoGebra(targetIndex, config);
       break;
       
     case "webpage":
-      // Para páginas web, mostrar progreso simulado más rápido
-      simulateWebpageCheck(targetIndex, () => {
-        hideResourceLoader();
-        showWebpageAlert();
-        contentConfig.loaded = true;
-      });
+      handleDynamicWebpage(targetIndex, config);
+      break;
+      
+    case "3d":
+      handleDynamic3D(targetIndex, config);
       break;
       
     case "podcast":
-      // Audio - carga directa cuando se detecta
-      console.log('⏳ Cargando podcast...');
-      loadAudioResource(targetIndex);
+      handleDynamicPodcast(targetIndex, config);
       break;
       
     case "imagen":
-      // Imagen - carga directa cuando se detecta
-      console.log('⏳ Cargando imagen...');
-      loadImageResource(targetIndex);
+      handleDynamicImage(targetIndex, config);
       break;
+      
+    default:
+      console.warn(`⚠️ Tipo de contenido no reconocido: ${config.type}`);
   }
 }
 
-function onTargetLost(event) {
-  const targetIndex = event.target.getAttribute('mindar-image-target').targetIndex;
-  const contentConfig = CONTENT_CONFIG[targetIndex];
+// ===== MANEJADORES DINÁMICOS POR TIPO =====
+
+function handleDynamicVideo(targetIndex, config) {
+  showResourceLoader(targetIndex);
+  
+  if (!config.loaded) {
+    // Actualizar iframe con el video específico
+    const iframe = document.getElementById('youtube-iframe');
+    if (iframe && config.youtubeId) {
+      iframe.src = `https://www.youtube.com/embed/${config.youtubeId}?enablejsapi=1&controls=1&autoplay=1`;
+    }
+    
+    simulateIframeLoading(targetIndex, () => {
+      hideResourceLoader();
+      showYoutubePlayer();
+      config.loaded = true;
+    });
+  } else {
+    // Ya cargado, solo actualizar src si es necesario
+    const iframe = document.getElementById('youtube-iframe');
+    if (iframe && config.youtubeId) {
+      const currentSrc = iframe.src;
+      const expectedSrc = `https://www.youtube.com/embed/${config.youtubeId}`;
+      if (!currentSrc.includes(config.youtubeId)) {
+        iframe.src = `${expectedSrc}?enablejsapi=1&controls=1&autoplay=1`;
+      }
+    }
+    
+    setTimeout(() => {
+      hideResourceLoader();
+      showYoutubePlayer();
+    }, 100);
+  }
+}
+
+function handleDynamicGeoGebra(targetIndex, config) {
+  showResourceLoader(targetIndex);
+  
+  if (!config.loaded) {
+    // Actualizar iframe con el applet específico
+    const iframe = document.getElementById('geogebra-iframe');
+    if (iframe && config.appletId) {
+      let geogebraUrl;
+      if (config.appletId === "classic") {
+        geogebraUrl = "https://www.geogebra.org/classic";
+      } else {
+        geogebraUrl = `https://www.geogebra.org/material/iframe/id/${config.appletId}/width/1400/height/800/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false`;
+      }
+      iframe.src = geogebraUrl;
+    }
+    
+    simulateIframeLoading(targetIndex, () => {
+      hideResourceLoader();
+      showGeogebraApplet();
+      config.loaded = true;
+    });
+  } else {
+    setTimeout(() => {
+      hideResourceLoader();
+      showGeogebraApplet();
+    }, 100);
+  }
+}
+
+function handleDynamicWebpage(targetIndex, config) {
+  // Establecer URL activa dinámicamente
+  currentWebpageUrl = config.url;
+  
+  simulateWebpageCheck(targetIndex, () => {
+    hideResourceLoader();
+    showWebpageAlert();
+    config.loaded = true;
+  });
+}
+
+function handleDynamic3D(targetIndex, config) {
+  console.log(`🎨 Modelo 3D ${targetIndex} detectado - manejado por A-Frame`);
+  
+  // Crear o actualizar entidad 3D dinámicamente
+  const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
+  
+  if (targetEntity && config.loaded) {
+    // Verificar si el modelo ya está agregado
+    let existingModel = targetEntity.querySelector('a-gltf-model');
+    
+    if (!existingModel) {
+      // Crear modelo dinámicamente
+      existingModel = document.createElement('a-gltf-model');
+      existingModel.setAttribute('src', `#${config.modelId}`);
+      existingModel.setAttribute('scale', config.scale || '1 1 1');
+      existingModel.setAttribute('position', config.position || '0 0 0.1');
+      existingModel.setAttribute('rotation', config.rotation || '0 0 0');
+      
+      if (config.animation) {
+        existingModel.setAttribute('animation', config.animation);
+      }
+      
+      targetEntity.appendChild(existingModel);
+      console.log(`✅ Modelo 3D ${config.modelId} agregado dinámicamente`);
+    }
+  }
+  
+  config.visible = true;
+}
+
+function handleDynamicPodcast(targetIndex, config) {
+  showResourceLoader(targetIndex);
+  loadAudioResource(targetIndex);
+}
+
+function handleDynamicImage(targetIndex, config) {
+  showResourceLoader(targetIndex);
+  loadImageResource(targetIndex);
+}
+
+function onDynamicTargetLost(event) {
+  const targetIndex = parseInt(event.target.getAttribute('mindar-image-target').targetIndex);
+  const contentConfig = getTargetConfig(targetIndex);
   
   if (!contentConfig) return;
   
   contentConfig.visible = false;
   hideResourceLoader();
   
-  // CLAVE: NO interferir con el modelo 3D (target 3)
-  if (targetIndex == 3) {
-    console.log('🎨 Modelo 3D perdido - A-Frame lo oculta automáticamente');
-    return; // SALIR TEMPRANO - no hacer nada más
+  // Solo resetear si era el target activo
+  if (currentActiveTarget === targetIndex) {
+    currentActiveTarget = null;
   }
+  
+  console.log(`👻 Target ${targetIndex} perdido`);
 }
 
-// ===== FUNCIONES DE SOPORTE OPTIMIZADAS =====
+// ===== FUNCIONES DE CIERRE DINÁMICAS =====
+
+function closeDynamicContent(containerType) {
+  const container = document.getElementById(`${containerType}-container`);
+  if (container) {
+    container.style.display = 'none';
+
+    // Lógica específica por tipo
+    if (containerType === 'youtube') {
+      const iframe = document.getElementById('youtube-iframe');
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'pauseVideo',
+            args: []
+          }), '*');
+        } catch (error) {
+          console.warn('No se pudo pausar YouTube:', error);
+        }
+      }
+    } else if (containerType === 'podcast') {
+      // Pausar todos los audios activos
+      Object.keys(activeAudioElements).forEach(targetIndex => {
+        const audio = activeAudioElements[targetIndex];
+        if (audio) {
+          try {
+            audio.pause();
+            audio.currentTime = 0;
+          } catch (error) {
+            console.warn(`Error pausando audio ${targetIndex}:`, error);
+          }
+        }
+      });
+    }
+  }
+  
+  // Marcar todos los targets de este tipo como no visibles
+  Object.keys(CONTENT_CONFIG).forEach(key => {
+    const config = CONTENT_CONFIG[key];
+    if (config.container === containerType) {
+      config.visible = false;
+    }
+  });
+}
+
+function handleDynamicWebpageClose() {
+  closeDynamicContent('webpage');
+  currentWebpageUrl = null;
+}
+
+function openDynamicExternalBrowser() {
+  if (!currentWebpageUrl) {
+    console.warn('⚠️ No hay URL activa para abrir');
+    return;
+  }
+  
+  try {
+    const newWindow = window.open(currentWebpageUrl, '_blank');
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      window.location.href = currentWebpageUrl;
+    }
+    console.log(`🌐 Abriendo URL dinámica: ${currentWebpageUrl}`);
+  } catch (e) {
+    console.error('Error al abrir el navegador:', e);
+    window.location.href = currentWebpageUrl;
+  }
+  
+  handleDynamicWebpageClose();
+}
+
+// ===== FUNCIONES DE SOPORTE OPTIMIZADAS (DINÁMICAS) =====
+
 function showResourceLoader(targetIndex) {
   const loader = document.getElementById('ar-resource-loader');
   const bar = document.getElementById('resource-loader-bar');
   const loaderText = document.querySelector('.loader-text');
   
   if (loader && bar) {
-    // 🚀 CAMBIO CRÍTICO: Mostrar loader INMEDIATAMENTE sin delays
     loader.style.display = 'block';
-    loader.style.opacity = '1'; // Asegurar visibilidad inmediata
+    loader.style.opacity = '1';
     
-    // Resetear barra inmediatamente
-    bar.style.transition = 'none'; // Sin transición inicial
+    bar.style.transition = 'none';
     bar.style.width = '0%';
     
-    // Personalizar texto según el tipo de recurso
-    const config = CONTENT_CONFIG[targetIndex];
+    // Obtener configuración dinámica del target
+    const config = getTargetConfig(targetIndex);
     const resourceNames = {
       'video': 'video de YouTube',
       'geogebra': 'applet de GeoGebra',
@@ -348,15 +564,15 @@ function showResourceLoader(targetIndex) {
       'webpage': 'página web'
     };
     
-    if (loaderText) {
-      loaderText.textContent = `Cargando ${resourceNames[config.type] || 'recurso AR'}...`;
+    if (loaderText && config) {
+      const resourceName = resourceNames[config.type] || 'recurso AR';
+      const title = config.title ? ` - ${config.title}` : '';
+      loaderText.textContent = `Cargando ${resourceName}${title}...`;
     }
     
-    // 🎯 OPTIMIZACIÓN: Animar la barra inmediatamente después de mostrar
-    // Usar requestAnimationFrame para asegurar que el DOM se actualice primero
     requestAnimationFrame(() => {
       bar.style.transition = 'width 0.3s ease';
-      bar.style.width = '15%'; // Empezar con 15% para dar sensación de progreso inmediato
+      bar.style.width = '15%';
     });
   }
 }
@@ -366,65 +582,61 @@ function hideResourceLoader() {
   const bar = document.getElementById('resource-loader-bar');
   
   if (loader) {
-    // Completar la barra antes de ocultar
     if (bar) {
-      bar.style.transition = 'width 0.2s ease'; // Transición más rápida
+      bar.style.transition = 'width 0.2s ease';
       bar.style.width = '100%';
     }
     
-    // 🚀 OPTIMIZACIÓN: Reducir tiempo de espera antes de ocultar
     setTimeout(() => {
       loader.style.display = 'none';
-      loader.style.opacity = '0'; // Asegurar que esté oculto
+      loader.style.opacity = '0';
       if (bar) {
         bar.style.transition = 'none';
         bar.style.width = '0%';
       }
-    }, 200); // Reducido de 300ms a 200ms
+    }, 200);
   }
 }
 
 function updateResourceLoaderProgress(targetIndex, percent) {
   const bar = document.getElementById('resource-loader-bar');
   if (bar) {
-    bar.style.transition = 'width 0.2s ease'; // Transición más fluida
+    bar.style.transition = 'width 0.2s ease';
     bar.style.width = `${Math.min(percent, 100)}%`;
   }
 }
 
-// ===== NUEVAS FUNCIONES DE SIMULACIÓN OPTIMIZADAS =====
+// ===== FUNCIONES DE SIMULACIÓN OPTIMIZADAS =====
 
-// Función optimizada para simular carga de iframes más rápida
 function simulateIframeLoading(targetIndex, callback) {
-  let progress = 15; // Empezar desde donde el loader inicial dejó
+  let progress = 15;
   const interval = setInterval(() => {
-    progress += 25; // Incrementos más grandes
+    progress += 25;
     updateResourceLoaderProgress(targetIndex, progress);
     
     if (progress >= 100) {
       clearInterval(interval);
-      setTimeout(callback, 100); // Delay mínimo
+      setTimeout(callback, 100);
     }
-  }, 200); // Intervalos más frecuentes (200ms vs 300ms)
+  }, 200);
 }
 
-// Nueva función para páginas web más rápida
 function simulateWebpageCheck(targetIndex, callback) {
   let progress = 15;
   const interval = setInterval(() => {
-    progress += 30; // Incrementos más grandes para páginas web
+    progress += 30;
     updateResourceLoaderProgress(targetIndex, progress);
     
     if (progress >= 100) {
       clearInterval(interval);
-      setTimeout(callback, 100); // Delay mínimo
+      setTimeout(callback, 100);
     }
-  }, 150); // Muy rápido para páginas web
+  }, 150);
 }
 
-// ===== OPTIMIZACIÓN CSS PARA LOADERS =====
+// ===== CSS OPTIMIZACIONES =====
+
 function applyLoaderOptimizations() {
-  // CSS adicional para asegurar aparición instantánea
   const loaderOptimizationCSS = `
     #ar-resource-loader {
       opacity: 0;
@@ -440,7 +652,6 @@ function applyLoaderOptimizations() {
     }
   `;
 
-  // Aplicar CSS de optimización
   if (!document.getElementById('loader-optimization-styles')) {
     const style = document.createElement('style');
     style.id = 'loader-optimization-styles';
@@ -449,60 +660,179 @@ function applyLoaderOptimizations() {
   }
 }
 
-function closeContent(type) {
-  const container = document.getElementById(`${type}-container`);
-  if (container) {
-    container.style.display = 'none';
+// ===== FUNCIONES AUXILIARES PARA AUDIO DINÁMICO =====
 
-    if (type === 'youtube') {
-      const iframe = document.getElementById('youtube-iframe');
-      if (iframe && iframe.contentWindow) {
-        try {
-          iframe.contentWindow.postMessage(JSON.stringify({
-            event: 'command',
-            func: 'pauseVideo',
-            args: []
-          }), '*');
-        } catch (error) {
-          console.warn('No se pudo pausar YouTube:', error);
-        }
+function setActiveAudio(targetIndex, audioElement) {
+  // Pausar audios previos
+  Object.keys(activeAudioElements).forEach(key => {
+    if (key !== targetIndex.toString()) {
+      const prevAudio = activeAudioElements[key];
+      if (prevAudio && !prevAudio.paused) {
+        prevAudio.pause();
       }
-    } else if (type === 'podcast' && podcastAudio) {
-      try {
-        podcastAudio.pause();
-        podcastAudio.currentTime = 0;
-      } catch (error) {
-        console.warn('No se pudo pausar el podcast:', error);
-      }
-    }
-  }
-  
-  Object.keys(CONTENT_CONFIG).forEach(key => {
-    if (CONTENT_CONFIG[key].container === type) {
-      CONTENT_CONFIG[key].visible = false;
     }
   });
+  
+  // Establecer nuevo audio activo
+  activeAudioElements[targetIndex] = audioElement;
 }
 
-function handleWebpageClose() {
-  closeContent('webpage');
-}
-
-function openExternalBrowser() {
-  try {
-    const newWindow = window.open(CONTENT_CONFIG[2].url, '_blank');
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      window.location.href = CONTENT_CONFIG[2].url;
-    }
-  } catch (e) {
-    console.error('Error al abrir el navegador:', e);
-    window.location.href = CONTENT_CONFIG[2].url;
+function removeActiveAudio(targetIndex) {
+  if (activeAudioElements[targetIndex]) {
+    delete activeAudioElements[targetIndex];
   }
-  closeContent('webpage');
 }
 
+// ===== FUNCIONES AUXILIARES PARA MODELOS 3D =====
+
+function setActive3DModel(targetIndex, modelElement) {
+  if (!active3DModels) {
+    active3DModels = {};
+  }
+  active3DModels[targetIndex] = modelElement;
+}
+
+function removeActive3DModel(targetIndex) {
+  if (active3DModels && active3DModels[targetIndex]) {
+    delete active3DModels[targetIndex];
+  }
+}
+
+// ===== FUNCIONES DE UTILIDAD Y DEPURACIÓN =====
+
+function getCurrentActiveTarget() {
+  return currentActiveTarget;
+}
+
+function getActiveTargets() {
+  return Object.keys(CONTENT_CONFIG)
+    .filter(key => CONTENT_CONFIG[key].visible)
+    .map(key => ({
+      targetIndex: parseInt(key),
+      config: CONTENT_CONFIG[key]
+    }));
+}
+
+function resetAllTargets() {
+  Object.keys(CONTENT_CONFIG).forEach(key => {
+    CONTENT_CONFIG[key].visible = false;
+  });
+  
+  currentActiveTarget = null;
+  currentWebpageUrl = null;
+  
+  // Limpiar audios activos
+  Object.keys(activeAudioElements).forEach(key => {
+    const audio = activeAudioElements[key];
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  });
+  activeAudioElements = {};
+  
+  console.log('🔄 Todos los targets reseteados');
+}
+
+function getTargetStatistics() {
+  const stats = {
+    total: Object.keys(CONTENT_CONFIG).length,
+    loaded: 0,
+    visible: 0,
+    byType: {}
+  };
+  
+  Object.keys(CONTENT_CONFIG).forEach(key => {
+    const config = CONTENT_CONFIG[key];
+    
+    if (config.loaded) stats.loaded++;
+    if (config.visible) stats.visible++;
+    
+    if (!stats.byType[config.type]) {
+      stats.byType[config.type] = { total: 0, loaded: 0, visible: 0 };
+    }
+    
+    stats.byType[config.type].total++;
+    if (config.loaded) stats.byType[config.type].loaded++;
+    if (config.visible) stats.byType[config.type].visible++;
+  });
+  
+  return stats;
+}
+
+// ===== FUNCIONES DE COMPATIBILIDAD =====
+
+// Funciones legacy para mantener compatibilidad
 function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
+
+// Funciones que serán llamadas desde otros archivos
+function showYoutubePlayer() {
+  const container = document.getElementById('youtube-container');
+  if (container) {
+    container.style.display = 'block';
+    container.style.pointerEvents = 'auto';
+    console.log('📺 Reproductor de YouTube mostrado dinámicamente');
+  }
+}
+
+function showGeogebraApplet() {
+  const container = document.getElementById('geogebra-container');
+  if (container) {
+    container.style.display = 'block';
+    container.style.pointerEvents = 'auto';
+    console.log('🧮 Applet de GeoGebra mostrado dinámicamente');
+    
+    // Aplicar mejoras del applet si la función existe
+    if (typeof applyFullscreenIconStyles === 'function') {
+      applyFullscreenIconStyles();
+    }
+  }
+}
+
+function showWebpageAlert() {
+  const container = document.getElementById('webpage-container');
+  const alert = document.getElementById('webpage-alert');
+  
+  if (container && alert) {
+    container.style.display = 'block';
+    container.style.pointerEvents = 'auto';
+    alert.style.display = 'block';
+    
+    // Actualizar texto dinámicamente si hay configuración específica
+    if (currentActiveTarget !== null) {
+      const config = getTargetConfig(currentActiveTarget);
+      if (config && config.title) {
+        const alertText = alert.querySelector('p');
+        if (alertText) {
+          alertText.textContent = `"${config.title}" no puede mostrarse directamente debido a políticas de seguridad. ¿Deseas abrirlo en tu navegador?`;
+        }
+      }
+    }
+    
+    console.log('🌐 Alerta de página web mostrada dinámicamente');
+  }
+}
+
+// ===== FUNCIONES DE INICIALIZACIÓN FINAL =====
+
+// Auto-ejecutar validaciones cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+  // Ejecutar después de un pequeño delay para asegurar que todo esté cargado
+  setTimeout(() => {
+    if (typeof getTargetStatistics === 'function') {
+      const stats = getTargetStatistics();
+      console.log('📊 ESTADÍSTICAS INICIALES:', stats);
+      
+      // Verificar integridad del sistema
+      if (stats.total === 0) {
+        console.error('❌ No se encontraron configuraciones de targets');
+      } else {
+        console.log(`✅ Sistema dinámico listo con ${stats.total} targets configurados`);
+      }
+    }
+  }, 1000);
+});
