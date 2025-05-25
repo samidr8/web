@@ -542,14 +542,19 @@ function openDynamicExternalBrowser() {
 // ===== FUNCIONES DE SOPORTE OPTIMIZADAS (DINÁMICAS) =====
 
 function showResourceLoader(targetIndex) {
+  console.log(`⚡ MOSTRAR LOADER INMEDIATAMENTE - Target ${targetIndex}`);
+  
   const loader = document.getElementById('ar-resource-loader');
   const bar = document.getElementById('resource-loader-bar');
   const loaderText = document.querySelector('.loader-text');
   
   if (loader && bar) {
+    // ✅ OPTIMIZACIÓN CRÍTICA: Aparecer INSTANTÁNEAMENTE
     loader.style.display = 'block';
     loader.style.opacity = '1';
+    loader.style.visibility = 'visible';
     
+    // Resetear barra SIN transiciones para aparecer al instante
     bar.style.transition = 'none';
     bar.style.width = '0%';
     
@@ -570,11 +575,14 @@ function showResourceLoader(targetIndex) {
       loaderText.textContent = `Cargando ${resourceName}${title}...`;
     }
     
-    requestAnimationFrame(() => {
+    // ✅ PROGRESO INICIAL INMEDIATO (sin requestAnimationFrame que causa delay)
+    setTimeout(() => {
       bar.style.transition = 'width 0.3s ease';
       bar.style.width = '15%';
-    });
+    }, 50); // Delay mínimo para aplicar transición
   }
+  
+  console.log(`✅ Loader mostrado instantáneamente para target ${targetIndex}`);
 }
 
 function hideResourceLoader() {
@@ -638,17 +646,26 @@ function simulateWebpageCheck(targetIndex, callback) {
 
 function applyLoaderOptimizations() {
   const loaderOptimizationCSS = `
+    /* ✅ OPTIMIZACIÓN CRÍTICA: Loader instantáneo */
     #ar-resource-loader {
       opacity: 0;
-      transition: opacity 0.1s ease !important;
+      transition: none !important;
+      visibility: hidden;
     }
     
     #ar-resource-loader[style*="display: block"] {
       opacity: 1 !important;
+      visibility: visible !important;
     }
     
     .loader-bar {
       transition: width 0.2s ease !important;
+    }
+    
+    /* Asegurar que el loader tenga prioridad visual máxima */
+    #ar-resource-loader {
+      z-index: 10001 !important;
+      pointer-events: auto !important;
     }
   `;
 
