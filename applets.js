@@ -1,31 +1,42 @@
-// ===== APPLETS.JS MEJORADO CON ICONOS MÁS GRANDES Y MENSAJE INSTRUCTIVO =====
+// ===== APPLETS.JS MEJORADO - VERSIÓN SIMPLIFICADA =====
 
+// 🔧 FUNCIÓN PRINCIPAL CORREGIDA
 function showGeogebraApplet() {
+  console.log('🧮 showGeogebraApplet() llamada desde applets.js');
+  
   const container = document.getElementById('geogebra-container');
   if (container) {
     container.style.display = 'block';
     container.style.pointerEvents = 'auto';
     
-    // Verificar si el iframe ya tiene los parámetros correctos
+    // Verificar iframe y aplicar estilos
     const iframe = document.getElementById('geogebra-iframe');
     if (iframe && iframe.src) {
-      // Si el iframe ya está cargado, aplicar estilos CSS para agrandar el icono
       applyFullscreenIconStyles();
     }
     
-    // NUEVO: Mostrar mensaje instructivo sobre orientación de pantalla
+    // 🔧 LLAMADA DIRECTA AL MENSAJE SIN DELAYS COMPLEJOS
+    console.log('🔧 Mostrando mensaje de orientación desde showGeogebraApplet...');
     showOrientationInstructionMessage();
     
-    console.log('🧮 GeoGebra applet mostrado con icono de pantalla completa agrandado');
+    console.log('🧮 GeoGebra applet mostrado con mensaje de orientación');
+  } else {
+    console.error('❌ Container geogebra-container no encontrado');
   }
 }
 
-// NUEVA FUNCIÓN: Mostrar mensaje instructivo sobre orientación
+// FUNCIÓN DEL MENSAJE SIMPLIFICADA
 function showOrientationInstructionMessage() {
+  console.log('📱 showOrientationInstructionMessage() ejecutándose...');
+  
   // Verificar si ya existe un mensaje para evitar duplicados
   if (document.getElementById('orientation-instruction-message')) {
-    return;
+    console.log('📱 Mensaje ya existe, removiendo el anterior...');
+    const existing = document.getElementById('orientation-instruction-message');
+    existing.remove();
   }
+  
+  console.log('📱 Creando nuevo mensaje de orientación...');
   
   // Crear el contenedor del mensaje
   const messageContainer = document.createElement('div');
@@ -53,14 +64,15 @@ function showOrientationInstructionMessage() {
   // Contenido del mensaje
   messageContainer.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-      <span style="font-size: 18px; font-weight: bold;">Activar la Orientación de la Pantalla.</span>
+      <span style="font-size: 24px; margin-right: 10px;">📱</span>
+      <span style="font-size: 18px; font-weight: bold;">Activar la Orientación de la Pantalla</span>
     </div>
     <div style="font-size: 14px; opacity: 0.9; line-height: 1.4;">
-      Luego presione el botón de pantalla completa.
+      Luego presione el botón de pantalla completa
     </div>
   `;
   
-  // Agregar CSS para la animación si no existe
+  // Agregar CSS para la animación (simplificado)
   if (!document.getElementById('orientation-message-styles')) {
     const styleElement = document.createElement('style');
     styleElement.id = 'orientation-message-styles';
@@ -88,27 +100,58 @@ function showOrientationInstructionMessage() {
       }
     `;
     document.head.appendChild(styleElement);
+    console.log('📱 Estilos CSS agregados');
   }
   
-  // Agregar el mensaje al documento
+  // Agregar al DOM
   document.body.appendChild(messageContainer);
+  console.log('📱 ✅ Mensaje agregado al DOM exitosamente');
   
-  // Configurar desaparición automática después de 2 segundos
+  // Verificar que esté visible
   setTimeout(() => {
-    if (messageContainer.parentNode) {
-      // Aplicar animación de salida
-      messageContainer.style.animation = 'messageSlideOut 0.3s ease-in forwards';
+    const check = document.getElementById('orientation-instruction-message');
+    if (check) {
+      console.log('📱 ✅ CONFIRMADO: Mensaje visible en DOM');
+      console.log('📱 Posición:', check.style.position);
+      console.log('📱 Z-index:', check.style.zIndex);
+    } else {
+      console.error('📱 ❌ ERROR: Mensaje no encontrado en DOM después de agregar');
+    }
+  }, 50);
+  
+  // Auto-remover después de 5 segundos
+  setTimeout(() => {
+    const messageToRemove = document.getElementById('orientation-instruction-message');
+    if (messageToRemove) {
+      console.log('📱 Iniciando remoción del mensaje...');
+      messageToRemove.style.animation = 'messageSlideOut 0.3s ease-in forwards';
       
-      // Remover el elemento después de la animación
       setTimeout(() => {
-        if (messageContainer.parentNode) {
-          messageContainer.parentNode.removeChild(messageContainer);
+        if (messageToRemove.parentNode) {
+          messageToRemove.remove();
+          console.log('📱 ✅ Mensaje removido exitosamente');
         }
       }, 300);
     }
-  }, 5000); // 5 segundos como solicitaste
-  
-  console.log('📱 Mensaje de instrucción de orientación mostrado');
+  }, 5000);
+}
+
+// 🆕 FUNCIONES DE PRUEBA SIMPLIFICADAS
+function testOrientationMessage() {
+  console.log('🧪 === PRUEBA MANUAL DEL MENSAJE ===');
+  showOrientationInstructionMessage();
+}
+
+function forceShowOrientationMessage() {
+  console.log('🔧 === FORZAR MOSTRAR MENSAJE ===');
+  // Remover existente
+  const existing = document.getElementById('orientation-instruction-message');
+  if (existing) {
+    existing.remove();
+    console.log('🔧 Mensaje anterior removido');
+  }
+  // Mostrar nuevo
+  showOrientationInstructionMessage();
 }
 
 // Función para aplicar estilos CSS que agranden el icono de pantalla completa
@@ -188,6 +231,7 @@ function applyFullscreenIconStyles() {
   // Agregar los estilos al documento si no existen
   if (!document.getElementById('geogebra-fullscreen-styles')) {
     document.head.appendChild(style);
+    console.log('🎨 Estilos de pantalla completa aplicados');
   }
   
   // Agregar botón de pantalla completa personalizado
@@ -367,13 +411,32 @@ function updateGeogebraIframeForLargerIcons() {
   }
 }
 
+// 🔧 CORREGIDO: Integración con el sistema dinámico
+function handleGeogebraShow() {
+  console.log('🧮 Manejando mostrar GeoGebra desde sistema dinámico');
+  showGeogebraApplet();
+}
+
+// 🆕 NUEVA FUNCIÓN: Para pruebas manuales
+function testOrientationMessage() {
+  console.log('🧪 Probando mensaje de orientación manualmente...');
+  forceShowOrientationMessage();
+}
+
 // Inicializar mejoras cuando se carga el documento
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('🚀 Applets.js iniciando...');
+  
   // Aplicar estilos inmediatamente
   applyFullscreenIconStyles();
   
   // Actualizar iframe después de un breve delay
   setTimeout(updateGeogebraIframeForLargerIcons, 2000);
   
+  // 🔧 NUEVO: Agregar función de prueba a la consola para depuración
+  window.testOrientationMessage = testOrientationMessage;
+  window.forceShowOrientationMessage = forceShowOrientationMessage;
+  
   console.log('🚀 Applets.js mejorado cargado con iconos más grandes y mensaje instructivo');
+  console.log('🧪 Para probar el mensaje manualmente, ejecuta: testOrientationMessage()');
 });

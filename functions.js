@@ -786,10 +786,24 @@ function showGeogebraApplet() {
     container.style.pointerEvents = 'auto';
     console.log('🧮 Applet de GeoGebra mostrado dinámicamente');
     
-    // Aplicar mejoras del applet si la función existe
-    if (typeof applyFullscreenIconStyles === 'function') {
-      applyFullscreenIconStyles();
-    }
+    // 🔧 CORREGIDO: Llamar directamente la función del mensaje
+    setTimeout(() => {
+      console.log('🔧 Intentando mostrar mensaje de orientación...');
+      
+      // Verificar si la función existe y llamarla
+      if (typeof showOrientationInstructionMessage === 'function') {
+        console.log('✅ Función showOrientationInstructionMessage encontrada, ejecutando...');
+        showOrientationInstructionMessage();
+      } else {
+        console.error('❌ Función showOrientationInstructionMessage no encontrada');
+      }
+      
+      // También aplicar estilos
+      if (typeof applyFullscreenIconStyles === 'function') {
+        console.log('✅ Aplicando estilos de pantalla completa...');
+        applyFullscreenIconStyles();
+      }
+    }, 100); // Delay mínimo para asegurar que el DOM esté listo
   }
 }
 
